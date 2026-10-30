@@ -6,7 +6,7 @@ they inherit, project a unit's stats through promotions and multi-classing, and 
 loadouts — all client-side, nothing leaves your device.
 
 Fire Emblem Fates, Path of Radiance, Radiant Dawn, Genealogy of the Holy War, Thracia 776, The Binding Blade, The Blazing Blade,
-The Sacred Stones, Mystery of the Emblem and Awakening are in; Shadows of Valentia follows. This app was the Fates Unit Planner.
+The Sacred Stones, Mystery of the Emblem, Awakening and Shadows of Valentia are in. This app was the Fates Unit Planner.
 
 **Live app:** https://athnir.github.io/Fire-Emblem-Roster/
 
@@ -30,6 +30,8 @@ The Sacred Stones, Mystery of the Emblem and Awakening are in; Shadows of Valent
   Formats are in [data-raw/fe3/README.md](data-raw/fe3/README.md).
 - **Awakening:** the user's own cartridge and DLC dumps, read by `scripts/build-fe13-units.py` (growths from Serenes Forest: the files'
   are encoded). Formats are in [data-raw/fe13/README.md](data-raw/fe13/README.md).
+- **Shadows of Valentia:** the user's own cartridge dump, read by `scripts/build-fe15-units.py` (joins and class-change levels from
+  Serenes Forest). Formats are in [data-raw/fe15/README.md](data-raw/fe15/README.md).
 - **Radiant Dawn:** the same, from the user's Wii disc, read by `scripts/build-fe10-units.py`. Formats are in
   [data-raw/fe10/README.md](data-raw/fe10/README.md).
 

@@ -60,6 +60,8 @@ export interface GbaUnit {
   /** Level-up growth rates: HP, Str/Mag, Skl, Spd, Lck, Def, Res. */
   growths: Partial<GbaStats>
   ranks: Partial<Record<string, string>>
+  /** Their own maximums, where the game keeps them per character (Shadows of Valentia) instead of per class. */
+  caps?: GbaStats
 }
 
 export interface GbaClass {
@@ -72,6 +74,8 @@ export interface GbaClass {
   promotions?: string[]
   /** The level the class stops at (a trainee's 10; otherwise 20). */
   maxLevel?: number
+  /** The level it must reach to change class (a promotion item's Lv 10 when unset). */
+  promoteLevel?: number
   /** The class promotes by itself on reaching its last level (The Sacred Stones' trainees). */
   autoPromote?: boolean
   /** What promoting into this class adds (HP to Res), when the game keeps it in the class data; otherwise the difference between

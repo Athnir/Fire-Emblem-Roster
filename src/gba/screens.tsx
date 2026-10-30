@@ -44,6 +44,11 @@ export interface GbaData {
   /** Fixed supports instead of support points (Mystery of the Emblem), and what they add, in words. */
   supportBonuses?: GbaSupportBonus[]
   supportBonusText?: string
+  /** Who supports whom, when what a support gives isn't read (Shadows of Valentia), and what to say about it. */
+  supportPairs?: { a: string; b: string }[]
+  supportPairsText?: string
+  /** How a class change works, in the planner's note (the GBA games' promotion item when unset). */
+  promotionText?: string
 }
 
 const statsOf = (data: GbaData) => data.stats ?? GBA_STATS
@@ -61,6 +66,8 @@ interface GbaPlan {
   to?: string
   promoteAt2?: number | null
   to2?: string
+  promoteAt3?: number | null
+  to3?: string
 }
 
 interface GbaState {
@@ -241,6 +248,15 @@ function bonusPartnersOf(data: GbaData, unitId: string) {
   return [...gets, ...gives].filter((x) => !seen.has(x.partner.id) && seen.add(x.partner.id)).map((x) => ({ partner: x.partner }))
 }
 
+/** A unit's partners where only who supports whom is read. */
+function pairPartnersOf(data: GbaData, unitId: string) {
+  const byId = new Map(data.units.map((u) => [u.id, u]))
+  return (data.supportPairs ?? [])
+    .filter((p) => p.a === unitId || p.b === unitId)
+    .map((p) => ({ partner: byId.get(p.a === unitId ? p.b : p.a)! }))
+    .filter((x) => x.partner)
+}
+
 /** Turns of building up for each level: points needed less the start, over the gain per turn, rounded up. */
 function turnsFor(levels: number[], s: GbaSupport): (number | null)[] {
   return levels.map((need) => (s.perTurn ? Math.max(0, Math.ceil((need - s.start) / s.perTurn)) : null))
@@ -249,7 +265,7 @@ function turnsFor(levels: number[], s: GbaSupport): (number | null)[] {
 function UnitDetail({ data, unit }: { data: GbaData; unit: GbaUnit }) {
   const cls = data.classes[unit.classId]
   const promo = optionsOf(data, cls)
-  const supports = [...supportsOf(data, unit.id), ...bonusPartnersOf(data, unit.id)]
+  const supports = [...supportsOf(data, unit.id), ...bonusPartnersOf(data, unit.id), ...pairPartnersOf(data, unit.id)]
   return (
     <div className="space-y-4 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
       <div className="flex flex-col items-start gap-4 sm:flex-row">
@@ -286,7 +302,7 @@ function UnitDetail({ data, unit }: { data: GbaData; unit: GbaUnit }) {
         rows={[
           { label: 'Bases', values: unit.bases },
           { label: 'Growths', values: unit.growths, suffix: '%' },
-          { label: `Caps (${cls.name})`, values: cls.caps },
+          unit.caps ? { label: 'Maximums', values: unit.caps } : { label: `Caps (${cls.name})`, values: cls.caps },
         ]}
       />
       {supports.length > 0 && (
@@ -354,6 +370,10 @@ interface Stage {
 /** Average stats: each level adds the growth rate, held at the class's caps. Promoting adds the difference between the classes'
  * bases (Con and Mov too) and starts again at level 1. */
 const maxLevelOf = (cls: GbaClass) => cls.maxLevel ?? MAX_LEVEL
+/** The level a class must reach before it can change (a promotion item's 10, unless the class says). */
+const minLevelOf = (cls: GbaClass) => cls.promoteLevel ?? PROMOTE_LEVEL
+/** A unit's maximums: their own where the game keeps them per character (Shadows of Valentia), else the class's. */
+const capsFor = (unit: GbaUnit, cls: GbaClass): GbaStats => unit.caps ?? cls.caps
 const optionsOf = (data: GbaData, cls: GbaClass) =>
   (cls.promotions ?? (cls.promotesTo ? [cls.promotesTo] : [])).map((id) => data.classes[id]).filter(Boolean)
 
@@ -374,6 +394,7 @@ function stepsOf(data: GbaData, unit: GbaUnit, plan: GbaPlan): Step[] {
   const wanted: [number | null, string | undefined][] = [
     [plan.promoteAt, plan.to],
     [plan.promoteAt2 ?? null, plan.to2],
+    [plan.promoteAt3 ?? null, plan.to3],
   ]
   for (const [at, to] of wanted) {
     const options = optionsOf(data, cls)
@@ -381,7 +402,7 @@ function stepsOf(data: GbaData, unit: GbaUnit, plan: GbaPlan): Step[] {
     const forced = !!cls.autoPromote
     if (!forced && at === null) break
     const max = maxLevelOf(cls)
-    const taken = forced ? max : Math.max(level, PROMOTE_LEVEL, Math.min(max, at!))
+    const taken = forced ? max : Math.max(level, minLevelOf(cls), Math.min(max, at!))
     const next = options.find((o) => o.id === to) ?? options[0]
     steps.push({ from: cls, options, to: next, at: taken, forced })
     cls = next
@@ -395,7 +416,8 @@ function stepsOf(data: GbaData, unit: GbaUnit, plan: GbaPlan): Step[] {
 function project(data: GbaData, unit: GbaUnit, plan: GbaPlan): Stage[] {
   const capped = (stats: GbaStats, cls: GbaClass) => {
     const out = { ...stats }
-    for (const s of statsOf(data)) if (cls.caps[s] !== undefined && out[s] !== undefined) out[s] = Math.min(out[s]!, cls.caps[s]!)
+    const caps = capsFor(unit, cls)
+    for (const s of statsOf(data)) if (caps[s] !== undefined && out[s] !== undefined) out[s] = Math.min(out[s]!, caps[s]!)
     return out
   }
   const grow = (stats: GbaStats, levels: number, cls: GbaClass) => {
@@ -451,6 +473,9 @@ export function GbaPlanner({ data: game }: { data: GbaData }) {
     targetLevel: MAX_LEVEL,
     promoteAt2: first.length && optionsOf(data, first[0]).length ? MAX_LEVEL : null,
   }
+  const atOf = [plan.promoteAt, plan.promoteAt2 ?? null, plan.promoteAt3 ?? null]
+  const patchAt = (i: number, v: number | null): Partial<GbaPlan> => (i === 0 ? { promoteAt: v } : i === 1 ? { promoteAt2: v } : { promoteAt3: v })
+  const patchTo = (i: number, v: string): Partial<GbaPlan> => (i === 0 ? { to: v } : i === 1 ? { to2: v } : { to3: v })
   const update = (patch: Partial<GbaPlan>) => setPlan(data.gameId, unit.id, { ...plan, ...patch })
   const steps = stepsOf(data, unit, plan)
   const stages = project(data, unit, plan)
@@ -458,9 +483,12 @@ export function GbaPlanner({ data: game }: { data: GbaData }) {
   const finalClass = data.classes[stages[stages.length - 1].classId]
   const lastLevel = steps.length ? 1 : unit.level
   // The promotions offered: the first from the class the unit joins in, then one from wherever that leads.
-  const offers: { index: 0 | 1; from: GbaClass; options: GbaClass[]; fromLevel: number }[] = []
+  const offers: { index: number; from: GbaClass; options: GbaClass[]; fromLevel: number }[] = []
   if (first.length) offers.push({ index: 0, from: start, options: first, fromLevel: unit.level })
-  if (steps[0] && optionsOf(data, steps[0].to).length) offers.push({ index: 1, from: steps[0].to, options: optionsOf(data, steps[0].to), fromLevel: 1 })
+  for (const i of [1, 2]) {
+    const prev = steps[i - 1]
+    if (prev && optionsOf(data, prev.to).length) offers.push({ index: i, from: prev.to, options: optionsOf(data, prev.to), fromLevel: 1 })
+  }
   return (
     <div className="space-y-4">
       {picker}
@@ -469,14 +497,14 @@ export function GbaPlanner({ data: game }: { data: GbaData }) {
         <div className="flex flex-wrap items-end gap-4 text-sm text-neutral-300">
           {offers.map(({ index, from, options, fromLevel }) => {
             const step = steps[index]
-            const at = index === 0 ? plan.promoteAt : (plan.promoteAt2 ?? null)
+            const at = atOf[index]
             const to = step?.to.id ?? options[0].id
             return (
               <div key={index} className="flex flex-wrap items-end gap-2">
                 {options.length > 1 ? (
                   <label className="space-y-1">
                     <span className="block text-xs text-neutral-500">{from.name} promotes to</span>
-                    <select value={to} onChange={(e) => update(index === 0 ? { to: e.target.value } : { to2: e.target.value })} className={selectClass}>
+                    <select value={to} onChange={(e) => update(patchTo(index, e.target.value))} className={selectClass}>
                       {options.map((o) => (
                         <option key={o.id} value={o.id}>
                           {o.name}
@@ -494,12 +522,12 @@ export function GbaPlanner({ data: game }: { data: GbaData }) {
                       value={at ?? ''}
                       onChange={(e) => {
                         const v = e.target.value === '' ? null : Number(e.target.value)
-                        update(index === 0 ? { promoteAt: v } : { promoteAt2: v })
+                        update(patchAt(index, v))
                       }}
                       className={selectClass}
                     >
                       <option value="">Don't promote</option>
-                      {levels(Math.max(PROMOTE_LEVEL, fromLevel), maxLevelOf(from)).map((lv) => (
+                      {levels(Math.max(minLevelOf(from), fromLevel), maxLevelOf(from)).map((lv) => (
                         <option key={lv} value={lv}>
                           At Lv {lv}
                         </option>
@@ -527,9 +555,11 @@ export function GbaPlanner({ data: game }: { data: GbaData }) {
           )}
         </div>
         <p className="text-xs text-neutral-500">
-          Average stats: each level adds the growth rate. Stats stop at the class's caps (green). A promotion item works from Lv 10 and
-          starts again at Lv 1 (Serenes Forest).{' '}
-          {(steps[0]?.to ?? first[0])?.gains
+          Average stats: each level adds the growth rate. Stats stop at the {unit.caps ? "unit's own maximums" : "class's caps"} (green).{' '}
+          {data.promotionText ?? 'A promotion item works from Lv 10 and starts again at Lv 1 (Serenes Forest).'}{' '}
+          {data.promotionText
+            ? ''
+            : (steps[0]?.to ?? first[0])?.gains
             ? "Promoting adds the new class's promotion gains from the game's class data, and Con and Mov become the new class's."
             : data.promotion
               ? "Promoting adds the difference between the classes' bases, and lifts HP and the weapon level to the new class's where lower (the game's code)."
@@ -541,7 +571,7 @@ export function GbaPlanner({ data: game }: { data: GbaData }) {
           rows={stages.map((st, i) => ({
             label: `${data.classes[st.classId].name} Lv ${st.level}${i === 0 ? ' (joins)' : ''}`,
             values: st.stats,
-            caps: data.classes[st.classId].caps,
+            caps: capsFor(unit, data.classes[st.classId]),
           }))}
         />
       </div>
@@ -591,7 +621,9 @@ export function GbaSupports({ data: game }: { data: GbaData }) {
               {unit.affinity && <div className="text-xs text-neutral-400">Affinity: {unit.affinity}</div>}
             </div>
           </div>
-          {fixed ? (
+          {data.supportPairs ? (
+            <PairSupports data={data} unit={unit} onPick={setUnitId} />
+          ) : fixed ? (
             <FixedSupports data={data} unit={unit} fixed={fixed} onPick={setUnitId} />
           ) : partners.length === 0 ? (
             <p className="text-sm text-neutral-400">{unit.name} has no supports.</p>
@@ -684,6 +716,27 @@ function FixedSupports({
         {list(`${unit.name} gets`, fixed.gets)}
         {list(`${unit.name} gives`, fixed.gives)}
       </div>
+    </>
+  )
+}
+
+/** Supports where only the partners are read. */
+function PairSupports({ data, unit, onPick }: { data: GbaData; unit: GbaUnit; onPick: (id: string) => void }) {
+  const partners = pairPartnersOf(data, unit.id)
+  if (!partners.length) return <p className="text-sm text-neutral-400">{unit.name} has no supports.</p>
+  return (
+    <>
+      {data.supportPairsText && <p className="text-xs text-neutral-500">{data.supportPairsText}</p>}
+      <ul className="flex flex-wrap gap-2">
+        {partners.map(({ partner }) => (
+          <li key={partner.id}>
+            <button type="button" onClick={() => onPick(partner.id)} className="flex items-center gap-2 rounded-md border border-neutral-800 px-2 py-1 text-sm text-neutral-200 hover:border-neutral-600">
+              <UnitPortrait data={data} unit={partner} size={28} />
+              {partner.name}
+            </button>
+          </li>
+        ))}
+      </ul>
     </>
   )
 }

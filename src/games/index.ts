@@ -95,4 +95,10 @@ export const GAMES: Game[] = [
     short: 'Awakening',
     load: () => import('./fe13').then((m) => m.default),
   },
+  {
+    id: 'fe15',
+    title: 'Fire Emblem Echoes: Shadows of Valentia',
+    short: 'Shadows of Valentia',
+    load: () => import('./fe15').then((m) => m.default),
+  },
 ]
