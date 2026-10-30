@@ -32,10 +32,14 @@ export interface Fe4Unit {
   leadership?: number
   /** The second generation's slot a child and its substitute share. */
   slot?: number
+  joinChapter?: string
+  join?: Fe4Join
   mother?: string
   /** Fixed by the story (Seliph, Leif, Altena). */
   father?: string
   substituteFor?: string
+  /** What the data leaves unsettled about this unit. */
+  unconfirmed?: string
 }
 
 export interface Fe4Class {
@@ -53,4 +57,18 @@ export interface Fe4Blood {
   weaponType: string
   /** Growth bonuses for minor blood; major doubles them. */
   growths: Fe4Stats
+}
+
+export interface Fe4Chapter {
+  id: string
+  /** 'Prologue', 'Ch.6', 'Final'. */
+  label: string
+}
+
+export interface Fe4Join {
+  /** 'start': at the start of the chapter; 'talk': recruited by talking; 'event': during the chapter. */
+  how: 'start' | 'talk' | 'event'
+  with?: string[]
+  turn?: number
+  note?: string
 }
