@@ -34,8 +34,8 @@ export interface GbaChapter {
 
 export interface GbaJoin {
   /** 'start': at the start of the chapter; 'talk': recruited by talking; 'visit': by visiting a village; 'event': during the
-   * chapter; 'end': at its end. */
-  how: 'start' | 'talk' | 'visit' | 'event' | 'end'
+   * chapter; 'end': at its end; 'unlock': added by the game's code once a condition (the note) is met. */
+  how: 'start' | 'talk' | 'visit' | 'event' | 'end' | 'unlock'
   with?: string[]
   turn?: number
   note?: string
@@ -64,6 +64,12 @@ export interface GbaClass {
   bases: GbaStats
   caps: Partial<GbaStats>
   promotesTo?: string
+  /** Every class it can promote to, when there's a choice (The Sacred Stones); `promotesTo` is the first. */
+  promotions?: string[]
+  /** The level the class stops at (a trainee's 10; otherwise 20). */
+  maxLevel?: number
+  /** The class promotes by itself on reaching its last level (The Sacred Stones' trainees). */
+  autoPromote?: boolean
   /** What promoting into this class adds (HP to Res), when the game keeps it in the class data; otherwise the difference between
    * the two classes' bases. */
   gains?: Partial<GbaStats>

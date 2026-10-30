@@ -21,6 +21,8 @@ export interface GbaData {
   gameId: string
   /** A game in more than one story shows a switch; its chapters and units each belong to one. */
   stories?: GbaStory[]
+  /** The story shown until one is picked (the first, unless set). */
+  defaultStory?: string
   chapters: GbaChapter[]
   units: GbaUnit[]
   classes: Record<string, GbaClass>
@@ -36,9 +38,13 @@ const MAX_LEVEL = 20
 /** A promotion item works from level 10 and starts the new class at level 1 (Serenes Forest). */
 const PROMOTE_LEVEL = 10
 
+/** A unit's plan: up to two promotions (a trainee's at Lv 10, then a promotion item's), each into a class of its own picking. */
 interface GbaPlan {
   promoteAt: number | null
   targetLevel: number
+  to?: string
+  promoteAt2?: number | null
+  to2?: string
 }
 
 interface GbaState {
@@ -73,7 +79,7 @@ function useStory(data: GbaData): { view: GbaData; story?: GbaStory; picker: Rea
   const picked = useGbaStore((s) => s.stories?.[data.gameId])
   const setStory = useGbaStore((s) => s.setStory)
   if (!data.stories?.length) return { view: data, picker: null }
-  const story = data.stories.find((s) => s.id === picked) ?? data.stories[data.stories.length > 1 ? 1 : 0]
+  const story = data.stories.find((s) => s.id === picked) ?? data.stories.find((s) => s.id === data.defaultStory) ?? data.stories[0]
   const view: GbaData = {
     ...data,
     chapters: data.chapters.filter((c) => !c.story || c.story === story.id),
@@ -169,6 +175,7 @@ function joinText(data: GbaData, u: GbaUnit): string {
   if (j.how === 'talk') return `${where}: talk to them with ${j.with?.join(' or ') ?? 'another unit'}`
   if (j.how === 'visit') return `${where}: visit their village${j.with?.length ? ` with ${j.with.join(' or ')}` : ''}`
   if (j.how === 'event') return `${where}: joins ${j.turn ? `on turn ${j.turn}` : 'during the chapter'}`
+  if (j.how === 'unlock') return `${where}: unlocked`
   if (j.how === 'end') return `${where}: joins at the end of the chapter${j.with?.length ? ` if ${j.with.join(' or ')} talked to them` : ''}`
   return `${where}: joins at the start`
 }
@@ -209,7 +216,7 @@ function turnsFor(levels: number[], s: GbaSupport): (number | null)[] {
 
 function UnitDetail({ data, unit }: { data: GbaData; unit: GbaUnit }) {
   const cls = data.classes[unit.classId]
-  const promo = cls.promotesTo ? data.classes[cls.promotesTo] : undefined
+  const promo = optionsOf(data, cls)
   const supports = supportsOf(data, unit.id)
   return (
     <div className="space-y-4 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
@@ -219,7 +226,7 @@ function UnitDetail({ data, unit }: { data: GbaData; unit: GbaUnit }) {
           <h3 className="text-lg font-semibold text-neutral-100">{unit.name}</h3>
           <div>
             {cls.name} · Lv {unit.level}
-            {promo && <span className="text-neutral-500"> · promotes to {promo.name}</span>}
+            {promo.length > 0 && <span className="text-neutral-500"> · promotes to {promo.map((c) => c.name).join(' or ')}</span>}
           </div>
           <div>
             <span className="text-neutral-500">Affinity: </span>
@@ -311,8 +318,46 @@ interface Stage {
 
 /** Average stats: each level adds the growth rate, held at the class's caps. Promoting adds the difference between the classes'
  * bases (Con and Mov too) and starts again at level 1. */
+const maxLevelOf = (cls: GbaClass) => cls.maxLevel ?? MAX_LEVEL
+const optionsOf = (data: GbaData, cls: GbaClass) =>
+  (cls.promotions ?? (cls.promotesTo ? [cls.promotesTo] : [])).map((id) => data.classes[id]).filter(Boolean)
+
+interface Step {
+  from: GbaClass
+  options: GbaClass[]
+  to: GbaClass
+  /** The level it's taken at; a trainee class's is its last level, and it can't be declined. */
+  at: number
+  forced: boolean
+}
+
+/** The promotions a plan takes: the first from the class the unit joins in, a second from the class that one leads to. */
+function stepsOf(data: GbaData, unit: GbaUnit, plan: GbaPlan): Step[] {
+  const steps: Step[] = []
+  let cls = data.classes[unit.classId]
+  let level = unit.level
+  const wanted: [number | null, string | undefined][] = [
+    [plan.promoteAt, plan.to],
+    [plan.promoteAt2 ?? null, plan.to2],
+  ]
+  for (const [at, to] of wanted) {
+    const options = optionsOf(data, cls)
+    if (!options.length) break
+    const forced = !!cls.autoPromote
+    if (!forced && at === null) break
+    const max = maxLevelOf(cls)
+    const taken = forced ? max : Math.max(level, PROMOTE_LEVEL, Math.min(max, at!))
+    const next = options.find((o) => o.id === to) ?? options[0]
+    steps.push({ from: cls, options, to: next, at: taken, forced })
+    cls = next
+    level = 1
+  }
+  return steps
+}
+
+/** Average stats: each level adds the growth rate, held at the class's caps. Promoting adds the new class's gains where the game keeps
+ * them (Con and Mov from the class), otherwise the difference between the classes' bases, and starts again at level 1. */
 function project(data: GbaData, unit: GbaUnit, plan: GbaPlan): Stage[] {
-  const start = data.classes[unit.classId]
   const capped = (stats: GbaStats, cls: GbaClass) => {
     const out = { ...stats }
     for (const s of GBA_STATS) if (cls.caps[s] !== undefined) out[s] = Math.min(out[s], cls.caps[s]!)
@@ -323,28 +368,28 @@ function project(data: GbaData, unit: GbaUnit, plan: GbaPlan): Stage[] {
     for (const s of GBA_GROWING) out[s] += ((unit.growths[s] ?? 0) / 100) * Math.max(0, levels)
     return capped(out, cls)
   }
-  const stages: Stage[] = [{ classId: start.id, level: unit.level, stats: { ...unit.bases } }]
-  const promoted = start.promotesTo ? data.classes[start.promotesTo] : undefined
-  if (promoted && plan.promoteAt !== null) {
-    const at = Math.max(unit.level, Math.min(MAX_LEVEL, plan.promoteAt))
-    let stats = grow(unit.bases, at - unit.level, start)
-    if (at > unit.level) stages.push({ classId: start.id, level: at, stats })
+  let cls = data.classes[unit.classId]
+  let level = unit.level
+  let stats: GbaStats = { ...unit.bases }
+  const stages: Stage[] = [{ classId: cls.id, level, stats }]
+  for (const step of stepsOf(data, unit, plan)) {
+    stats = grow(stats, step.at - level, cls)
+    if (step.at > level) stages.push({ classId: cls.id, level: step.at, stats })
     stats = { ...stats }
-    // The game's own gains when its class data has them (The Blazing Blade: 0x08029818 adds them, held at the new caps; Con and
-    // Mov come from the class); otherwise the difference between the two classes' bases.
-    const gains = promoted.gains
+    // The game's own gains when its class data has them (The Blazing Blade 0x08029818, The Sacred Stones 0x0802BC20: added, held at
+    // the new caps; Con and Mov come from the class); otherwise the difference between the two classes' bases.
+    const gains = step.to.gains
     for (const s of GBA_STATS) {
       if (s === 'lck') continue
-      stats[s] += gains && s !== 'con' && s !== 'mov' ? (gains[s] ?? 0) : promoted.bases[s] - start.bases[s]
+      stats[s] += gains && s !== 'con' && s !== 'mov' ? (gains[s] ?? 0) : step.to.bases[s] - cls.bases[s]
     }
-    stats = capped(stats, promoted)
-    stages.push({ classId: promoted.id, level: 1, stats })
-    const target = Math.max(1, Math.min(MAX_LEVEL, plan.targetLevel))
-    if (target > 1) stages.push({ classId: promoted.id, level: target, stats: grow(stats, target - 1, promoted) })
-    return stages
+    stats = capped(stats, step.to)
+    cls = step.to
+    level = 1
+    stages.push({ classId: cls.id, level, stats })
   }
-  const target = Math.max(unit.level, Math.min(MAX_LEVEL, plan.targetLevel))
-  if (target > unit.level) stages.push({ classId: start.id, level: target, stats: grow(unit.bases, target - unit.level, start) })
+  const target = Math.max(level, Math.min(maxLevelOf(cls), plan.targetLevel))
+  if (target > level) stages.push({ classId: cls.id, level: target, stats: grow(stats, target - level, cls) })
   return stages
 }
 
@@ -358,35 +403,75 @@ export function GbaPlanner({ data: game }: { data: GbaData }) {
   const setPlan = useGbaStore((s) => s.setPlan)
   if (!unit) return null
   const start = data.classes[unit.classId]
-  const promoted = start.promotesTo ? data.classes[start.promotesTo] : undefined
-  const plan: GbaPlan = saved ?? { promoteAt: promoted ? MAX_LEVEL : null, targetLevel: MAX_LEVEL }
+  const first = optionsOf(data, start)
+  const plan: GbaPlan = saved ?? {
+    promoteAt: first.length ? maxLevelOf(start) : null,
+    targetLevel: MAX_LEVEL,
+    promoteAt2: first.length && optionsOf(data, first[0]).length ? MAX_LEVEL : null,
+  }
   const update = (patch: Partial<GbaPlan>) => setPlan(data.gameId, unit.id, { ...plan, ...patch })
+  const steps = stepsOf(data, unit, plan)
   const stages = project(data, unit, plan)
-  const levels = (from: number) => Array.from({ length: MAX_LEVEL - from + 1 }, (_, i) => from + i)
+  const levels = (from: number, to = MAX_LEVEL) => Array.from({ length: Math.max(0, to - from + 1) }, (_, i) => from + i)
   const finalClass = data.classes[stages[stages.length - 1].classId]
+  const lastLevel = steps.length ? 1 : unit.level
+  // The promotions offered: the first from the class the unit joins in, then one from wherever that leads.
+  const offers: { index: 0 | 1; from: GbaClass; options: GbaClass[]; fromLevel: number }[] = []
+  if (first.length) offers.push({ index: 0, from: start, options: first, fromLevel: unit.level })
+  if (steps[0] && optionsOf(data, steps[0].to).length) offers.push({ index: 1, from: steps[0].to, options: optionsOf(data, steps[0].to), fromLevel: 1 })
   return (
     <div className="space-y-4">
       {picker}
       <UnitSelect data={data} value={unit.id} onChange={setUnitId} />
       <div className="space-y-4 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
         <div className="flex flex-wrap items-end gap-4 text-sm text-neutral-300">
-          {promoted && (
-            <label className="space-y-1">
-              <span className="block text-xs text-neutral-500">Promote to {promoted.name}</span>
-              <select value={plan.promoteAt ?? ''} onChange={(e) => update({ promoteAt: e.target.value === '' ? null : Number(e.target.value) })} className={selectClass}>
-                <option value="">Don't promote</option>
-                {levels(Math.max(PROMOTE_LEVEL, unit.level)).map((lv) => (
-                  <option key={lv} value={lv}>
-                    At Lv {lv}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
+          {offers.map(({ index, from, options, fromLevel }) => {
+            const step = steps[index]
+            const at = index === 0 ? plan.promoteAt : (plan.promoteAt2 ?? null)
+            const to = step?.to.id ?? options[0].id
+            return (
+              <div key={index} className="flex flex-wrap items-end gap-2">
+                {options.length > 1 ? (
+                  <label className="space-y-1">
+                    <span className="block text-xs text-neutral-500">{from.name} promotes to</span>
+                    <select value={to} onChange={(e) => update(index === 0 ? { to: e.target.value } : { to2: e.target.value })} className={selectClass}>
+                      {options.map((o) => (
+                        <option key={o.id} value={o.id}>
+                          {o.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ) : null}
+                <label className="space-y-1">
+                  <span className="block text-xs text-neutral-500">{options.length > 1 ? 'When' : `Promote to ${options[0].name}`}</span>
+                  {from.autoPromote ? (
+                    <span className="block py-1 text-neutral-400">At Lv {maxLevelOf(from)} (automatic)</span>
+                  ) : (
+                    <select
+                      value={at ?? ''}
+                      onChange={(e) => {
+                        const v = e.target.value === '' ? null : Number(e.target.value)
+                        update(index === 0 ? { promoteAt: v } : { promoteAt2: v })
+                      }}
+                      className={selectClass}
+                    >
+                      <option value="">Don't promote</option>
+                      {levels(Math.max(PROMOTE_LEVEL, fromLevel), maxLevelOf(from)).map((lv) => (
+                        <option key={lv} value={lv}>
+                          At Lv {lv}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </label>
+              </div>
+            )
+          })}
           <label className="space-y-1">
             <span className="block text-xs text-neutral-500">Up to Lv (as {finalClass.name})</span>
-            <select value={plan.targetLevel} onChange={(e) => update({ targetLevel: Number(e.target.value) })} className={selectClass}>
-              {levels(promoted && plan.promoteAt !== null ? 1 : unit.level).map((lv) => (
+            <select value={Math.max(lastLevel, Math.min(maxLevelOf(finalClass), plan.targetLevel))} onChange={(e) => update({ targetLevel: Number(e.target.value) })} className={selectClass}>
+              {levels(lastLevel, maxLevelOf(finalClass)).map((lv) => (
                 <option key={lv} value={lv}>
                   {lv}
                 </option>
@@ -402,9 +487,10 @@ export function GbaPlanner({ data: game }: { data: GbaData }) {
         <p className="text-xs text-neutral-500">
           Average stats: each level adds the growth rate. Stats stop at the class's caps (green). A promotion item works from Lv 10 and
           starts again at Lv 1 (Serenes Forest).{' '}
-          {promoted?.gains
+          {(steps[0]?.to ?? first[0])?.gains
             ? "Promoting adds the new class's promotion gains from the game's class data, and Con and Mov become the new class's."
             : "Promoting adds the difference between the classes' bases (Serenes Forest; not yet traced in the game's code)."}
+          {start.autoPromote ? ` A trainee promotes on reaching Lv ${maxLevelOf(start)} (Serenes Forest).` : ''}
         </p>
         <StatTable
           rows={stages.map((st, i) => ({

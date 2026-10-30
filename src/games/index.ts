@@ -77,4 +77,10 @@ export const GAMES: Game[] = [
     short: 'Blazing Blade',
     load: () => import('./fe7').then((m) => m.default),
   },
+  {
+    id: 'fe8',
+    title: 'Fire Emblem: The Sacred Stones',
+    short: 'Sacred Stones',
+    load: () => import('./fe8').then((m) => m.default),
+  },
 ]

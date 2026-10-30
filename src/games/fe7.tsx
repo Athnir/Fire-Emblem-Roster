@@ -7,6 +7,7 @@ import type { GameParts } from './index'
 export const FE7_DATA: GbaData = {
   gameId: 'fe7',
   stories: FE7_STORIES,
+  defaultStory: 'eliwood',
   chapters: FE7_CHAPTERS,
   units: FE7_UNITS,
   classes: FE7_CLASSES,
