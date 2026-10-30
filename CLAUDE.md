@@ -73,4 +73,6 @@ reveals it. What that means for each tab is settled with the user as each game i
 - **Check counts and values against outside sources in the tests**, with every exception explained.
 - **Back each rule with a test where it can be checked.**
 - **Look at each change in the browser before calling it done.**
-- **Commit and push each finished step.** End commit messages with the co-author line.
+- **Commit each finished step; push once a whole game is done.** A push to `main` deploys, and the user wants one deploy per
+  game, not one per tab (user, 2026-10-29). End commit messages with the
+  co-author line.

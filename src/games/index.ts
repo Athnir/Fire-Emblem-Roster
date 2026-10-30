@@ -47,4 +47,10 @@ export const GAMES: Game[] = [
     short: 'Path of Radiance',
     load: () => import('./fe9').then((m) => m.default),
   },
+  {
+    id: 'fe10',
+    title: 'Fire Emblem: Radiant Dawn',
+    short: 'Radiant Dawn',
+    load: () => import('./fe10').then((m) => m.default),
+  },
 ]

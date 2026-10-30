@@ -20,6 +20,37 @@ export function chapterLabel(data: TelliusData, chapterId: string): string {
   return ch ? ch.label : chapterId
 }
 
+/**
+ * Chapters as short runs, one line per part: ['Part 1: Prologue–Ch.8, Endgame', 'Part 3: Ch.6, Ch.12–Ch.13']. Chapters
+ * without a part (Path of Radiance) make one line.
+ */
+export function chapterRuns(data: TelliusData, chapterIds: string[]): string[] {
+  const wanted = new Set(chapterIds)
+  const lines: string[] = []
+  let part: string | undefined
+  let runs: string[] = []
+  let run: string[] = []
+  const closeRun = () => {
+    if (run.length) runs.push(run.length === 1 ? run[0] : `${run[0]}–${run[run.length - 1]}`)
+    run = []
+  }
+  const closePart = () => {
+    closeRun()
+    if (runs.length) lines.push(part ? `${part}: ${runs.join(', ')}` : runs.join(', '))
+    runs = []
+  }
+  for (const ch of data.chapters) {
+    if (ch.part !== part) {
+      closePart()
+      part = ch.part
+    }
+    if (wanted.has(ch.id)) run.push(ch.short ?? ch.label)
+    else closeRun()
+  }
+  closePart()
+  return lines
+}
+
 /** Keeps the screenshot file name on the unit being shown (ExportImageButton reads it). */
 export function useScreenshotUnit(unit: TelliusUnit | undefined) {
   const setUnitLabel = useScreenshotContextStore((state) => state.setUnitLabel)

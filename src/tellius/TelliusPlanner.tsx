@@ -1,15 +1,36 @@
 import { useState } from 'react'
 import { BandEditor } from './BandEditor'
-import { capacityUsed, learnableSkills, MASTER_SEAL_LEVEL, project, promotionOf, type GrowthMode } from './logic'
+import {
+  capacityUsed,
+  learnableSkills,
+  MASTER_SEAL_LEVEL,
+  maxLevelOf,
+  planSegments,
+  project,
+  promotionsOf,
+  transformedStats,
+  type GrowthMode,
+} from './logic'
 import { useTelliusPlanStore, type TelliusUnitPlan } from './planStore'
-import { SkillIcon, StatTable, UnitSelect, useScreenshotUnit } from './shared'
+import { chapterLabel, SkillIcon, StatTable, UnitSelect, useScreenshotUnit } from './shared'
 import type { TelliusData, TelliusUnit } from './types'
 
 function defaultPlan(data: TelliusData, unit: TelliusUnit): TelliusUnitPlan {
-  return { promoteAt: promotionOf(data, unit) ? data.maxLevel : null, targetLevel: data.maxLevel, skills: [...unit.skills] }
+  const chain = promotionsOf(data, unit)
+  const last = chain[chain.length - 1]?.id ?? unit.classId
+  return {
+    promoteAt: chain[0] ? maxLevelOf(data, unit.classId) : null,
+    promoteAt2: chain[1] ? maxLevelOf(data, chain[0].id) : null,
+    targetLevel: maxLevelOf(data, last),
+    skills: [...unit.skills],
+  }
 }
 
 const selectClass = 'rounded-md border border-neutral-700 bg-neutral-800 px-2 py-1 text-sm text-neutral-200'
+
+function range(from: number, to: number): number[] {
+  return Array.from({ length: Math.max(0, to - from + 1) }, (_, i) => from + i)
+}
 
 function Planner({ data, unit }: { data: TelliusData; unit: TelliusUnit }) {
   const saved = useTelliusPlanStore((state) => state.plans[data.gameId]?.[unit.id])
@@ -18,41 +39,63 @@ function Planner({ data, unit }: { data: TelliusData; unit: TelliusUnit }) {
   const plan = saved ?? defaultPlan(data, unit)
   const update = (patch: Partial<TelliusUnitPlan>) => setPlan(data.gameId, unit.id, { ...plan, ...patch })
 
-  const promoted = promotionOf(data, unit)
+  const chain = promotionsOf(data, unit)
+  const segments = planSegments(data, unit, plan)
   const fixed = Boolean(data.fixedMode && plan.mode === 'fixed' && unit.fixedStart)
   const stages = project(data, unit, plan)
   const final = stages[stages.length - 1]
   const finalClass = data.classes[final.classId]
   const startClass = data.classes[unit.classId]
-  const minPromote = Math.max(MASTER_SEAL_LEVEL, unit.level)
-  const promoteLevels = Array.from({ length: Math.max(0, data.maxLevel - minPromote + 1) }, (_, i) => minPromote + i)
-  const firstTarget = promoted && plan.promoteAt !== null ? 1 : unit.level
-  const targetLevels = Array.from({ length: data.maxLevel - firstTarget + 1 }, (_, i) => firstTarget + i)
+  const promoted = segments.length > 1
+  const targetLevels = range(promoted ? 1 : unit.level, maxLevelOf(data, finalClass.id))
+  const transformed = transformedStats(data, final.classId, final.stats)
+
+  // One select per promotion: each is offered once the one before it is planned.
+  const promotionAt = [plan.promoteAt, plan.promoteAt2 ?? null]
+  const promotionSelects = chain.map((to, i) => {
+    const from = i === 0 ? startClass : chain[i - 1]
+    if (i > 0 && promotionAt[i - 1] === null) return null
+    const firstLevel = i === 0 ? unit.level : 1
+    // A class the story promotes can't use a Seal or Crown: any level the unit might be at when the story does it.
+    const min = from.storyPromotion ? firstLevel : Math.max(MASTER_SEAL_LEVEL, firstLevel)
+    const levels = range(min, maxLevelOf(data, from.id))
+    const value = promotionAt[i]
+    // A new promotion plan aims for the top level of whatever class it ends in.
+    const change = (v: number | null) => {
+      const next = i === 0 ? { ...plan, promoteAt: v, ...(v === null ? { promoteAt2: null } : {}) } : { ...plan, promoteAt2: v }
+      const ends = planSegments(data, unit, next)
+      update({ ...next, targetLevel: maxLevelOf(data, ends[ends.length - 1].classId) })
+    }
+    return (
+      <label key={to.id} className="space-y-1">
+        <span className="block text-xs text-neutral-500">Promote to {to.name}</span>
+        <select value={value ?? ''} onChange={(e) => change(e.target.value === '' ? null : Number(e.target.value))} className={selectClass}>
+          <option value="">Don't promote</option>
+          {levels.map((lv) => (
+            <option key={lv} value={lv}>
+              At {from.name} Lv {lv}
+            </option>
+          ))}
+        </select>
+      </label>
+    )
+  })
 
   const used = capacityUsed(data, plan.skills)
-  const options = learnableSkills(data, unit, finalClass.id).filter((id) => !plan.skills.includes(id))
+  const mastery = finalClass.mastery
+  const options = [
+    ...learnableSkills(data, unit, finalClass.id, plan.skills),
+    ...(mastery && data.skills[mastery] ? [mastery] : []),
+  ].filter((id) => !plan.skills.includes(id))
   const [adding, setAdding] = useState('')
+  const gainsNote = Object.values(data.classes).some((c) => c.gains)
+    ? " Promoting adds the new class's promotion gains and starts again at Lv 1."
+    : " Promoting adds the difference between the two classes' bases and starts again at Lv 1."
 
   return (
     <div className="space-y-4 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
       <div className="flex flex-wrap items-end gap-4 text-sm text-neutral-300">
-        {promoted && (
-          <label className="space-y-1">
-            <span className="block text-xs text-neutral-500">Promote to {promoted.name}</span>
-            <select
-              value={plan.promoteAt ?? ''}
-              onChange={(e) => update({ promoteAt: e.target.value === '' ? null : Number(e.target.value), targetLevel: data.maxLevel })}
-              className={selectClass}
-            >
-              <option value="">Don't promote</option>
-              {promoteLevels.map((lv) => (
-                <option key={lv} value={lv}>
-                  At Lv {lv}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
+        {promotionSelects}
         {data.fixedMode && unit.fixedStart && (
           <label className="space-y-1">
             <span className="block text-xs text-neutral-500">Growths</span>
@@ -64,7 +107,7 @@ function Planner({ data, unit }: { data: TelliusData; unit: TelliusUnit }) {
         )}
         <label className="space-y-1">
           <span className="block text-xs text-neutral-500">Up to Lv (as {finalClass.name})</span>
-          <select value={plan.targetLevel} onChange={(e) => update({ targetLevel: Number(e.target.value) })} className={selectClass}>
+          <select value={final.level} onChange={(e) => update({ targetLevel: Number(e.target.value) })} className={selectClass}>
             {targetLevels.map((lv) => (
               <option key={lv} value={lv}>
                 {lv}
@@ -79,12 +122,20 @@ function Planner({ data, unit }: { data: TelliusData; unit: TelliusUnit }) {
         )}
       </div>
 
+      {unit.storyPromotions && (
+        <p className="text-xs text-neutral-400">
+          Promoted by the story, not a Seal or Crown:{' '}
+          {unit.storyPromotions.map((p) => `${p.when === 'end' ? 'at the end of' : 'at the start of'} ${chapterLabel(data, p.chapter)}`).join(', then ')}.
+          Whatever level they've reached then.
+        </p>
+      )}
+
       <p className="text-xs text-neutral-500">
         {fixed
           ? "Fixed mode: each stat has growth points, starting from the unit's own; a level's worth of EXP adds the growth rate (up to 255 points), and every 100 points is +1 at the level-up. Weapons and the class of what was defeated shift the points a little; they aren't counted here. From Serenes Forest; not yet checked in the game's code."
           : 'Average stats: each level adds the growth rate.'}{' '}
         Stats stop at the class's caps (green).
-        {promoted && ' Promoting adds the difference between the two classes\' bases and starts again at Lv 1.'}
+        {chain.length > 0 && gainsNote}
       </p>
       <StatTable
         rows={[
@@ -93,9 +144,18 @@ function Planner({ data, unit }: { data: TelliusData; unit: TelliusUnit }) {
             values: st.stats,
             caps: st.caps,
           })),
+          ...(transformed
+            ? [{ label: `Transformed (${data.classes[transformed.classId].name})`, values: transformed.stats, caps: data.classes[transformed.classId].caps }]
+            : []),
           ...(fixed && final.points ? [{ label: 'Growth points left', values: final.points }] : []),
         ]}
       />
+      {transformed && (
+        <p className="text-xs text-neutral-500">
+          Transformed: every stat but HP and Luck doubled, up to the transformed caps. That's the usual account of how laguz work;
+          it isn't checked in the game's code yet.
+        </p>
+      )}
       <div className="flex flex-wrap gap-x-6 text-sm text-neutral-300">
         <span>
           <span className="text-neutral-500">Mov </span>
@@ -123,6 +183,11 @@ function Planner({ data, unit }: { data: TelliusData; unit: TelliusUnit }) {
             {finalClass.name} skills: {finalClass.skills.map((id) => data.skills[id]?.name).filter(Boolean).join(', ')}
           </p>
         )}
+        {mastery && data.skills[mastery] && (
+          <p className="text-xs text-neutral-500">
+            Mastery skill: {data.skills[mastery].name}, learned with a Satori Sign ({data.skills[mastery].capacity} capacity).
+          </p>
+        )}
         {plan.skills.map((id) => {
           const skill = data.skills[id]
           if (!skill) return null
@@ -131,7 +196,7 @@ function Planner({ data, unit }: { data: TelliusData; unit: TelliusUnit }) {
               <SkillIcon data={data} skillId={id} />
               <span className="text-neutral-200">{skill.name}</span>
               <span className="text-xs text-neutral-500">{skill.capacity}</span>
-              {skill.removable && (
+              {(skill.removable || id === mastery) && (
                 <button type="button" onClick={() => update({ skills: plan.skills.filter((s) => s !== id) })} className="ml-auto text-xs text-neutral-500 hover:text-red-400">
                   Remove
                 </button>
@@ -145,7 +210,7 @@ function Planner({ data, unit }: { data: TelliusData; unit: TelliusUnit }) {
               <option value="">Add a skill…</option>
               {options.map((id) => (
                 <option key={id} value={id}>
-                  {data.skills[id].name} ({data.skills[id].capacity})
+                  {data.skills[id].name} ({data.skills[id].capacity}){id === mastery ? ', mastery' : ''}
                 </option>
               ))}
             </select>
@@ -168,7 +233,7 @@ function Planner({ data, unit }: { data: TelliusData; unit: TelliusUnit }) {
   )
 }
 
-/** One unit's stats through promotion, and the skills they carry within their class's capacity. Saved per unit. */
+/** One unit's stats through their promotions, and the skills they carry within their class's capacity. Saved per unit. */
 export function TelliusPlanner({ data }: { data: TelliusData }) {
   const [unitId, setUnitId] = useState(data.units[0]?.id ?? '')
   const unit = data.units.find((u) => u.id === unitId)

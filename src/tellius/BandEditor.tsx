@@ -1,4 +1,4 @@
-import { canWear, levelUpsIn, promotionOf, wearableBands, type BandSegment, type ProjectionPlan } from './logic'
+import { canWear, levelUpsIn, planSegments, wearableBands, type BandSegment, type ProjectionPlan } from './logic'
 import type { TelliusData, TelliusUnit } from './types'
 
 const STAT_SHORT: Record<string, string> = { hp: 'HP', str: 'Str', mag: 'Mag', skl: 'Skl', spd: 'Spd', lck: 'Lck', def: 'Def', res: 'Res' }
@@ -7,12 +7,13 @@ const selectClass = 'rounded-md border border-neutral-700 bg-neutral-800 px-2 py
 
 /** The class and level a unit reaches with its k-th level-up (0-based) under the plan. */
 function levelAt(data: TelliusData, unit: TelliusUnit, plan: ProjectionPlan, k: number): { classId: string; level: number } {
-  const promoted = promotionOf(data, unit)
-  if (promoted && plan.promoteAt !== null) {
-    const before = Math.max(unit.level, Math.min(plan.promoteAt, data.maxLevel)) - unit.level
-    if (k >= before) return { classId: promoted.id, level: k - before + 2 }
+  const segments = planSegments(data, unit, plan)
+  for (const seg of segments) {
+    if (k < seg.to - seg.from) return { classId: seg.classId, level: seg.from + k + 1 }
+    k -= seg.to - seg.from
   }
-  return { classId: unit.classId, level: unit.level + k + 1 }
+  const last = segments[segments.length - 1]
+  return { classId: last.classId, level: last.to }
 }
 
 /**

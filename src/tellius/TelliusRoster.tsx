@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
-import { chaptersNeeded, supportsOf } from './logic'
-import { chapterLabel, SkillIcon, StatTable, UnitPortrait, useScreenshotUnit } from './shared'
+import { bondsOf, chaptersNeeded, openSupportsOf, supportsOf, transformedStats } from './logic'
+import { chapterLabel, chapterRuns, SkillIcon, StatTable, UnitPortrait, useScreenshotUnit } from './shared'
 import { TELLIUS_RANK_LABELS, type TelliusData, type TelliusRankType, type TelliusUnit } from './types'
 
 function joinText(data: TelliusData, unit: TelliusUnit): string {
@@ -17,6 +17,11 @@ function UnitDetail({ data, unit }: { data: TelliusData; unit: TelliusUnit }) {
   const supports = supportsOf(data, unit.id)
   const ranks = Object.entries(unit.ranks) as [TelliusRankType, string][]
   const classSkills = cls.skills.filter((s) => !unit.skills.includes(s))
+  const transformed = transformedStats(data, unit.classId, unit.bases)
+  const open = openSupportsOf(data, unit.id)
+  const bonds = bondsOf(data, unit.id)
+  const faster = open.filter((p) => p.bonus > 0)
+  const slower = open.filter((p) => p.bonus < 0)
 
   return (
     <div className="space-y-4 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
@@ -36,16 +41,56 @@ function UnitDetail({ data, unit }: { data: TelliusData; unit: TelliusUnit }) {
             {joinText(data, unit)}
           </div>
           {unit.join.note && <div className="text-neutral-400">{unit.join.note}</div>}
+          {unit.talkedBack?.map((t) => (
+            <div key={t.chapter} className="text-neutral-400">
+              {chapterLabel(data, t.chapter)}: fighting for the other side, {t.with.join(' or ')} can talk them back.
+            </div>
+          ))}
+          {unit.leadership !== undefined && (
+            <div>
+              <span className="text-neutral-500">Leadership: </span>
+              {'★'.repeat(unit.leadership)}
+            </div>
+          )}
         </div>
       </div>
+
+      {unit.available && (
+        <div className="space-y-1 text-sm text-neutral-300">
+          <h4 className="text-sm font-semibold text-neutral-200">In your army</h4>
+          {chapterRuns(data, unit.available).map((line) => (
+            <div key={line}>{line}</div>
+          ))}
+          {unit.heldBack && (
+            <div className="text-xs text-neutral-500">
+              With the army but kept off the field: {chapterRuns(data, unit.heldBack).join('; ')}.
+            </div>
+          )}
+          <p className="text-xs text-neutral-500">
+            Read from the scripts' moves between armies, taking every recruit and the story's default path; not yet
+            checked in-game.
+          </p>
+        </div>
+      )}
 
       <StatTable
         rows={[
           { label: 'Bases', values: unit.bases },
           { label: 'Growths', values: unit.growths, suffix: '%' },
           { label: `Caps (${cls.name})`, values: cls.caps },
+          ...(transformed
+            ? [
+                { label: `Transformed (${data.classes[transformed.classId].name})`, values: transformed.stats },
+                { label: `Caps (${data.classes[transformed.classId].name})`, values: data.classes[transformed.classId].caps },
+              ]
+            : []),
         ]}
       />
+      {transformed && (
+        <p className="text-xs text-neutral-500">
+          Transformed: every stat but HP and Luck doubled, the usual account of laguz (not checked in the game's code).
+        </p>
+      )}
 
       <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-neutral-300">
         <span>
@@ -93,6 +138,38 @@ function UnitDetail({ data, unit }: { data: TelliusData; unit: TelliusUnit }) {
               </div>
             )
           })}
+        </div>
+      )}
+
+      {cls.mastery && data.skills[cls.mastery] && (
+        <p className="text-sm text-neutral-300">
+          <span className="text-neutral-500">Mastery skill: </span>
+          {data.skills[cls.mastery].name} (with a Satori Sign)
+        </p>
+      )}
+
+      {(open.length > 0 || bonds.length > 0) && (
+        <div className="space-y-1 text-sm text-neutral-300">
+          <h4 className="text-sm font-semibold text-neutral-200">Supports</h4>
+          {open.length > 0 && <p className="text-xs text-neutral-500">Can support any of the {open.length} other units in the support list.</p>}
+          {faster.length > 0 && (
+            <div>
+              <span className="text-neutral-500">Faster with: </span>
+              {faster.map((p) => p.partner.name).join(', ')}
+            </div>
+          )}
+          {slower.length > 0 && (
+            <div>
+              <span className="text-neutral-500">Slower with: </span>
+              {slower.map((p) => p.partner.name).join(', ')}
+            </div>
+          )}
+          {bonds.length > 0 && (
+            <div>
+              <span className="text-neutral-500">Bonds: </span>
+              {bonds.map((b) => b.partner.name).join(', ')}
+            </div>
+          )}
         </div>
       )}
 

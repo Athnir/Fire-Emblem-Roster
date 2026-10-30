@@ -4,6 +4,8 @@ import type { BandSegment, GrowthMode } from './logic'
 
 export interface TelliusUnitPlan {
   promoteAt: number | null
+  /** Radiant Dawn's second promotion; absent in Path of Radiance's plans. */
+  promoteAt2?: number | null
   targetLevel: number
   /** Random (the default) or Fixed growths. */
   mode?: GrowthMode
