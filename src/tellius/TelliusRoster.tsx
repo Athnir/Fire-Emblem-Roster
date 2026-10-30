@@ -6,6 +6,7 @@ import { TELLIUS_RANK_LABELS, type TelliusData, type TelliusRankType, type Telli
 function joinText(data: TelliusData, unit: TelliusUnit): string {
   const where = chapterLabel(data, unit.joinChapter)
   if (unit.join.how === 'talk') return `${where}: talk to them with ${unit.join.with?.join(' or ') ?? 'another unit'}`
+  if (unit.join.how === 'bonus') return where
   if (unit.join.how === 'base') return `${where}: joins at the base before it (an Info conversation)`
   if (unit.join.how === 'event') return `${where}: joins ${unit.join.turn ? `on turn ${unit.join.turn}` : 'during the chapter'}`
   return `${where}: joins at the start`

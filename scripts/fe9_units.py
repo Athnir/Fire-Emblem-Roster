@@ -63,6 +63,8 @@ def people(t):
             'con': signed(r[0x37]), 'wt': signed(r[0x38]),
             'bases': dict(zip(STATS, (signed(b) for b in r[0x39:0x41]))),
             'growths': dict(zip(STATS, r[0x41:0x49])),
+            # Fixed mode's starting growth points (Serenes Forest's "Starting Growth Points" table).
+            'fixed_start': dict(zip(STATS, r[0x49:0x51])),
         }
     return out
 

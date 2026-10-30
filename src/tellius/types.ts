@@ -38,7 +38,7 @@ export interface TelliusChapter {
 export interface TelliusJoin {
   /** 'start': at the start of the chapter; 'base': an Info conversation at the base before it; 'talk': recruited by
    * talking; 'event': during the chapter. */
-  how: 'start' | 'base' | 'talk' | 'event'
+  how: 'start' | 'base' | 'talk' | 'event' | 'bonus'
   /** Who can talk to them, for a talk. */
   with?: string[]
   /** The turn a turn event brings them in. */
@@ -58,6 +58,8 @@ export interface TelliusUnit {
   /** Their stats when they join: the class's bases plus their own. */
   bases: TelliusStats
   growths: TelliusStats
+  /** Fixed mode's growth points when they join (Path of Radiance). */
+  fixedStart?: TelliusStats
   con: number
   wt: number
   /** Starting weapon ranks. */
@@ -123,4 +125,6 @@ export interface TelliusData {
   supports: TelliusSupport[]
   /** The level a class tops out at (and promotes at, in a base class). */
   maxLevel: number
+  /** The game has Fixed mode growths (Path of Radiance, from a second playthrough). */
+  fixedMode?: boolean
 }

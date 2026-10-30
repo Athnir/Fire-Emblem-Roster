@@ -14,6 +14,7 @@ export const FE9_DATA: TelliusData = {
   skills: FE9_SKILLS,
   supports: FE9_SUPPORTS,
   maxLevel: 20,
+  fixedMode: true,
 }
 
 const fe9: GameParts = {

@@ -42,6 +42,21 @@ UNCONFIRMED = {
 }
 
 
+# The trial maps' units: zmap/always's `always_T_NN` groups, unlocked by clearing the game NN times from beginning to end
+# (Serenes Forest's recruitment page). They come as the bosses they are in the story, whose stats include the game's enemy
+# level-ups, which aren't decoded; so their stats are Serenes Forest's boss tables (characters/boss-data/stats), Normal mode
+# for Oliver, Shiharam and Ashnard and Hard mode for Petrine and Bryce, as Serenes says they join. HP, Str, Mag, Skl, Spd,
+# Lck, Def, Res.
+TRIAL_STATS = {
+    'PID_OLIVER': (32, 6, 9, 14, 12, 25, 10, 20),
+    'PID_SIHARAMU': (45, 20, 4, 17, 14, 1, 21, 13),
+    'PID_PRAGUE': (43, 20, 18, 22, 23, 10, 23, 19),
+    'PID_BURAISU': (54, 28, 13, 26, 18, 17, 27, 18),
+    'PID_ASHNARD': (60, 35, 16, 27, 27, 0, 35, 26),
+}
+TRIAL_CHAPTER = {'id': 'fe9-trial', 'label': 'Trial maps', 'title': 'Unlocked by clearing the game'}
+
+
 class Reloc:
     """A pointer-relocated file inside a .cmp (dispos_*.bin): data at 0x20, then pointer offsets and table names."""
 
@@ -226,7 +241,7 @@ def main():
                      **({'turn': turn} if turn else {})},
             'affinity': text[AFFINITY_LABELS[p['affinity']]],
             'bases': {s: c['bases'][s] + p['bases'][s] for s in STATS},
-            'growths': p['growths'],
+            'growths': p['growths'], 'fixedStart': p['fixed_start'],
             'con': c['con'] + p['con'], 'wt': c['wt'] + p['wt'],
             'ranks': ranks(p['ranks']),
             'skills': visible(p['skills'], sk),
@@ -236,6 +251,28 @@ def main():
         if pid in UNCONFIRMED:
             unit['unconfirmed'] = UNCONFIRMED[pid]
         units.append(unit)
+
+    for group, pids in always_groups().items():
+        if not group.startswith('always_T_'):
+            continue
+        clears = int(group.rsplit('_', 1)[1])
+        r = Reloc(map_files('always', 'dispos')['dispos_c.bin'])
+        o = dict((g, off) for off, g in r.tables)[group]
+        jid, level = r.string(o + 4 + 4), r.data[o + 4 + 96]
+        for pid in pids:
+            p, c = persons[pid], jobs[jid]
+            used.add(jid)
+            units.append({
+                'id': pid, 'name': p['name'], 'classId': jid, 'level': level, 'joinChapter': TRIAL_CHAPTER['id'],
+                'join': {'how': 'bonus', 'note': f'Joins the trial maps once the game has been cleared {clears} times, from beginning to end.'},
+                'affinity': text[AFFINITY_LABELS[p['affinity']]],
+                'bases': dict(zip(STATS, TRIAL_STATS[pid])),
+                'growths': p['growths'], 'fixedStart': p['fixed_start'],
+                'con': c['con'] + p['con'], 'wt': c['wt'] + p['wt'],
+                'ranks': ranks(p['ranks']),
+                'skills': visible(p['skills'], sk),
+                'unconfirmed': "Stats from Serenes Forest's boss data (the game's enemy level-ups aren't decoded yet).",
+            })
 
     # The classes your units start in, what those promote or transform into, and the promoted classes a choice
     # at promotion leads to.
@@ -308,7 +345,7 @@ def main():
         out_supports.append({'a': key[0], 'b': key[1], 'points': [c_, b_, a_]})
 
     chapters = [{'id': chapter_id(text, n), 'label': chapter_label(text, n),
-                 'title': ' '.join(text[f'MCT{n:02d}'].split(':', 1)[-1].split())} for n in STORY]
+                 'title': ' '.join(text[f'MCT{n:02d}'].split(':', 1)[-1].split())} for n in STORY] + [TRIAL_CHAPTER]
 
     def js(v):
         return json.dumps(v, ensure_ascii=False)

@@ -3,14 +3,19 @@ import { TELLIUS_STATS, type TelliusClass, type TelliusData, type TelliusStats, 
 /** The lowest level a base class can promote at with a Master Seal. */
 export const MASTER_SEAL_LEVEL = 10
 
+export type GrowthMode = 'random' | 'fixed'
+
 export interface ProjectionStage {
   classId: string
   level: number
-  /** Average stats: each level adds the growth rate as a fraction, held at the class's caps. */
+  /** Random mode: average stats, each level adding the growth rate as a fraction. Fixed mode: the stats themselves.
+   * Both held at the class's caps. */
   stats: TelliusStats
   caps: TelliusStats
   mov: number
   con: number
+  /** Fixed mode: the growth points left over. */
+  points?: TelliusStats
 }
 
 export interface ProjectionPlan {
@@ -18,18 +23,17 @@ export interface ProjectionPlan {
   promoteAt: number | null
   /** The level to reach in the final class. */
   targetLevel: number
+  /** Random growths (the default) or Path of Radiance's Fixed mode. */
+  mode?: GrowthMode
 }
+
+/** Fixed mode holds at most this many growth points per stat (Serenes Forest). */
+export const FIXED_MAX_POINTS = 255
 
 function capped(stats: TelliusStats, caps: TelliusStats): TelliusStats {
   const out = { ...stats }
   for (const s of TELLIUS_STATS) out[s] = Math.min(out[s], caps[s])
   return out
-}
-
-function grow(stats: TelliusStats, growths: TelliusStats, levels: number, caps: TelliusStats): TelliusStats {
-  const out = { ...stats }
-  for (const s of TELLIUS_STATS) out[s] = stats[s] + (growths[s] * Math.max(0, levels)) / 100
-  return capped(out, caps)
 }
 
 /** Whether the unit's starting class can promote (laguz and promoted classes can't). */
@@ -40,30 +44,62 @@ export function promotionOf(data: TelliusData, unit: TelliusUnit): TelliusClass 
 }
 
 /**
- * The unit's average stats where they join, at the promotion (if any) and at the target level. Promotion adds
- * the promoted class's bases minus the base class's (checked against Serenes Forest's promotion gains) and
- * starts the new class at level 1.
+ * Levels a unit up. Random mode adds each growth rate as a fraction (the average). Fixed mode (Path of Radiance, from
+ * Serenes Forest's description: unconfirmed in the game's code) keeps growth points per stat, starting from the unit's
+ * own: a level's worth of EXP (100) adds the growth rate, held at 255, and each 100 points becomes +1 at the level-up,
+ * the rest carrying over. Weapons, items and the class of what was defeated shift the points too; they aren't counted.
+ */
+function makeGrower(unit: TelliusUnit, mode: GrowthMode | undefined) {
+  const points = mode === 'fixed' && unit.fixedStart ? { ...unit.fixedStart } : undefined
+  return {
+    points: () => (points ? { ...points } : undefined),
+    grow(stats: TelliusStats, levels: number, caps: TelliusStats): TelliusStats {
+      const out = { ...stats }
+      if (!points) {
+        for (const s of TELLIUS_STATS) out[s] = stats[s] + (unit.growths[s] * Math.max(0, levels)) / 100
+        return capped(out, caps)
+      }
+      for (let i = 0; i < levels; i++) {
+        for (const s of TELLIUS_STATS) {
+          points[s] = Math.min(FIXED_MAX_POINTS, points[s] + unit.growths[s])
+          const rise = Math.floor(points[s] / 100)
+          points[s] -= rise * 100
+          out[s] += rise
+        }
+      }
+      return capped(out, caps)
+    },
+  }
+}
+
+/**
+ * The unit's stats where they join, at the promotion (if any) and at the target level. Promotion adds the promoted
+ * class's bases minus the base class's (checked against Serenes Forest's promotion gains) and starts the new class
+ * at level 1.
  */
 export function project(data: TelliusData, unit: TelliusUnit, plan: ProjectionPlan): ProjectionStage[] {
   const start = data.classes[unit.classId]
   const promoted = promotionOf(data, unit)
+  const grower = makeGrower(unit, plan.mode)
   const stages: ProjectionStage[] = [
-    { classId: start.id, level: unit.level, stats: { ...unit.bases }, caps: start.caps, mov: start.mov, con: unit.con },
+    { classId: start.id, level: unit.level, stats: { ...unit.bases }, caps: start.caps, mov: start.mov, con: unit.con, points: grower.points() },
   ]
   if (promoted && plan.promoteAt !== null) {
     const at = Math.max(unit.level, Math.min(plan.promoteAt, data.maxLevel))
-    const before = grow(unit.bases, unit.growths, at - unit.level, start.caps)
-    if (at > unit.level) stages.push({ classId: start.id, level: at, stats: before, caps: start.caps, mov: start.mov, con: unit.con })
+    const before = grower.grow(unit.bases, at - unit.level, start.caps)
+    if (at > unit.level) {
+      stages.push({ classId: start.id, level: at, stats: before, caps: start.caps, mov: start.mov, con: unit.con, points: grower.points() })
+    }
     const after = { ...before }
     for (const s of TELLIUS_STATS) after[s] = before[s] + promoted.bases[s] - start.bases[s]
     const con = unit.con + promoted.con - start.con
     const afterCapped = capped(after, promoted.caps)
-    stages.push({ classId: promoted.id, level: 1, stats: afterCapped, caps: promoted.caps, mov: promoted.mov, con })
+    stages.push({ classId: promoted.id, level: 1, stats: afterCapped, caps: promoted.caps, mov: promoted.mov, con, points: grower.points() })
     const target = Math.max(1, Math.min(plan.targetLevel, data.maxLevel))
     if (target > 1) {
       stages.push({
-        classId: promoted.id, level: target, stats: grow(afterCapped, unit.growths, target - 1, promoted.caps),
-        caps: promoted.caps, mov: promoted.mov, con,
+        classId: promoted.id, level: target, stats: grower.grow(afterCapped, target - 1, promoted.caps),
+        caps: promoted.caps, mov: promoted.mov, con, points: grower.points(),
       })
     }
     return stages
@@ -71,8 +107,8 @@ export function project(data: TelliusData, unit: TelliusUnit, plan: ProjectionPl
   const target = Math.max(unit.level, Math.min(plan.targetLevel, data.maxLevel))
   if (target > unit.level) {
     stages.push({
-      classId: start.id, level: target, stats: grow(unit.bases, unit.growths, target - unit.level, start.caps),
-      caps: start.caps, mov: start.mov, con: unit.con,
+      classId: start.id, level: target, stats: grower.grow(unit.bases, target - unit.level, start.caps),
+      caps: start.caps, mov: start.mov, con: unit.con, points: grower.points(),
     })
   }
   return stages

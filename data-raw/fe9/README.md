@@ -30,6 +30,7 @@ decoded) and `DivineData` (not decoded).
 | 0x37, 0x38 | Con and Wt, added to the class's (signed) |
 | 0x39-0x40 | HP, Str, Mag, Skl, Spd, Lck, Def, Res, added to the class's bases (signed) |
 | 0x41-0x48 | growth rates, same order |
+| 0x49-0x50 | Fixed mode's starting growth points, same order (they match Serenes Forest's table for every unit) |
 
 A unit's stats when they join are the class's bases plus their own; every playable unit matches Serenes Forest except Rhys (see
 `unconfirmed` on him). Personal growths are the whole growth rate (they match Serenes Forest's for every unit).
@@ -50,7 +51,7 @@ A unit's stats when they join are the class's bases plus their own; every playab
 | 0x44-0x4B | base stats |
 | 0x4C-0x53 | caps |
 | 0x54-0x5B | growth rates, used for generic units (Serenes Forest's class growth rates) |
-| 0x5C-0x63 | small signed values (±5); not used by the app. Unconfirmed: what reads them |
+| 0x5C-0x63 | small signed values (±5): by Serenes Forest's Fixed mode formula, what defeating this class adds to the growth rate when growth points are counted; the app's projection doesn't count them |
 
 Promotion adds the promoted class's bases minus the base class's, and the Con, Mov and capacity differences (they match Serenes
 Forest's promotion gains).
@@ -101,3 +102,19 @@ Conditions the scripts put on joins:
   C30's and C31's `Opening0` also set it, beside the debug joins, so that's taken as the debug path (unconfirmed).
 - **Tibarn, Naesala or Giffca (Endgame, C31):** a turn-3 handler places `bmap31_m_tibarn_c`, `_m_naesala_c` or `_m_giffca_c` for
   `BMGetValue(0)` = 0, 1 or 2. Serenes Forest says the player chooses; what sets the value isn't traced (unconfirmed).
+
+## Fixed mode
+
+From a second playthrough the game offers Fixed mode. As Serenes Forest describes it (general/fixed-mode), each stat has growth
+points: EXP gained × (growth rate + the equipped weapon's and item's alterations + the defeated class's alteration), rounded,
+held at 255; at a level-up every 100 points is +1 and the rest carries over. Each unit starts with its own points (PersonData
+0x49-0x50). The Unit Planner's Fixed option counts a level as 100 EXP with no alterations. Unconfirmed: the formula hasn't been
+checked in `main.dol`, nor what happens to points for a stat at its cap; the weapons' and items' alterations aren't located.
+
+## The trial maps' units
+
+`zmap/always/dispos.cmp` also holds `always_T_03`, `_05`, `_07`, `_10` and `_15`: Oliver (Bishop, Lv 2), Shiharam (Wyvern Lord,
+Lv 10), Petrine (Paladin, Lv 18), Bryce (General, Lv 20) and Ashnard (King Daein, Lv 20). Serenes Forest: they join the trial
+maps once the game has been cleared that many times from beginning to end, Oliver, Shiharam and Ashnard with their Normal mode
+stats and Petrine and Bryce with their Hard mode ones. Only Ashnard's are his class's bases plus his own; the others include the
+game's enemy level-ups, which aren't decoded, so their stats are Serenes Forest's boss tables (`TRIAL_STATS` in the generator).

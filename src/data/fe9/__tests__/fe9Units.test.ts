@@ -14,6 +14,8 @@ const SF_SUPPORTS: Record<string, Record<string, number[]>> = {"Ike": {"Titania"
 const SF_RECRUITMENT: Record<string, string> = {"Ike": "Prologue", "Titania": "1", "Oscar": "1", "Boyd": "1", "Rhys": "2", "Shinon": "3", "Gatrie": "3", "Soren": "4", "Mia": "7", "Ilyana": "8", "Mist": "9", "Rolf": "9", "Marcia": "9", "Lethe": "10", "Mordecai": "10", "Volke": "10", "Kieran": "11", "Brom": "11", "Nephenee": "11", "Zihark": "11", "Sothe": "12", "Jill": "12", "Astrid": "13", "Makalov": "14", "Tormod": "15", "Muarim": "15", "Stefan": "15", "Devdan": "16", "Tanith": "18", "Reyson": "18", "Janaff": "18", "Ulki": "18", "Calill": "20", "Tauroneo": "21", "Haar": "23", "Ranulf": "23", "Bastian": "24", "Lucia": "24", "Geoffrey": "25", "Largo": "25", "Elincia": "26", "Nasir": "28", "Ena": "28", "Tibarn": "Final", "Naesala": "Final", "Giffca": "Final"}
 // Affinities (characters/other-data, from its icons' file names).
 const SF_AFFINITY: Record<string, string> = {"Ike": "Earth", "Titania": "Light", "Oscar": "Earth", "Boyd": "Fire", "Rhys": "Fire", "Shinon": "Thunder", "Gatrie": "Light", "Soren": "Dark", "Mia": "Fire", "Ilyana": "Light", "Marcia": "Fire", "Mist": "Water", "Rolf": "Wind", "Lethe": "Sky", "Mordecai": "Water", "Volke": "Wind", "Kieran": "Wind", "Brom": "Water", "Nephenee": "Wind", "Zihark": "Earth", "Jill": "Thunder", "Sothe": "Wind", "Astrid": "Wind", "Makalov": "Thunder", "Stefan": "Sky", "Muarim": "Thunder", "Tormod": "Fire", "Devdan": "Fire", "Tanith": "Earth", "Reyson": "Fire", "Janaff": "Thunder", "Ulki": "Water", "Calill": "Dark", "Tauroneo": "Thunder", "Ranulf": "Wind", "Haar": "Wind", "Lucia": "Earth", "Bastian": "Wind", "Geoffrey": "Fire", "Largo": "Wind", "Elincia": "Sky", "Ena": "Earth", "Nasir": "Light", "Tibarn": "Sky", "Naesala": "Dark", "Giffca": "Dark"}
+// Fixed mode's starting growth points (general/fixed-mode/starting-growth-points).
+const SF_FIXED_START: Record<string, number[]> = {"Ike": [30, 0, 50, 80, 50, 55, 40, 30], "Titania": [50, 50, 0, 0, 0, 80, 40, 0], "Oscar": [60, 75, 0, 80, 80, 0, 40, 0], "Boyd": [50, 50, 0, 80, 50, 0, 15, 0], "Rhys": [70, 40, 0, 0, 0, 80, 0, 80], "Shinon": [0, 80, 0, 0, 80, 80, 0, 0], "Gatrie": [80, 0, 0, 80, 0, 0, 80, 10], "Soren": [0, 0, 99, 0, 0, 0, 0, 80], "Mia": [60, 70, 0, 50, 0, 0, 0, 0], "Ilyana": [50, 0, 45, 0, 0, 50, 0, 55], "Marcia": [40, 20, 0, 80, 80, 0, 0, 40], "Mist": [60, 50, 90, 80, 25, 0, 50, 50], "Rolf": [80, 0, 0, 0, 50, 80, 0, 0], "Lethe": [80, 80, 0, 0, 80, 50, 80, 0], "Mordecai": [60, 0, 0, 80, 0, 50, 20, 0], "Volke": [45, 0, 0, 45, 0, 90, 0, 0], "Kieran": [50, 50, 0, 0, 0, 70, 60, 0], "Brom": [40, 0, 0, 35, 90, 0, 50, 0], "Nephenee": [50, 60, 0, 0, 50, 40, 30, 0], "Zihark": [0, 75, 20, 50, 80, 80, 30, 0], "Sothe": [50, 0, 0, 0, 50, 40, 30, 0], "Jill": [40, 30, 0, 0, 50, 30, 0, 0], "Astrid": [50, 40, 0, 50, 40, 55, 0, 0], "Makalov": [50, 0, 0, 0, 70, 0, 35, 0], "Stefan": [40, 45, 0, 50, 0, 75, 0, 0], "Tormod": [0, 0, 50, 0, 50, 0, 0, 0], "Muarim": [50, 0, 0, 25, 75, 0, 0, 0], "Devdan": [50, 20, 0, 0, 70, 50, 0, 0], "Reyson": [0, 0, 0, 80, 80, 0, 0, 80], "Ulki": [50, 40, 0, 0, 80, 0, 0, 0], "Janaff": [0, 50, 0, 50, 30, 80, 60, 0], "Tanith": [70, 80, 0, 0, 60, 80, 20, 0], "Calill": [50, 75, 30, 50, 0, 0, 0, 45], "Tauroneo": [50, 0, 0, 30, 0, 30, 0, 50], "Ranulf": [50, 80, 0, 50, 0, 60, 30, 30], "Haar": [40, 0, 0, 50, 25, 40, 20, 0], "Lucia": [50, 0, 0, 20, 10, 55, 0, 0], "Bastian": [50, 0, 30, 0, 0, 50, 0, 0], "Geoffrey": [0, 50, 0, 45, 0, 0, 0, 0], "Largo": [20, 10, 0, 50, 75, 0, 0, 0], "Elincia": [0, 90, 0, 50, 0, 70, 0, 20], "Ena": [0, 75, 0, 50, 35, 75, 0, 40], "Nasir": [50, 0, 0, 50, 20, 90, 50, 15], "Tibarn": [50, 50, 0, 0, 0, 50, 0, 0], "Naesala": [50, 0, 0, 60, 0, 0, 80, 0], "Giffca": [0, 0, 0, 0, 0, 0, 0, 0]}
 const SF_SKILL_CAPACITY: Record<string, number> = {"Nihil": 15, "Vantage": 10, "Adept": 10, "Wrath": 10, "Miracle": 5, "Resolve": 10, "Counter": 10, "Guard": 10, "Corrode": 10, "Parity": 5, "Gamble": 10, "Smite": 10, "Celerity": 15, "Tempest": 5, "Serenity": 5, "Provoke": 5, "Shade": 5, "Renewal": 15, "Saviour": 10, "Paragon": 15, "Reinforce": 15, "Blossom": 15, "Canto": 20, "Insight": 0, "Vigilance": 0, "Daunt": 10, "Mantle": 0, "Discipline": 0, "Iron Wall": 5, "Lumina": 0, "Knife": 0, "Steal": 0, "Aether": 20, "Stun": 20, "Flare": 20, "Sol": 20, "Astra": 20, "Luna": 20, "Colossus": 20, "Deadeye": 20, "Lethality": 20, "Roar": 20, "Cancel": 20, "Vortex": 20, "Blessing": 20, "Boon": 20}
 
 const unitByName = new Map(FE9_DATA.units.map((u) => [u.name, u]))
@@ -23,7 +25,8 @@ const NOT_PLAYABLE = new Set(['Leanne'])
 
 describe('Path of Radiance units', () => {
   it('has every playable unit Serenes Forest lists, and no others', () => {
-    expect(FE9_DATA.units.map((u) => u.name).sort()).toEqual(Object.keys(SF_BASES).filter((n) => !NOT_PLAYABLE.has(n)).sort())
+    const story = FE9_DATA.units.filter((u) => u.join.how !== 'bonus')
+    expect(story.map((u) => u.name).sort()).toEqual(Object.keys(SF_BASES).filter((n) => !NOT_PLAYABLE.has(n)).sort())
   })
 
   it("matches Serenes Forest's levels, bases, Mov, Con and Wt", () => {
@@ -78,6 +81,59 @@ describe('Path of Radiance units', () => {
   it('joins every unit in a chapter of the story', () => {
     const ids = new Set(FE9_DATA.chapters.map((c) => c.id))
     for (const unit of FE9_DATA.units) expect(ids.has(unit.joinChapter)).toBe(true)
+  })
+})
+
+describe('Path of Radiance trial map units', () => {
+  it('lists the five units the always_T groups unlock, each saying how', () => {
+    const trial = FE9_DATA.units.filter((u) => u.join.how === 'bonus')
+    expect(trial.map((u) => u.name)).toEqual(['Oliver', 'Shiharam', 'Petrine', 'Bryce', 'Ashnard'])
+    for (const u of trial) {
+      expect(u.joinChapter).toBe('fe9-trial')
+      expect(u.join.note).toMatch(/cleared \d+ times/)
+      expect(u.unconfirmed).toBeDefined()
+    }
+    expect(trial.map((u) => u.join.note?.match(/(\d+) times/)?.[1])).toEqual(['3', '5', '7', '10', '15'])
+  })
+
+  it("matches Serenes Forest's King Daein Ashnard, the one whose stats are only his class's and his own", () => {
+    const ashnard = unitByName.get('Ashnard')!
+    const cls = FE9_DATA.classes[ashnard.classId]
+    expect(TELLIUS_STATS.map((s) => ashnard.bases[s])).toEqual([60, 35, 16, 27, 27, 0, 35, 26])
+    expect([cls.mov, ashnard.con, ashnard.wt]).toEqual([10, 14, 49])
+  })
+})
+
+describe('Path of Radiance fixed mode', () => {
+  it("matches Serenes Forest's starting growth points", () => {
+    for (const [name, sf] of Object.entries(SF_FIXED_START)) {
+      const unit = unitByName.get(name)!
+      expect([name, ...TELLIUS_STATS.map((s) => unit.fixedStart![s])]).toEqual([name, ...sf])
+    }
+  })
+
+  it('adds the growth rate each level and turns every 100 points into +1', () => {
+    // Soren: Mag growth 60 from 99 points. Lv 2: 159 -> +1, 59 left. Lv 3: 119 -> +1, 19 left. Lv 4: 79 -> nothing.
+    const soren = unitByName.get('Soren')!
+    const stages = project(FE9_DATA, soren, { promoteAt: null, targetLevel: 4, mode: 'fixed' })
+    const final = stages.at(-1)!
+    expect(final.stats.mag - soren.bases.mag).toBe(2)
+    expect(final.points!.mag).toBe(79)
+    // Never more than 255 points in a stat.
+    const ike = unitByName.get('Ike')!
+    for (const st of project(FE9_DATA, ike, { promoteAt: 20, targetLevel: 20, mode: 'fixed' })) {
+      for (const s of TELLIUS_STATS) expect(st.points![s]).toBeLessThan(100)
+    }
+  })
+
+  it('gives whole stats near the average', () => {
+    const ike = unitByName.get('Ike')!
+    const fixed = project(FE9_DATA, ike, { promoteAt: 20, targetLevel: 20, mode: 'fixed' }).at(-1)!
+    const average = project(FE9_DATA, ike, { promoteAt: 20, targetLevel: 20 }).at(-1)!
+    for (const s of TELLIUS_STATS) {
+      expect(Number.isInteger(fixed.stats[s])).toBe(true)
+      expect(Math.abs(fixed.stats[s] - average.stats[s])).toBeLessThanOrEqual(1)
+    }
   })
 })
 

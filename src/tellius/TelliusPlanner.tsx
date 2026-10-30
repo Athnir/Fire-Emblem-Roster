@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { capacityUsed, learnableSkills, MASTER_SEAL_LEVEL, project, promotionOf } from './logic'
+import { capacityUsed, learnableSkills, MASTER_SEAL_LEVEL, project, promotionOf, type GrowthMode } from './logic'
 import { useTelliusPlanStore, type TelliusUnitPlan } from './planStore'
 import { SkillIcon, StatTable, UnitSelect, useScreenshotUnit } from './shared'
 import type { TelliusData, TelliusUnit } from './types'
@@ -18,6 +18,7 @@ function Planner({ data, unit }: { data: TelliusData; unit: TelliusUnit }) {
   const update = (patch: Partial<TelliusUnitPlan>) => setPlan(data.gameId, unit.id, { ...plan, ...patch })
 
   const promoted = promotionOf(data, unit)
+  const fixed = Boolean(data.fixedMode && plan.mode === 'fixed' && unit.fixedStart)
   const stages = project(data, unit, plan)
   const final = stages[stages.length - 1]
   const finalClass = data.classes[final.classId]
@@ -51,6 +52,15 @@ function Planner({ data, unit }: { data: TelliusData; unit: TelliusUnit }) {
             </select>
           </label>
         )}
+        {data.fixedMode && unit.fixedStart && (
+          <label className="space-y-1">
+            <span className="block text-xs text-neutral-500">Growths</span>
+            <select value={plan.mode ?? 'random'} onChange={(e) => update({ mode: e.target.value as GrowthMode })} className={selectClass}>
+              <option value="random">Random (average)</option>
+              <option value="fixed">Fixed</option>
+            </select>
+          </label>
+        )}
         <label className="space-y-1">
           <span className="block text-xs text-neutral-500">Up to Lv (as {finalClass.name})</span>
           <select value={plan.targetLevel} onChange={(e) => update({ targetLevel: Number(e.target.value) })} className={selectClass}>
@@ -69,15 +79,21 @@ function Planner({ data, unit }: { data: TelliusData; unit: TelliusUnit }) {
       </div>
 
       <p className="text-xs text-neutral-500">
-        Average stats: each level adds the growth rate, held at the class's caps (green).
+        {fixed
+          ? "Fixed mode: each stat has growth points, starting from the unit's own; a level's worth of EXP adds the growth rate (up to 255 points), and every 100 points is +1 at the level-up. Equipment and the class of what was defeated shift the points a little; they aren't counted here. From Serenes Forest; not yet checked in the game's code."
+          : 'Average stats: each level adds the growth rate.'}{' '}
+        Stats stop at the class's caps (green).
         {promoted && ' Promoting adds the difference between the two classes\' bases and starts again at Lv 1.'}
       </p>
       <StatTable
-        rows={stages.map((st, i) => ({
-          label: `${data.classes[st.classId].name} Lv ${st.level}${i === 0 ? ' (joins)' : ''}`,
-          values: st.stats,
-          caps: st.caps,
-        }))}
+        rows={[
+          ...stages.map((st, i) => ({
+            label: `${data.classes[st.classId].name} Lv ${st.level}${i === 0 ? ' (joins)' : ''}`,
+            values: st.stats,
+            caps: st.caps,
+          })),
+          ...(fixed && final.points ? [{ label: 'Growth points left', values: final.points }] : []),
+        ]}
       />
       <div className="flex flex-wrap gap-x-6 text-sm text-neutral-300">
         <span>
