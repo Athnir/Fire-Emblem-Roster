@@ -32,6 +32,28 @@ skills (bits), +0x1F-0x22 holy blood, +0x23-0x25 item instances.
 +0x14-0x15 class skills (bits, not matched yet), +0x18-0x1E bases (HP, Str, Mag, Skl, Spd, Def, Res). A class's bases sit in
 the record before its own (slot i - 1); the first five knights share theirs.
 
+## Promotions: `0x3833C`
+
+One byte per character id (from 1): the class they promote to, 255 none. Each character has their own (Dalvin's and
+Scáthach's Sword Fighter becomes a Forester, Larcei's a Swordmaster); Oifey's names his own class.
+
+## Joins (`scripts/build-fe4-units.py`, with the Armory's `fe4_events.py` and `fe4_cpu.py`)
+
+A unit's first chapter is where a scene puts them on the map (event command 0x49) or moves them to army 0 (0x53): in the
+opening (the start), a talk trigger's scene (a talk; 0xFFFF as the speaker is anyone), or a turn block's (that turn, or under a
+flag: the trigger that sets it, a castle seized (0x02), entered (0x07) or an area reached (0x0B)). Arden, whom nothing brings in,
+starts in the home castle. Matches Serenes Forest's recruitment page, except a few turns (under those units' `unconfirmed`).
+Notes where the trigger isn't one the reader names (the arena, Beowolf's fee) are Serenes'.
+
+## Children (`src/genealogy/logic.ts`)
+
+A child record's +0x0B is 1 when the child takes after the father, 0 the mother (daughters; Leif and Febail swap, Altena and
+Patty too). The rest follows Serenes Forest's inheritance and calculations pages, not yet traced in the code: growths are the
+main parent's own + half the other's own (rounded down) + the child's holy blood bonus; bases from the parents' stats at the end
+of the first generation (the app uses their Unit Planner plans), with Luck's random 1-99 taken as 50; holy blood: the main
+parent's major stays major, the other's becomes minor, minor from both becomes major, Loptous isn't passed on. Serenes' worked
+example (Seliph) comes out the same (tested).
+
 ## Holy blood: `0x389E3`, 13 records of 16 bytes
 
 +0 weapon type, +1 holy weapon item id, +2-9 growth bonuses (HP, Str, Mag, Skl, Spd, Def, Res, Lck), doubled for major blood.
@@ -44,5 +66,7 @@ caps show (Lord Knight Str 25 = 10 + 15). Promotion changes the class's bases an
 
 ## Unconfirmed
 
-- The children's bases and growths: Serenes Forest's formula (calculations page), not yet found in the code.
+- The children's bases, growths and holy blood: Serenes Forest's formulas, not yet found in the code.
 - Which mother each child belongs to, from Serenes.
+- Promotion keeping the level, and the level cap of 30 (Serenes).
+- Which father each mother can have: the app offers every first-generation man but Sigurd and Quan.

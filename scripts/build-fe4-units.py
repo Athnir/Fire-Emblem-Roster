@@ -9,7 +9,7 @@ import os
 
 import fe4_events as ev
 from fe4_names import character_names, class_names, place
-from fe4_units import classes, holy_bloods, people
+from fe4_units import classes, holy_bloods, people, promotion
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 OUT = os.path.join(ROOT, 'src', 'data', 'fe4', 'fe4Units.ts')
@@ -127,6 +127,11 @@ def main():
         gen = 1 if i < GEN2_FIRST_ID else 2
         used.add(p['class'])
         unit = {'id': f'fe4-{i}', 'name': name, 'generation': gen, 'classId': str(p['class']), 'level': p['level']}
+        # Each character has their own promotion (0x3833C): Dalvin's Sword Fighter becomes a Forester, Larcei's a Swordmaster.
+        promo = promotion(i)
+        if promo != 0xFF and promo != p['class']:
+            unit['promotesTo'] = str(promo)
+            used.add(promo)
         if p['kind'] == 'fixed':
             cb = class_bases(p['class'])
             unit.update({
@@ -141,7 +146,7 @@ def main():
                 **({'leadership': p['leadership']} if p['leadership'] else {}),
             })
         else:
-            unit.update({'role': 'child'})
+            unit.update({'role': 'child', 'mainParent': 'father' if p['main_father'] else 'mother'})
         if gen == 2:
             by_slot.setdefault(p['slot'], []).append(unit)
             unit['slot'] = p['slot']

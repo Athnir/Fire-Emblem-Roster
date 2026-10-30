@@ -16,6 +16,8 @@ export interface Fe4Unit {
   generation: 1 | 2
   classId: string
   level: number
+  /** The class they promote to (each character has their own). */
+  promotesTo?: string
   /** 'fixed': stats of their own; 'child': stats from their parents; 'substitute': stands in for a child whose mother
    * had none. */
   role: 'fixed' | 'child' | 'substitute'
@@ -38,6 +40,8 @@ export interface Fe4Unit {
   /** Fixed by the story (Seliph, Leif, Altena). */
   father?: string
   substituteFor?: string
+  /** A child: the parent they take after (stats, growths and major blood). */
+  mainParent?: 'father' | 'mother'
   /** What the data leaves unsettled about this unit. */
   unconfirmed?: string
 }

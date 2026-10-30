@@ -9,6 +9,7 @@ GAME_STATS = ('hp', 'str', 'mag', 'skl', 'spd', 'def', 'res', 'lck')
 CHARACTERS = 0x38000 + 0x2DF5  # u16 count*2, then u16 offsets (from here) to each record, id 1 upward
 CLASSES = 0x38FCD  # 72 records of 31 bytes
 HOLY_BLOOD = 0x389E3  # 13 records of 16 bytes
+PROMOTIONS = 0x3833C  # one byte per character id (from 1): the class they promote to, 255 none
 # The holy bloods in the order of their bits in a character record (and of the bonus table).
 # Names: the patch's spellings (Neir and Hezul aren't in its text, so they're Serenes Forest's).
 BLOODS = ('Baldr', 'Naga', 'Dáinn', 'Njörun', 'Od', 'Ullr', 'Neir', 'Fjalar', 'Thrud', 'Forseti', 'Bragi', 'Hezul',
@@ -49,7 +50,8 @@ def people():
     bases), +9 class, +0x0A level, +0x0B leadership stars, +0x0C gold / 1000, +0x0D id, +0x0F name index (u16), +0x11 the
     second generation's slot (a substitute shares its child's), +0x13 1 for women, +0x14-0x1B growth rates (same order), +0x1C-0x1E
     skills, +0x1F-0x22 holy blood, +0x23-0x25 item instances. Kind 1 (12 bytes, a child whose stats come from the parents): +1
-    class, +2 level, +5 name index (u16), +7 slot, +9-0x0A item instances. {id: dict}."""
+    class, +2 level, +5 name index (u16), +7 slot, +9-0x0A item instances, +0x0B 1 when the child takes after the father
+    (0 the mother: daughters, and Leif and Febail, whose roles swap). {id: dict}."""
     out = {}
     n = u16(CHARACTERS) // 2
     for i in range(1, n):
@@ -64,10 +66,15 @@ def people():
             }
         elif r[0] == 1 and len(r) == 12:
             out[i] = {'id': i, 'kind': 'child', 'class': r[1], 'level': r[2], 'name_index': r[5] | r[6] << 8, 'slot': r[7],
-                      'items': [x for x in r[9:11] if x != 0xFF]}
+                      'items': [x for x in r[9:11] if x != 0xFF], 'main_father': bool(r[11])}
         if i > 63:
             break
     return out
+
+
+def promotion(i):
+    """The class character id i promotes to, or None (255, or their own class: Oifey's)."""
+    return R[PROMOTIONS + i - 1]
 
 
 def classes(count=72):

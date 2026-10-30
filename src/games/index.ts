@@ -53,4 +53,10 @@ export const GAMES: Game[] = [
     short: 'Radiant Dawn',
     load: () => import('./fe10').then((m) => m.default),
   },
+  {
+    id: 'fe4',
+    title: 'Fire Emblem: Genealogy of the Holy War',
+    short: 'Genealogy',
+    load: () => import('./fe4').then((m) => m.default),
+  },
 ]

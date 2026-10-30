@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { FE4_STATS } from '../../../genealogy/types'
-import { FE4_BLOODS, FE4_CLASSES, FE4_UNITS } from '../fe4Units'
+import { childProfile } from '../../../genealogy/logic'
+import { FE4_BLOODS, FE4_CHAPTERS, FE4_CLASSES, FE4_UNITS } from '../fe4Units'
 
 // Serenes Forest's Genealogy of the Holy War tables, copied here to check the data built from the ROM against them.
 // Base stats: Lv, HP, Str, Mag, Skl, Spd, Lck, Def, Res, Gold (characters/base-stats), by the patch's names.
@@ -55,5 +56,25 @@ describe('Genealogy of the Holy War units', () => {
     for (const child of children) expect([child.name, Boolean(child.mother)]).toEqual([child.name, true])
     const subs = FE4_UNITS.filter((u) => u.role === 'substitute')
     expect(subs).toHaveLength(14)
+  })
+})
+
+describe('Genealogy of the Holy War children', () => {
+  const data = { gameId: 'fe4', chapters: FE4_CHAPTERS, units: FE4_UNITS, classes: FE4_CLASSES, bloods: FE4_BLOODS }
+  const named = (name: string) => FE4_UNITS.find((u) => u.name === name)!
+  const stats = (v: number[]) => Object.fromEntries(FE4_STATS.map((s, i) => [s, v[i]])) as Record<(typeof FE4_STATS)[number], number>
+
+  it("works Seliph out as Serenes Forest's calculations page does", () => {
+    // Its example: Sigurd at HP 40, Str 20, Mag 5, Skl 20, Spd 20, Lck 10, Def 20, Res 10; Deirdre at 15, 5, 30, 15, 15, 5, 5, 30.
+    // Seliph: HP 25, Str 7, Mag 3, Skl 8, Spd 8, Def 7, Res 3; Luck 11 with its random 76 (8 with the 50 used here).
+    const sigurd = { unit: named('Sigurd'), classId: named('Sigurd').classId, stats: stats([40, 20, 5, 20, 20, 10, 20, 10]), gold: 0 }
+    const deirdre = { unit: named('Deirdre'), classId: named('Deirdre').classId, stats: stats([15, 5, 30, 15, 15, 5, 5, 30]), gold: 0 }
+    const seliph = childProfile(data, named('Seliph'), sigurd, deirdre)
+    expect(FE4_STATS.map((s) => seliph.bases[s])).toEqual([25, 7, 3, 8, 8, 8, 7, 3])
+    expect(seliph.blood.map((b) => `${b.level} ${b.blood}`)).toEqual(['major Baldr', 'minor Naga'])
+  })
+
+  it('swaps Leif\'s and Altena\'s main parent, as Serenes Forest says', () => {
+    expect([named('Leif').mainParent, named('Altena').mainParent, named('Seliph').mainParent]).toEqual(['mother', 'father', 'father'])
   })
 })
