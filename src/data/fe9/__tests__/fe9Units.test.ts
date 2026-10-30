@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { FE9_DATA } from '../../../games/fe9'
-import { chaptersNeeded, learnableSkills, project, supportsOf } from '../../../tellius/logic'
+import { chaptersNeeded, learnableSkills, project, supportsOf, wearableBands } from '../../../tellius/logic'
 import { TELLIUS_STATS } from '../../../tellius/types'
 
 // Serenes Forest's Path of Radiance tables (characters/base-stats, growth-rates, supports; miscellaneous/skills),
@@ -161,6 +161,15 @@ describe('Path of Radiance bands', () => {
     const fixed = project(FE9_DATA, soren, { promoteAt: null, targetLevel: 11, mode: 'fixed', bands: [{ bandId: mage, levels: 5 }] }).at(-1)!
     expect(fixed.stats.mag - soren.bases.mag).toBe(7)
     expect(fixed.points!.mag).toBe(49)
+  })
+
+  it('offers the Knight Ward only to units that can equip it', () => {
+    const offered = (name: string) => wearableBands(FE9_DATA, unitByName.get(name)!, { promoteAt: 20, targetLevel: 20 }).map((b) => b.name)
+    expect(offered('Ike')).not.toContain('Knight Ward')
+    expect(offered('Soren')).not.toContain('Knight Ward')
+    expect(offered('Gatrie')).toContain('Knight Ward')
+    expect(offered('Oscar')).toContain('Knight Ward')
+    expect(offered('Ike')).toContain('Sword Band')
   })
 
   it("gives the Knight Ward's +30 Spd only to classes that can wear it", () => {

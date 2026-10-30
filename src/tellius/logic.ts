@@ -56,6 +56,13 @@ export function canWear(band: TelliusBand, classId: string): boolean {
   return !band.onlyClasses || band.onlyClasses.includes(classId)
 }
 
+/** The bands to offer: those the unit can wear in its class or the one the plan promotes it to (no Knight Ward for Ike). */
+export function wearableBands(data: TelliusData, unit: TelliusUnit, plan: ProjectionPlan): TelliusBand[] {
+  const promoted = promotionOf(data, unit)
+  const classIds = [unit.classId, ...(promoted && plan.promoteAt !== null ? [promoted.id] : [])]
+  return (data.bands ?? []).filter((b) => classIds.some((c) => canWear(b, c)))
+}
+
 /** Fixed mode holds at most this many growth points per stat (Serenes Forest). */
 export const FIXED_MAX_POINTS = 255
 

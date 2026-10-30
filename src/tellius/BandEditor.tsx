@@ -1,4 +1,4 @@
-import { canWear, levelUpsIn, promotionOf, type BandSegment, type ProjectionPlan } from './logic'
+import { canWear, levelUpsIn, promotionOf, wearableBands, type BandSegment, type ProjectionPlan } from './logic'
 import type { TelliusData, TelliusUnit } from './types'
 
 const STAT_SHORT: Record<string, string> = { hp: 'HP', str: 'Str', mag: 'Mag', skl: 'Skl', spd: 'Spd', lck: 'Lck', def: 'Def', res: 'Res' }
@@ -30,13 +30,13 @@ export function BandEditor({
   plan: ProjectionPlan
   onChange: (bands: BandSegment[]) => void
 }) {
-  const bands = data.bands ?? []
+  const bands = wearableBands(data, unit, plan)
   if (bands.length === 0) return null
   const segments = plan.bands ?? []
   const total = levelUpsIn(data, unit, plan)
   const used = segments.reduce((sum, s) => sum + s.levels, 0)
   const remaining = total - used
-  const byId = new Map(bands.map((b) => [b.id, b]))
+  const byId = new Map((data.bands ?? []).map((b) => [b.id, b]))
 
   const update = (i: number, patch: Partial<BandSegment>) => onChange(segments.map((s, j) => (j === i ? { ...s, ...patch } : s)))
 
@@ -66,7 +66,7 @@ export function BandEditor({
         return (
           <div key={i} className="flex flex-wrap items-center gap-2 rounded-md border border-neutral-800 p-2 text-xs">
             <select value={seg.bandId} onChange={(e) => update(i, { bandId: e.target.value })} className={`${selectClass} min-w-[9rem]`}>
-              {bands.map((b) => (
+              {(band && !bands.includes(band) ? [...bands, band] : bands).map((b) => (
                 <option key={b.id} value={b.id}>
                   {b.name}
                 </option>
