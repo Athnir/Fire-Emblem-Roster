@@ -11,6 +11,13 @@ Mystery of the Emblem, Awakening). This app was the Fates Unit Planner.
 
 **Live app:** https://athnir.github.io/Fire-Emblem-Roster/
 
+## Data sources
+
+- **Fates:** Serenes Forest's base stats, growth rates, maximum stats, class sets and supports, cross-checked against the Fire
+  Emblem Wiki.
+- **Path of Radiance:** the game's own files (the user's disc), read by `scripts/build-fe9-units.py`, and checked against
+  Serenes Forest's tables in the tests. Formats are in [data-raw/fe9/README.md](data-raw/fe9/README.md).
+
 ## Installing
 
 The live link above is a Progressive Web App (PWA) — it installs like a native app on every

@@ -1,15 +1,5 @@
 import { useState } from 'react'
-import { usePlannerStore } from '../state/plannerStore'
 import { useScreenshotContextStore } from '../state/screenshotContextStore'
-import type { Tab } from '../App'
-
-const TAB_LABELS: Record<Tab, string> = {
-  roster: 'Roster',
-  unit: 'Unit Planner',
-  planner: 'Marriage Planner',
-  skills: 'Skill Planner',
-  viewer: 'Bulk Viewer',
-}
 
 /** Windows/macOS/Linux all forbid these in filenames — strip rather than fail the download. */
 function sanitizeFilenamePart(part: string): string {
@@ -22,15 +12,13 @@ function formatTimestamp(date: Date): string {
 }
 
 /**
- * Auto-generated name: (saved plan, if one's active) (unit) (tab) (route) (timestamp) — e.g.
- * "Conquest run #1 Hana Skill Planner Conquest 2026-08-06_14-30-22.png". The saved-plan and unit
- * pieces are omitted when there's nothing to show (no plan loaded, no unit selected) rather than
- * left as empty tokens. Route is always included, independent of whether a plan is active, so a
- * screenshot's route is identifiable either way (see plannerStore's activeRoute).
+ * Auto-generated name: (group) (unit) (tab) (context) (timestamp) — e.g. Fates' "Conquest run #1 Hana
+ * Skill Planner Conquest 2026-08-06_14-30-22.png", where the group is the active saved plan and the
+ * context the route (see FatesExportButton). Empty pieces (no plan loaded, no unit selected) are
+ * omitted rather than left as empty tokens.
  */
-function buildFilename(majorGroup: string, unitLabel: string, tab: Tab, route: string): string {
-  const routeLabel = route === 'all' ? 'All Routes' : route
-  const parts = [majorGroup, unitLabel, TAB_LABELS[tab], routeLabel]
+function buildFilename(group: string, unitLabel: string, tabLabel: string, context: string): string {
+  const parts = [group, unitLabel, tabLabel, context]
     .map(sanitizeFilenamePart)
     .filter(Boolean)
   return `${parts.join(' ')} ${formatTimestamp(new Date())}.png`
@@ -60,11 +48,17 @@ function waitForStylesReady(): Promise<void> {
 }
 
 /** Captures the given element as a PNG and triggers a download, matching the prototype's "Save full page as image" feature. */
-export function ExportImageButton({ targetRef, tab }: { targetRef: React.RefObject<HTMLElement | null>; tab: Tab }) {
+export interface ExportImageButtonProps {
+  targetRef: React.RefObject<HTMLElement | null>
+  tabLabel: string
+  /** Leads the file name (Fates: the active saved plan). */
+  group?: string
+  /** Follows the tab (Fates: the route; other games: the game). */
+  context?: string
+}
+
+export function ExportImageButton({ targetRef, tabLabel, group = '', context = '' }: ExportImageButtonProps) {
   const [status, setStatus] = useState<'idle' | 'capturing' | 'done' | 'failed'>('idle')
-  const activeRoute = usePlannerStore((state) => state.activeRoute)
-  const activePlanId = usePlannerStore((state) => state.activePlanId)
-  const plans = usePlannerStore((state) => state.plans)
   const unitLabel = useScreenshotContextStore((state) => state.unitLabel)
 
   async function handleClick() {
@@ -123,13 +117,12 @@ export function ExportImageButton({ targetRef, tab }: { targetRef: React.RefObje
     try {
       const html2canvas = (await import('html2canvas-pro')).default
       const canvas = await html2canvas(target, { backgroundColor: '#0a0a0a', useCORS: true, scale: 2, windowWidth })
-      const activePlanName = activePlanId ? plans.find((p) => p.id === activePlanId)?.name : undefined
-      const filename = buildFilename(activePlanName ?? '', unitLabel, tab, activeRoute)
+      const filename = buildFilename(group, unitLabel, tabLabel, context)
       const link = document.createElement('a')
       // Forward slashes in `download` create subfolders inside the browser's downloads directory
       // (Chromium/Electron honor this) — keeps every tab's screenshots sorted into their own folder
       // instead of piling up loose in one place.
-      link.download = `Fire Emblem Roster Screenshots/${TAB_LABELS[tab]}/${filename}`
+      link.download = `Fire Emblem Roster Screenshots/${sanitizeFilenamePart(tabLabel)}/${filename}`
       link.href = canvas.toDataURL('image/png')
       link.click()
       setStatus('done')

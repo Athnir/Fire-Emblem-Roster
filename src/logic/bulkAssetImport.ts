@@ -23,7 +23,7 @@ function stem(file: File): string {
   return file.name.replace(/\.[^.]+$/, '').toLowerCase()
 }
 
-function matchByStem(files: File[], entries: { id: string; label: string }[], keyFor: (id: string) => string): MatchResult {
+export function matchByStem(files: File[], entries: { id: string; label: string }[], keyFor: (id: string) => string): MatchResult {
   const byStem = new Map(entries.map((e) => [e.id.toLowerCase(), e]))
   const matched: MatchedFile[] = []
   const unmatched: File[] = []

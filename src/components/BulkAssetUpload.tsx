@@ -25,7 +25,7 @@ const CORRIN_BODY_VARIANTS: { gender: 'M' | 'F'; height: 'short' | 'tall'; label
  * uploads are — this is a bulk "restore my backup" action, same philosophy as the Export/Import
  * Backup feature: it commits straight to storage rather than needing a session-level undo.
  */
-function UploadSection({
+export function UploadSection({
   title,
   hint,
   match,

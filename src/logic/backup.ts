@@ -1,14 +1,19 @@
 import { getAllAssetEntries, putAllAssetEntries } from '../data/assetStorage'
 
-// Kept from when the app was the Fates Unit Planner: renaming it would orphan everything already
-// saved (and every backup already exported), so the Fates data keeps its keys.
-const LOCAL_STORAGE_PREFIX = 'fates-planner-'
+// 'fates-planner-' is kept from when the app was the Fates Unit Planner: renaming it would orphan
+// everything already saved (and every backup already exported), so the Fates data keeps its keys.
+// Everything added since (the game picker, the other games) is under 'fe-roster-'.
+const LOCAL_STORAGE_PREFIXES = ['fates-planner-', 'fe-roster-']
+
+function isOurKey(key: string): boolean {
+  return LOCAL_STORAGE_PREFIXES.some((prefix) => key.startsWith(prefix))
+}
 const BACKUP_FORMAT_VERSION = 1
 
 export interface BackupFile {
   formatVersion: number
   exportedAt: string
-  /** Every localStorage key under the fates-planner- prefix (saved plans/builds, Corrin build and
+  /** Every localStorage key under the app's prefixes (saved plans/builds, Corrin build and
    * appearance, hair-source picks, icon crop/palette settings) — a plain prefix scan rather than a
    * hand-maintained list, so a newly-added store is picked up automatically without editing this file. */
   localStorage: Record<string, string>
@@ -21,7 +26,7 @@ function collectLocalStorage(): Record<string, string> {
   const entries: Record<string, string> = {}
   for (let i = 0; i < window.localStorage.length; i++) {
     const key = window.localStorage.key(i)
-    if (!key || !key.startsWith(LOCAL_STORAGE_PREFIX)) continue
+    if (!key || !isOurKey(key)) continue
     const value = window.localStorage.getItem(key)
     if (value !== null) entries[key] = value
   }
@@ -56,7 +61,7 @@ export async function restoreBackup(file: File): Promise<void> {
     throw new Error('That file doesn\'t look like a Fire Emblem Roster backup.')
   }
   for (const [key, value] of Object.entries(parsed.localStorage)) {
-    if (key.startsWith(LOCAL_STORAGE_PREFIX)) window.localStorage.setItem(key, value)
+    if (isOurKey(key)) window.localStorage.setItem(key, value)
   }
   if (parsed.assets && Object.keys(parsed.assets).length > 0) {
     await putAllAssetEntries(parsed.assets)

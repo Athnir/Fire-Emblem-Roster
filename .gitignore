@@ -26,7 +26,10 @@ public/skills/
 
 # Dumped game files (romfs, ROM images, anything read from the user's own copies) — only data
 # derived from them by the generators in scripts/ goes in the repo. See CLAUDE.md.
-data-raw/
+# Each game's README.md there (the file formats) is kept.
+data-raw/**
+!data-raw/**/
+!data-raw/**/README.md
 *.smc
 *.sfc
 *.gba
@@ -43,3 +46,6 @@ data-raw/
 *.njsproj
 *.sln
 *.sw?
+
+# Python bytecode from the generators
+__pycache__/

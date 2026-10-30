@@ -15,6 +15,8 @@ new rule, add it here.
 - **Finish one game across every tab before starting the next.** Order: Fates, Path of Radiance, Radiant Dawn, Genealogy of the
   Holy War, Thracia 776, The Binding Blade, The Blazing Blade, The Sacred Stones, Mystery of the Emblem, Awakening. Fortune's Weave
   is skipped (too new for solid data).
+- **Fates is finished** and is the model for the most any game will need (no other game has a web as complex). It's only
+  touched to fix bugs.
 - **Only what the user owns.** Missing DLC is left out (or taken from wikis later), never obtained.
 
 ## Art: the game's own, never shipped
@@ -28,9 +30,9 @@ new rule, add it here.
 ## Data sources
 
 - **The game's own files first** (the user's dumps), then Serenes Forest / fireemblemwod.com / the wikis for what the files
-  lack. Fates' bases, growths, caps, class sets and supports are rebuilt from the romfs. The data that was entered by hand from
-  Serenes Forest becomes a cross-check in the tests.
-- **Dumps are copied into `data-raw/<game>/`, which is git-ignored.** Only data derived from them goes in the repo.
+  lack. Fates keeps its hand-entered Serenes Forest data.
+- **Dumps stay where the user extracted them** (each game's reader has the default path), or in `data-raw/<game>/`, which is
+  git-ignored except each game's `README.md` (the formats). Only data derived from them goes in the repo.
 - **Japanese-only games:** read the clean Japanese files; English names come from the community translation patches' name
   tables, applied in memory only (as the Armory does).
 - **Everything generated comes from a re-runnable script**; fix the generator, never the output. Formats go in
