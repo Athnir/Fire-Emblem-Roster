@@ -103,12 +103,22 @@ Conditions the scripts put on joins:
 - **Tibarn, Naesala or Giffca (Endgame, C31):** a turn-3 handler places `bmap31_m_tibarn_c`, `_m_naesala_c` or `_m_giffca_c` for
   `BMGetValue(0)` = 0, 1 or 2. Serenes Forest says the player chooses; what sets the value isn't traced (unconfirmed).
 
+## Bands (ItemData)
+
+ItemData records are 96 bytes (the Armory's README has the weapon fields). Bytes 85-92 are signed growth changes, HP, Str,
+Mag, Skl, Spd, Lck, Def, Res, which the item gives while equipped. The accessories (type `acc`) with any are the eleven bands
+and the Knight Ward (Spd +30); they match Serenes Forest's accessories page. The Knight Ward's rule flag `eqD` limits it to
+classes with the skill `SID_EQ_D` (Soldiers, Halberdiers, Knights, Generals, the horseback knights and Paladins). Weapons have
+values there too (the Iron Sword's Str -5, Skl +5, Spd +5, Res -5...): Serenes Forest's Fixed mode formula counts them as
+the weapon's alteration. The Unit Planner counts the bands in both modes and leaves weapons out. Unconfirmed: that the bands
+apply in Random mode is Serenes Forest's accessories page, not checked in the code.
+
 ## Fixed mode
 
 From a second playthrough the game offers Fixed mode. As Serenes Forest describes it (general/fixed-mode), each stat has growth
 points: EXP gained × (growth rate + the equipped weapon's and item's alterations + the defeated class's alteration), rounded,
 held at 255; at a level-up every 100 points is +1 and the rest carries over. Each unit starts with its own points (PersonData
-0x49-0x50). The Unit Planner's Fixed option counts a level as 100 EXP with no alterations. Unconfirmed: the formula hasn't been
+0x49-0x50). The Unit Planner's Fixed option counts a level as 100 EXP, with the band worn (if any) and no other alterations. Unconfirmed: the formula hasn't been
 checked in `main.dol`, nor what happens to points for a stat at its cap; the weapons' and items' alterations aren't located.
 
 ## The trial maps' units

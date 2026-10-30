@@ -104,6 +104,28 @@ def skills(t):
     return out
 
 
+def bands(t, jobs):
+    """Accessories (ItemData type `acc`) that change growth rates: bytes 85-92 of the 96-byte record are HP, Str, Mag, Skl,
+    Spd, Lck, Def, Res growth changes (signed; Serenes Forest's accessories page gives the same for every band). An
+    `eqX` rule flag (24-44) limits it to classes with the skill SID_EQ_X (the Knight Ward's eqD). [dict]."""
+    o = t.named['ItemData']
+    out = []
+    for k in range(t.u32(o)):
+        p = o + 4 + k * 96
+        if t.ptr_string(p + 12) != 'acc':
+            continue
+        r = t.raw(p, 96)
+        growths = dict(zip(STATS, (signed(b) for b in r[85:93])))
+        if not any(growths.values()):
+            continue
+        flags = [f for f in (t.ptr_string(p + 24 + 4 * i) for i in range(6)) if f]
+        only = sorted({j for f in flags if f.startswith('eq') and len(f) == 3
+                       for j, c in jobs.items() if 'SID_EQ_' + f[2].upper() in c['skills']})
+        out.append({'id': t.ptr_string(p), 'name': t.name(t.ptr_string(p + 4)), 'growths': growths,
+                    **({'onlyClasses': only} if only else {})})
+    return out
+
+
 def supports(t):
     """RelianceData: a count of people, then each one's PID, a partner count and 8-byte entries
     (partner PID, then three bytes C, B, A). [(PID, partner PID, (c, b, a))]."""

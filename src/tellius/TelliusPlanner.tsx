@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { BandEditor } from './BandEditor'
 import { capacityUsed, learnableSkills, MASTER_SEAL_LEVEL, project, promotionOf, type GrowthMode } from './logic'
 import { useTelliusPlanStore, type TelliusUnitPlan } from './planStore'
 import { SkillIcon, StatTable, UnitSelect, useScreenshotUnit } from './shared'
@@ -80,7 +81,7 @@ function Planner({ data, unit }: { data: TelliusData; unit: TelliusUnit }) {
 
       <p className="text-xs text-neutral-500">
         {fixed
-          ? "Fixed mode: each stat has growth points, starting from the unit's own; a level's worth of EXP adds the growth rate (up to 255 points), and every 100 points is +1 at the level-up. Equipment and the class of what was defeated shift the points a little; they aren't counted here. From Serenes Forest; not yet checked in the game's code."
+          ? "Fixed mode: each stat has growth points, starting from the unit's own; a level's worth of EXP adds the growth rate (up to 255 points), and every 100 points is +1 at the level-up. Weapons and the class of what was defeated shift the points a little; they aren't counted here. From Serenes Forest; not yet checked in the game's code."
           : 'Average stats: each level adds the growth rate.'}{' '}
         Stats stop at the class's caps (green).
         {promoted && ' Promoting adds the difference between the two classes\' bases and starts again at Lv 1.'}
@@ -107,6 +108,8 @@ function Planner({ data, unit }: { data: TelliusData; unit: TelliusUnit }) {
           {final.con !== unit.con && ` → ${final.con}`}
         </span>
       </div>
+
+      <BandEditor data={data} unit={unit} plan={plan} onChange={(bands) => update({ bands })} />
 
       <div className="space-y-2">
         <h4 className="text-sm font-semibold text-neutral-200">

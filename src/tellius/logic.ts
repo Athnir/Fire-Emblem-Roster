@@ -1,4 +1,12 @@
-import { TELLIUS_STATS, type TelliusClass, type TelliusData, type TelliusStats, type TelliusSupport, type TelliusUnit } from './types'
+import {
+  TELLIUS_STATS,
+  type TelliusBand,
+  type TelliusClass,
+  type TelliusData,
+  type TelliusStats,
+  type TelliusSupport,
+  type TelliusUnit,
+} from './types'
 
 /** The lowest level a base class can promote at with a Master Seal. */
 export const MASTER_SEAL_LEVEL = 10
@@ -25,6 +33,27 @@ export interface ProjectionPlan {
   targetLevel: number
   /** Random growths (the default) or Path of Radiance's Fixed mode. */
   mode?: GrowthMode
+  /** Bands worn, in order from when the unit joins: each for this many level-ups. Later levels wear none. */
+  bands?: BandSegment[]
+}
+
+export interface BandSegment {
+  bandId: string
+  levels: number
+}
+
+/** How many level-ups the plan covers: to the promotion and from there to the target, or straight to the target. */
+export function levelUpsIn(data: TelliusData, unit: TelliusUnit, plan: ProjectionPlan): number {
+  if (promotionOf(data, unit) && plan.promoteAt !== null) {
+    const at = Math.max(unit.level, Math.min(plan.promoteAt, data.maxLevel))
+    return at - unit.level + Math.max(0, Math.min(plan.targetLevel, data.maxLevel) - 1)
+  }
+  return Math.max(0, Math.min(plan.targetLevel, data.maxLevel) - unit.level)
+}
+
+/** Whether a unit in this class can wear the band (the Knight Ward is for knights, soldiers and their promotions). */
+export function canWear(band: TelliusBand, classId: string): boolean {
+  return !band.onlyClasses || band.onlyClasses.includes(classId)
 }
 
 /** Fixed mode holds at most this many growth points per stat (Serenes Forest). */
@@ -44,27 +73,36 @@ export function promotionOf(data: TelliusData, unit: TelliusUnit): TelliusClass 
 }
 
 /**
- * Levels a unit up. Random mode adds each growth rate as a fraction (the average). Fixed mode (Path of Radiance, from
- * Serenes Forest's description: unconfirmed in the game's code) keeps growth points per stat, starting from the unit's
- * own: a level's worth of EXP (100) adds the growth rate, held at 255, and each 100 points becomes +1 at the level-up,
- * the rest carrying over. Weapons, items and the class of what was defeated shift the points too; they aren't counted.
+ * Levels a unit up, one level at a time. Random mode adds each growth rate as a fraction (the average). Fixed mode (Path
+ * of Radiance, from Serenes Forest's description: unconfirmed in the game's code) keeps growth points per stat, starting
+ * from the unit's own: a level's worth of EXP (100) adds the growth rate, held at 255, and each 100 points becomes +1 at
+ * the level-up, the rest carrying over. A worn band adds its growth changes to the rate (Serenes Forest's accessories
+ * page) in either mode, while the class can wear it. Weapons and the class of what was defeated also shift Fixed mode's
+ * points; they aren't counted.
  */
-function makeGrower(unit: TelliusUnit, mode: GrowthMode | undefined) {
-  const points = mode === 'fixed' && unit.fixedStart ? { ...unit.fixedStart } : undefined
+function makeGrower(data: TelliusData, unit: TelliusUnit, plan: ProjectionPlan) {
+  const points = plan.mode === 'fixed' && unit.fixedStart ? { ...unit.fixedStart } : undefined
+  const bands = new Map((data.bands ?? []).map((b) => [b.id, b]))
+  // The band worn for each level-up, in order.
+  const worn: (TelliusBand | undefined)[] = []
+  for (const seg of plan.bands ?? []) for (let i = 0; i < seg.levels; i++) worn.push(bands.get(seg.bandId))
+  let levelUps = 0
   return {
     points: () => (points ? { ...points } : undefined),
-    grow(stats: TelliusStats, levels: number, caps: TelliusStats): TelliusStats {
+    grow(stats: TelliusStats, levels: number, caps: TelliusStats, classId: string): TelliusStats {
       const out = { ...stats }
-      if (!points) {
-        for (const s of TELLIUS_STATS) out[s] = stats[s] + (unit.growths[s] * Math.max(0, levels)) / 100
-        return capped(out, caps)
-      }
       for (let i = 0; i < levels; i++) {
+        const band = worn[levelUps++]
         for (const s of TELLIUS_STATS) {
-          points[s] = Math.min(FIXED_MAX_POINTS, points[s] + unit.growths[s])
-          const rise = Math.floor(points[s] / 100)
-          points[s] -= rise * 100
-          out[s] += rise
+          const rate = unit.growths[s] + (band && canWear(band, classId) ? band.growths[s] : 0)
+          if (points) {
+            points[s] = Math.min(FIXED_MAX_POINTS, points[s] + rate)
+            const rise = Math.floor(points[s] / 100)
+            points[s] -= rise * 100
+            out[s] += rise
+          } else {
+            out[s] += rate / 100
+          }
         }
       }
       return capped(out, caps)
@@ -80,13 +118,13 @@ function makeGrower(unit: TelliusUnit, mode: GrowthMode | undefined) {
 export function project(data: TelliusData, unit: TelliusUnit, plan: ProjectionPlan): ProjectionStage[] {
   const start = data.classes[unit.classId]
   const promoted = promotionOf(data, unit)
-  const grower = makeGrower(unit, plan.mode)
+  const grower = makeGrower(data, unit, plan)
   const stages: ProjectionStage[] = [
     { classId: start.id, level: unit.level, stats: { ...unit.bases }, caps: start.caps, mov: start.mov, con: unit.con, points: grower.points() },
   ]
   if (promoted && plan.promoteAt !== null) {
     const at = Math.max(unit.level, Math.min(plan.promoteAt, data.maxLevel))
-    const before = grower.grow(unit.bases, at - unit.level, start.caps)
+    const before = grower.grow(unit.bases, at - unit.level, start.caps, start.id)
     if (at > unit.level) {
       stages.push({ classId: start.id, level: at, stats: before, caps: start.caps, mov: start.mov, con: unit.con, points: grower.points() })
     }
@@ -98,7 +136,7 @@ export function project(data: TelliusData, unit: TelliusUnit, plan: ProjectionPl
     const target = Math.max(1, Math.min(plan.targetLevel, data.maxLevel))
     if (target > 1) {
       stages.push({
-        classId: promoted.id, level: target, stats: grower.grow(afterCapped, target - 1, promoted.caps),
+        classId: promoted.id, level: target, stats: grower.grow(afterCapped, target - 1, promoted.caps, promoted.id),
         caps: promoted.caps, mov: promoted.mov, con, points: grower.points(),
       })
     }
@@ -107,7 +145,7 @@ export function project(data: TelliusData, unit: TelliusUnit, plan: ProjectionPl
   const target = Math.max(unit.level, Math.min(plan.targetLevel, data.maxLevel))
   if (target > unit.level) {
     stages.push({
-      classId: start.id, level: target, stats: grower.grow(unit.bases, target - unit.level, start.caps),
+      classId: start.id, level: target, stats: grower.grow(unit.bases, target - unit.level, start.caps, start.id),
       caps: start.caps, mov: start.mov, con: unit.con, points: grower.points(),
     })
   }

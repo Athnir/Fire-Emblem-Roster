@@ -114,6 +114,16 @@ export interface TelliusSupport {
   points: [number, number, number]
 }
 
+/** An accessory that changes growth rates while equipped (Path of Radiance's bands). */
+export interface TelliusBand {
+  id: string
+  name: string
+  /** Added to each growth rate (random) or to the growth points a level gives (fixed). */
+  growths: TelliusStats
+  /** Only these classes can equip it (the Knight Ward). */
+  onlyClasses?: string[]
+}
+
 /** Everything a Tellius game's screens need, passed in so the screens don't import a game's data. */
 export interface TelliusData {
   /** 'fe9': the namespace for uploaded art and saved plans. */
@@ -127,4 +137,6 @@ export interface TelliusData {
   maxLevel: number
   /** The game has Fixed mode growths (Path of Radiance, from a second playthrough). */
   fixedMode?: boolean
+  /** Accessories that change growth rates. */
+  bands?: TelliusBand[]
 }

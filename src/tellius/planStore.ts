@@ -1,12 +1,14 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { GrowthMode } from './logic'
+import type { BandSegment, GrowthMode } from './logic'
 
 export interface TelliusUnitPlan {
   promoteAt: number | null
   targetLevel: number
   /** Random (the default) or Fixed growths. */
   mode?: GrowthMode
+  /** Bands worn, in order from when the unit joins. */
+  bands?: BandSegment[]
   /** Skills chosen on top of the unit's own (their own can be dropped too). */
   skills: string[]
 }

@@ -16,6 +16,8 @@ const SF_RECRUITMENT: Record<string, string> = {"Ike": "Prologue", "Titania": "1
 const SF_AFFINITY: Record<string, string> = {"Ike": "Earth", "Titania": "Light", "Oscar": "Earth", "Boyd": "Fire", "Rhys": "Fire", "Shinon": "Thunder", "Gatrie": "Light", "Soren": "Dark", "Mia": "Fire", "Ilyana": "Light", "Marcia": "Fire", "Mist": "Water", "Rolf": "Wind", "Lethe": "Sky", "Mordecai": "Water", "Volke": "Wind", "Kieran": "Wind", "Brom": "Water", "Nephenee": "Wind", "Zihark": "Earth", "Jill": "Thunder", "Sothe": "Wind", "Astrid": "Wind", "Makalov": "Thunder", "Stefan": "Sky", "Muarim": "Thunder", "Tormod": "Fire", "Devdan": "Fire", "Tanith": "Earth", "Reyson": "Fire", "Janaff": "Thunder", "Ulki": "Water", "Calill": "Dark", "Tauroneo": "Thunder", "Ranulf": "Wind", "Haar": "Wind", "Lucia": "Earth", "Bastian": "Wind", "Geoffrey": "Fire", "Largo": "Wind", "Elincia": "Sky", "Ena": "Earth", "Nasir": "Light", "Tibarn": "Sky", "Naesala": "Dark", "Giffca": "Dark"}
 // Fixed mode's starting growth points (general/fixed-mode/starting-growth-points).
 const SF_FIXED_START: Record<string, number[]> = {"Ike": [30, 0, 50, 80, 50, 55, 40, 30], "Titania": [50, 50, 0, 0, 0, 80, 40, 0], "Oscar": [60, 75, 0, 80, 80, 0, 40, 0], "Boyd": [50, 50, 0, 80, 50, 0, 15, 0], "Rhys": [70, 40, 0, 0, 0, 80, 0, 80], "Shinon": [0, 80, 0, 0, 80, 80, 0, 0], "Gatrie": [80, 0, 0, 80, 0, 0, 80, 10], "Soren": [0, 0, 99, 0, 0, 0, 0, 80], "Mia": [60, 70, 0, 50, 0, 0, 0, 0], "Ilyana": [50, 0, 45, 0, 0, 50, 0, 55], "Marcia": [40, 20, 0, 80, 80, 0, 0, 40], "Mist": [60, 50, 90, 80, 25, 0, 50, 50], "Rolf": [80, 0, 0, 0, 50, 80, 0, 0], "Lethe": [80, 80, 0, 0, 80, 50, 80, 0], "Mordecai": [60, 0, 0, 80, 0, 50, 20, 0], "Volke": [45, 0, 0, 45, 0, 90, 0, 0], "Kieran": [50, 50, 0, 0, 0, 70, 60, 0], "Brom": [40, 0, 0, 35, 90, 0, 50, 0], "Nephenee": [50, 60, 0, 0, 50, 40, 30, 0], "Zihark": [0, 75, 20, 50, 80, 80, 30, 0], "Sothe": [50, 0, 0, 0, 50, 40, 30, 0], "Jill": [40, 30, 0, 0, 50, 30, 0, 0], "Astrid": [50, 40, 0, 50, 40, 55, 0, 0], "Makalov": [50, 0, 0, 0, 70, 0, 35, 0], "Stefan": [40, 45, 0, 50, 0, 75, 0, 0], "Tormod": [0, 0, 50, 0, 50, 0, 0, 0], "Muarim": [50, 0, 0, 25, 75, 0, 0, 0], "Devdan": [50, 20, 0, 0, 70, 50, 0, 0], "Reyson": [0, 0, 0, 80, 80, 0, 0, 80], "Ulki": [50, 40, 0, 0, 80, 0, 0, 0], "Janaff": [0, 50, 0, 50, 30, 80, 60, 0], "Tanith": [70, 80, 0, 0, 60, 80, 20, 0], "Calill": [50, 75, 30, 50, 0, 0, 0, 45], "Tauroneo": [50, 0, 0, 30, 0, 30, 0, 50], "Ranulf": [50, 80, 0, 50, 0, 60, 30, 30], "Haar": [40, 0, 0, 50, 25, 40, 20, 0], "Lucia": [50, 0, 0, 20, 10, 55, 0, 0], "Bastian": [50, 0, 30, 0, 0, 50, 0, 0], "Geoffrey": [0, 50, 0, 45, 0, 0, 0, 0], "Largo": [20, 10, 0, 50, 75, 0, 0, 0], "Elincia": [0, 90, 0, 50, 0, 70, 0, 20], "Ena": [0, 75, 0, 50, 35, 75, 0, 40], "Nasir": [50, 0, 0, 50, 20, 90, 50, 15], "Tibarn": [50, 50, 0, 0, 0, 50, 0, 0], "Naesala": [50, 0, 0, 60, 0, 0, 80, 0], "Giffca": [0, 0, 0, 0, 0, 0, 0, 0]}
+// Accessories' growth changes (inventory/accessories).
+const SF_BAND_GROWTHS: Record<string, Record<string, number>> = {"Knight Ward": {"spd": 30}, "Sword Band": {"skl": 5, "lck": 5}, "Soldier Band": {"hp": 5, "def": 5}, "Fighter Band": {"hp": 5, "str": 5}, "Archer Band": {"skl": 5, "spd": 5}, "Knight Band": {"str": 5, "def": 5}, "Paladin Band": {"hp": 5, "spd": 5}, "Pegasus Band": {"lck": 5, "res": 5}, "Wyvern Band": {"str": 5, "def": 5}, "Mage Band": {"mag": 10}, "Priest Band": {"lck": 5, "res": 5}, "Thief Band": {"skl": 5, "spd": 5}}
 const SF_SKILL_CAPACITY: Record<string, number> = {"Nihil": 15, "Vantage": 10, "Adept": 10, "Wrath": 10, "Miracle": 5, "Resolve": 10, "Counter": 10, "Guard": 10, "Corrode": 10, "Parity": 5, "Gamble": 10, "Smite": 10, "Celerity": 15, "Tempest": 5, "Serenity": 5, "Provoke": 5, "Shade": 5, "Renewal": 15, "Saviour": 10, "Paragon": 15, "Reinforce": 15, "Blossom": 15, "Canto": 20, "Insight": 0, "Vigilance": 0, "Daunt": 10, "Mantle": 0, "Discipline": 0, "Iron Wall": 5, "Lumina": 0, "Knife": 0, "Steal": 0, "Aether": 20, "Stun": 20, "Flare": 20, "Sol": 20, "Astra": 20, "Luna": 20, "Colossus": 20, "Deadeye": 20, "Lethality": 20, "Roar": 20, "Cancel": 20, "Vortex": 20, "Blessing": 20, "Boon": 20}
 
 const unitByName = new Map(FE9_DATA.units.map((u) => [u.name, u]))
@@ -134,6 +136,41 @@ describe('Path of Radiance fixed mode', () => {
       expect(Number.isInteger(fixed.stats[s])).toBe(true)
       expect(Math.abs(fixed.stats[s] - average.stats[s])).toBeLessThanOrEqual(1)
     }
+  })
+})
+
+describe('Path of Radiance bands', () => {
+  const bandByName = new Map((FE9_DATA.bands ?? []).map((b) => [b.name, b]))
+
+  it("matches Serenes Forest's growth changes for every band", () => {
+    expect([...bandByName.keys()].sort()).toEqual(Object.keys(SF_BAND_GROWTHS).sort())
+    for (const [name, sf] of Object.entries(SF_BAND_GROWTHS)) {
+      const ours = Object.fromEntries(Object.entries(bandByName.get(name)!.growths).filter(([, v]) => v))
+      expect([name, ours]).toEqual([name, sf])
+    }
+  })
+
+  it('adds a band to the growth rate for the levels it is worn, in either mode', () => {
+    const soren = unitByName.get('Soren')!
+    const mage = bandByName.get('Mage Band')!.id
+    // Random: Lv 1 -> 11 is 10 level-ups; 5 of them with +10 Mag growth add half a point on average.
+    const plain = project(FE9_DATA, soren, { promoteAt: null, targetLevel: 11 }).at(-1)!
+    const banded = project(FE9_DATA, soren, { promoteAt: null, targetLevel: 11, bands: [{ bandId: mage, levels: 5 }] }).at(-1)!
+    expect(banded.stats.mag - plain.stats.mag).toBeCloseTo(0.5)
+    // Fixed: 99 starting points, then 5 levels of 70 and 5 of 60: 99 + 350 + 300 = 749, so +7 with 49 left.
+    const fixed = project(FE9_DATA, soren, { promoteAt: null, targetLevel: 11, mode: 'fixed', bands: [{ bandId: mage, levels: 5 }] }).at(-1)!
+    expect(fixed.stats.mag - soren.bases.mag).toBe(7)
+    expect(fixed.points!.mag).toBe(49)
+  })
+
+  it("gives the Knight Ward's +30 Spd only to classes that can wear it", () => {
+    const ward = bandByName.get('Knight Ward')!
+    const ike = unitByName.get('Ike')!
+    const gatrie = unitByName.get('Gatrie')!
+    const with_ = (u: typeof ike) => project(FE9_DATA, u, { promoteAt: null, targetLevel: 20, bands: [{ bandId: ward.id, levels: 10 }] }).at(-1)!
+    const without = (u: typeof ike) => project(FE9_DATA, u, { promoteAt: null, targetLevel: 20 }).at(-1)!
+    expect(with_(ike).stats.spd).toBeCloseTo(without(ike).stats.spd)
+    expect(with_(gatrie).stats.spd - without(gatrie).stats.spd).toBeCloseTo(3)
   })
 })
 
