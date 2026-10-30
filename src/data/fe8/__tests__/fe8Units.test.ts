@@ -75,7 +75,7 @@ describe('Sacred Stones units', () => {
     for (const from of Object.values(FE8_CLASSES)) {
       for (const toId of from.promotions ?? []) {
         const to = FE8_CLASSES[toId]
-        const ours = [...(['hp', 'str', 'skl', 'spd', 'def', 'res'] as const).map((s) => to.gains![s]), to.bases.con - from.bases.con, to.bases.mov - from.bases.mov]
+        const ours = [...(['hp', 'str', 'skl', 'spd', 'def', 'res'] as const).map((s) => to.gains![s]), to.bases.con! - from.bases.con!, to.bases.mov! - from.bases.mov!]
         const rows = SF_PROMOTION.filter(([, t]) => plain(t) === plain(to.name))
         expect([from.name, to.name, rows.some(([, , ...sf]) => sf.join() === ours.join())]).toEqual([from.name, to.name, true])
         checked++

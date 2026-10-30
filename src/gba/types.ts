@@ -1,7 +1,9 @@
-/** The GBA games' unit data (The Binding Blade; The Blazing Blade and The Sacred Stones share it), as the generators write it. */
+/** The GBA games' unit data (The Binding Blade, The Blazing Blade, The Sacred Stones; Mystery of the Emblem shares the screens), as
+ * the generators write it. */
 
-export type GbaStat = 'hp' | 'str' | 'skl' | 'spd' | 'lck' | 'def' | 'res' | 'con' | 'mov'
-export type GbaStats = Record<GbaStat, number>
+export type GbaStat = 'hp' | 'str' | 'skl' | 'spd' | 'lck' | 'wlv' | 'def' | 'res' | 'con' | 'mov'
+/** A game keeps the stats it has: Mystery of the Emblem has a weapon level (wlv) and no Con. */
+export type GbaStats = Partial<Record<GbaStat, number>>
 
 export const GBA_STATS: GbaStat[] = ['hp', 'str', 'skl', 'spd', 'lck', 'def', 'res', 'con', 'mov']
 /** The stats that grow on a level-up (Con and Mov don't). */
@@ -12,6 +14,7 @@ export const GBA_STAT_LABELS: Record<GbaStat, string> = {
   skl: 'Skl',
   spd: 'Spd',
   lck: 'Lck',
+  wlv: 'Wlv',
   def: 'Def',
   res: 'Res',
   con: 'Con',
@@ -50,7 +53,8 @@ export interface GbaUnit {
   level: number
   joinChapter: string
   join: GbaJoin
-  affinity: string
+  /** None in Mystery of the Emblem. */
+  affinity?: string
   /** Their stats when they join: the class's bases plus their own (Luck is their own). */
   bases: GbaStats
   /** Level-up growth rates: HP, Str/Mag, Skl, Spd, Lck, Def, Res. */
@@ -91,4 +95,11 @@ export interface GbaAffinity {
   avoid: number
   crit: number
   dodge: number
+}
+
+/** A fixed support (Mystery of the Emblem): with the giver in reach, the receiver gets the bonus. */
+export interface GbaSupportBonus {
+  giver: string
+  receiver: string
+  bonus: number
 }

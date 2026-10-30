@@ -77,7 +77,7 @@ describe('Blazing Blade units', () => {
       if (!from.promotesTo) continue
       const to = FE7_CLASSES[from.promotesTo]
       const rows = Object.entries(SF_PROMOTION).filter(([n]) => n.replace(/ \((M|F)\)$/, '') === to.name)
-      const ours = [...(['hp', 'str', 'skl', 'spd', 'def', 'res'] as const).map((s) => to.gains![s]), to.bases.mov - from.bases.mov, to.bases.con - from.bases.con]
+      const ours = [...(['hp', 'str', 'skl', 'spd', 'def', 'res'] as const).map((s) => to.gains![s]), to.bases.mov! - from.bases.mov!, to.bases.con! - from.bases.con!]
       expect([from.name, to.name, rows.some(([, sf]) => sf.join() === ours.join())]).toEqual([from.name, to.name, true])
     }
   })

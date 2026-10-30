@@ -11,8 +11,10 @@ import {
   type GbaClass,
   type GbaChapter,
   type GbaStats,
+  type GbaStat,
   type GbaStory,
   type GbaSupport,
+  type GbaSupportBonus,
   type GbaUnit,
 } from './types'
 
@@ -32,7 +34,21 @@ export interface GbaData {
   /** When a pair gains its points, where the game's code was read for it ("each turn the two are side by side"). */
   supportGain?: string
   affinities: GbaAffinity[]
+  /** The stats the game has, in its order (the GBA games' when unset), the ones that grow, and labels of its own. */
+  stats?: GbaStat[]
+  growing?: GbaStat[]
+  statLabels?: Partial<Record<GbaStat, string>>
+  /** How promoting changes stats where the class data has no gains: the difference between the classes' bases for `difference`, and
+   * `raise` lifted to the new class's bases where lower (Mystery of the Emblem). Unset: the difference for every stat but Luck. */
+  promotion?: { difference: GbaStat[]; raise: GbaStat[] }
+  /** Fixed supports instead of support points (Mystery of the Emblem), and what they add, in words. */
+  supportBonuses?: GbaSupportBonus[]
+  supportBonusText?: string
 }
+
+const statsOf = (data: GbaData) => data.stats ?? GBA_STATS
+const growingOf = (data: GbaData) => data.growing ?? GBA_GROWING
+const labelOf = (data: GbaData, s: GbaStat) => data.statLabels?.[s] ?? GBA_STAT_LABELS[s]
 
 const MAX_LEVEL = 20
 /** A promotion item works from level 10 and starts the new class at level 1 (Serenes Forest). */
@@ -121,16 +137,16 @@ function fmt(v: number | undefined): string {
   return Number.isInteger(v) ? String(v) : v.toFixed(1)
 }
 
-function StatTable({ rows }: { rows: { label: string; values: Partial<GbaStats>; caps?: Partial<GbaStats>; suffix?: string }[] }) {
+function StatTable({ data, rows }: { data: GbaData; rows: { label: string; values: GbaStats; caps?: GbaStats; suffix?: string }[] }) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[30rem] text-sm">
         <thead>
           <tr className="text-xs text-neutral-500">
             <th className="py-1 pr-2 text-left font-normal" />
-            {GBA_STATS.map((s) => (
+            {statsOf(data).map((s) => (
               <th key={s} className="px-1 py-1 text-right font-normal">
-                {GBA_STAT_LABELS[s]}
+                {labelOf(data, s)}
               </th>
             ))}
           </tr>
@@ -139,7 +155,7 @@ function StatTable({ rows }: { rows: { label: string; values: Partial<GbaStats>;
           {rows.map((row) => (
             <tr key={row.label} className="border-t border-neutral-800">
               <td className="whitespace-nowrap py-1 pr-2 text-xs text-neutral-400">{row.label}</td>
-              {GBA_STATS.map((s) => {
+              {statsOf(data).map((s) => {
                 const v = row.values[s]
                 const cap = row.caps?.[s]
                 return (
@@ -209,6 +225,22 @@ function supportsOf(data: GbaData, unitId: string) {
     .filter((x) => x.partner)
 }
 
+/** A unit's fixed supports: who gives it a bonus, and whom it gives one. */
+function bonusesOf(data: GbaData, unitId: string) {
+  const byId = new Map(data.units.map((u) => [u.id, u]))
+  const all = data.supportBonuses ?? []
+  return {
+    gets: all.filter((b) => b.receiver === unitId).map((b) => ({ partner: byId.get(b.giver)!, bonus: b.bonus })).filter((x) => x.partner),
+    gives: all.filter((b) => b.giver === unitId).map((b) => ({ partner: byId.get(b.receiver)!, bonus: b.bonus })).filter((x) => x.partner),
+  }
+}
+
+function bonusPartnersOf(data: GbaData, unitId: string) {
+  const { gets, gives } = bonusesOf(data, unitId)
+  const seen = new Set<string>()
+  return [...gets, ...gives].filter((x) => !seen.has(x.partner.id) && seen.add(x.partner.id)).map((x) => ({ partner: x.partner }))
+}
+
 /** Turns of building up for each level: points needed less the start, over the gain per turn, rounded up. */
 function turnsFor(levels: number[], s: GbaSupport): (number | null)[] {
   return levels.map((need) => (s.perTurn ? Math.max(0, Math.ceil((need - s.start) / s.perTurn)) : null))
@@ -217,7 +249,7 @@ function turnsFor(levels: number[], s: GbaSupport): (number | null)[] {
 function UnitDetail({ data, unit }: { data: GbaData; unit: GbaUnit }) {
   const cls = data.classes[unit.classId]
   const promo = optionsOf(data, cls)
-  const supports = supportsOf(data, unit.id)
+  const supports = [...supportsOf(data, unit.id), ...bonusPartnersOf(data, unit.id)]
   return (
     <div className="space-y-4 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
       <div className="flex flex-col items-start gap-4 sm:flex-row">
@@ -228,10 +260,12 @@ function UnitDetail({ data, unit }: { data: GbaData; unit: GbaUnit }) {
             {cls.name} · Lv {unit.level}
             {promo.length > 0 && <span className="text-neutral-500"> · promotes to {promo.map((c) => c.name).join(' or ')}</span>}
           </div>
-          <div>
-            <span className="text-neutral-500">Affinity: </span>
-            {unit.affinity}
-          </div>
+          {unit.affinity && (
+            <div>
+              <span className="text-neutral-500">Affinity: </span>
+              {unit.affinity}
+            </div>
+          )}
           <div>
             <span className="text-neutral-500">Joins: </span>
             {joinText(data, unit)}
@@ -248,6 +282,7 @@ function UnitDetail({ data, unit }: { data: GbaData; unit: GbaUnit }) {
         </div>
       </div>
       <StatTable
+        data={data}
         rows={[
           { label: 'Bases', values: unit.bases },
           { label: 'Growths', values: unit.growths, suffix: '%' },
@@ -360,12 +395,12 @@ function stepsOf(data: GbaData, unit: GbaUnit, plan: GbaPlan): Step[] {
 function project(data: GbaData, unit: GbaUnit, plan: GbaPlan): Stage[] {
   const capped = (stats: GbaStats, cls: GbaClass) => {
     const out = { ...stats }
-    for (const s of GBA_STATS) if (cls.caps[s] !== undefined) out[s] = Math.min(out[s], cls.caps[s]!)
+    for (const s of statsOf(data)) if (cls.caps[s] !== undefined && out[s] !== undefined) out[s] = Math.min(out[s]!, cls.caps[s]!)
     return out
   }
   const grow = (stats: GbaStats, levels: number, cls: GbaClass) => {
     const out = { ...stats }
-    for (const s of GBA_GROWING) out[s] += ((unit.growths[s] ?? 0) / 100) * Math.max(0, levels)
+    for (const s of growingOf(data)) out[s] = (out[s] ?? 0) + ((unit.growths[s] ?? 0) / 100) * Math.max(0, levels)
     return capped(out, cls)
   }
   let cls = data.classes[unit.classId]
@@ -379,9 +414,16 @@ function project(data: GbaData, unit: GbaUnit, plan: GbaPlan): Stage[] {
     // The game's own gains when its class data has them (The Blazing Blade 0x08029818, The Sacred Stones 0x0802BC20: added, held at
     // the new caps; Con and Mov come from the class); otherwise the difference between the two classes' bases.
     const gains = step.to.gains
-    for (const s of GBA_STATS) {
-      if (s === 'lck') continue
-      stats[s] += gains && s !== 'con' && s !== 'mov' ? (gains[s] ?? 0) : step.to.bases[s] - cls.bases[s]
+    const diff = (s: GbaStat) => (step.to.bases[s] ?? 0) - (cls.bases[s] ?? 0)
+    if (gains) {
+      for (const s of statsOf(data)) if (s !== 'lck') stats[s] = (stats[s] ?? 0) + (s !== 'con' && s !== 'mov' ? (gains[s] ?? 0) : diff(s))
+    } else if (data.promotion) {
+      // Mystery of the Emblem ($83:FD2B): the old class's bases come off and the new class's go on ($93:D9FF, $93:D951); HP and the
+      // weapon level are lifted to the new class's where lower ($83:FD76).
+      for (const s of data.promotion.difference) stats[s] = (stats[s] ?? 0) + diff(s)
+      for (const s of data.promotion.raise) stats[s] = Math.max(stats[s] ?? 0, step.to.bases[s] ?? 0)
+    } else {
+      for (const s of statsOf(data)) if (s !== 'lck') stats[s] = (stats[s] ?? 0) + diff(s)
     }
     stats = capped(stats, step.to)
     cls = step.to
@@ -489,10 +531,13 @@ export function GbaPlanner({ data: game }: { data: GbaData }) {
           starts again at Lv 1 (Serenes Forest).{' '}
           {(steps[0]?.to ?? first[0])?.gains
             ? "Promoting adds the new class's promotion gains from the game's class data, and Con and Mov become the new class's."
-            : "Promoting adds the difference between the classes' bases (Serenes Forest; not yet traced in the game's code)."}
+            : data.promotion
+              ? "Promoting adds the difference between the classes' bases, and lifts HP and the weapon level to the new class's where lower (the game's code)."
+              : "Promoting adds the difference between the classes' bases (Serenes Forest; not yet traced in the game's code)."}
           {start.autoPromote ? ` A trainee promotes on reaching Lv ${maxLevelOf(start)} (Serenes Forest).` : ''}
         </p>
         <StatTable
+          data={data}
           rows={stages.map((st, i) => ({
             label: `${data.classes[st.classId].name} Lv ${st.level}${i === 0 ? ' (joins)' : ''}`,
             values: st.stats,
@@ -511,6 +556,7 @@ export function GbaSupports({ data: game }: { data: GbaData }) {
   const unit = data.units.find((u) => u.id === unitId) ?? data.units[0]
   useScreenshotUnit(unit)
   const partners = unit ? supportsOf(data, unit.id) : []
+  const fixed = unit && data.supportBonuses ? bonusesOf(data, unit.id) : null
   const row = (name: string) => data.affinities.find((a) => a.name === name)
   const bonus = (a: string, b: string) => {
     const x = row(a)
@@ -542,10 +588,12 @@ export function GbaSupports({ data: game }: { data: GbaData }) {
             <UnitPortrait data={data} unit={unit} size={48} />
             <div>
               <div className="font-semibold text-neutral-100">{unit.name}</div>
-              <div className="text-xs text-neutral-400">Affinity: {unit.affinity}</div>
+              {unit.affinity && <div className="text-xs text-neutral-400">Affinity: {unit.affinity}</div>}
             </div>
           </div>
-          {partners.length === 0 ? (
+          {fixed ? (
+            <FixedSupports data={data} unit={unit} fixed={fixed} onPick={setUnitId} />
+          ) : partners.length === 0 ? (
             <p className="text-sm text-neutral-400">{unit.name} has no supports.</p>
           ) : (
             <>
@@ -585,7 +633,7 @@ export function GbaSupports({ data: game }: { data: GbaData }) {
                             {t ?? '–'}
                           </td>
                         ))}
-                        <td className="py-1 pl-2 text-xs text-neutral-400">{bonus(unit.affinity, partner.affinity)}</td>
+                        <td className="py-1 pl-2 text-xs text-neutral-400">{bonus(unit.affinity ?? '', partner.affinity ?? '')}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -596,5 +644,46 @@ export function GbaSupports({ data: game }: { data: GbaData }) {
         </div>
       )}
     </div>
+  )
+}
+
+/** Fixed supports: who gives this unit a bonus when in reach, and whom it gives one. */
+function FixedSupports({
+  data,
+  unit,
+  fixed,
+  onPick,
+}: {
+  data: GbaData
+  unit: GbaUnit
+  fixed: ReturnType<typeof bonusesOf>
+  onPick: (id: string) => void
+}) {
+  if (!fixed.gets.length && !fixed.gives.length) return <p className="text-sm text-neutral-400">{unit.name} has no supports.</p>
+  const list = (title: string, rows: { partner: GbaUnit; bonus: number }[]) =>
+    rows.length > 0 && (
+      <div>
+        <h4 className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">{title}</h4>
+        <ul className="space-y-1">
+          {rows.map(({ partner, bonus }) => (
+            <li key={partner.id} className="flex items-center gap-2 text-sm">
+              <button type="button" onClick={() => onPick(partner.id)} className="flex items-center gap-2 text-neutral-200 hover:text-violet-300">
+                <UnitPortrait data={data} unit={partner} size={28} />
+                {partner.name}
+              </button>
+              <span className="tabular-nums text-neutral-400">+{bonus}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )
+  return (
+    <>
+      {data.supportBonusText && <p className="text-xs text-neutral-500">{data.supportBonusText}</p>}
+      <div className="grid gap-4 sm:grid-cols-2">
+        {list(`${unit.name} gets`, fixed.gets)}
+        {list(`${unit.name} gives`, fixed.gives)}
+      </div>
+    </>
   )
 }
