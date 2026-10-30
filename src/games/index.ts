@@ -59,4 +59,10 @@ export const GAMES: Game[] = [
     short: 'Genealogy',
     load: () => import('./fe4').then((m) => m.default),
   },
+  {
+    id: 'fe5',
+    title: 'Fire Emblem: Thracia 776',
+    short: 'Thracia 776',
+    load: () => import('./fe5').then((m) => m.default),
+  },
 ]

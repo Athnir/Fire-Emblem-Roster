@@ -23,6 +23,11 @@ SUPPORTS = 0x8880CD  # 5-byte entries: gets u16, gives u16, bonus u8; ended by a
 SCROLLS = 0x888054  # 10-byte entries: item id, then a signed growth bonus per stat (GAME_STATS order)
 SCROLL_COUNT = 12
 # The dismounted classes (the Armory's build-fe5-maps.py): mounted units and fliers become these indoors.
+# The class records' "promotes from" links leave some classes with options Serenes Forest's promotion-gains page doesn't have
+# (the Bow Knight's Master Knight, the Pegasus Rider's Falcon Knight, the Archer's and Brigand's second class): these are left
+# out. Swordfighters keep both of theirs (Swordmaster and Hero, Serenes' Mercenary): which a unit gets isn't found yet.
+NOT_PROMOTIONS = {('Bow Knight', 'Master Knight'), ('Pegasus Rider', 'Falcon Knight'), ('Archer', 'Hero'), ('Brigand', 'Berserker'),
+                  ('Loptrian Mage', 'Dark Bishop'), ('Mage', 'Bishop')}
 DISMOUNTED = {0x28, 0x2B, *range(0x42, 0x55), 0x56, 0x58, 0x5A, 0x5C, 0x5E, 0x60, 0x74}
 # Joins the scripts' runner doesn't find: Misha is talked to by Karin, then captured, and joins at the chapter's end if Karin lives
 # (Serenes Forest's recruitment page; level from its base stats).
@@ -86,7 +91,10 @@ def main():
             p['class'] = mounted
         cls = class_record(p['class'])
         used.add(p['class'])
-        promos = lowers.get(p['class'], [])
+        promos = []
+        for k in lowers.get(p['class'], []):
+            if (cnames[p['class']], cnames[k]) not in NOT_PROMOTIONS and all(cnames[k] != cnames[x] for x in promos):
+                promos.append(k)
         used |= set(promos)
         cb = {**cls['bases'], 'lck': 0}
         unit = {
