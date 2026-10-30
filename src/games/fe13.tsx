@@ -1,4 +1,4 @@
-import { Fe13Pairings, Fe13Planner, Fe13Roster, Fe13Supports } from '../awakening/screens'
+import { Fe13MarriagePlanner, Fe13ParentChecker, Fe13Planner, Fe13Roster, Fe13Supports } from '../awakening/screens'
 import type { Fe13Data } from '../awakening/logic'
 import { FE13_CHAPTERS, FE13_CLASSES, FE13_UNITS } from '../data/fe13/fe13Units'
 import { TelliusBulkUpload } from '../tellius/TelliusBulkUpload'
@@ -15,7 +15,8 @@ const fe13: GameParts = {
     { id: 'roster', label: 'Roster', component: () => <Fe13Roster data={FE13_DATA} /> },
     { id: 'unit', label: 'Unit Planner', component: () => <Fe13Planner data={FE13_DATA} /> },
     { id: 'supports', label: 'Supports', component: () => <Fe13Supports data={FE13_DATA} /> },
-    { id: 'pairings', label: 'Pairings', component: () => <Fe13Pairings data={FE13_DATA} /> },
+    { id: 'pairings', label: 'Marriage Planner', component: () => <Fe13MarriagePlanner data={FE13_DATA} /> },
+    { id: 'parents', label: 'Parent Checker', component: () => <Fe13ParentChecker data={FE13_DATA} /> },
   ],
   bulkUpload: ({ onClose }) => <TelliusBulkUpload data={UPLOAD_DATA} title="Awakening" onClose={onClose} />,
 }

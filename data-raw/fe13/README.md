@@ -50,6 +50,15 @@ and says so.
 ## Not traced in the code (taken from Serenes Forest or the Fire Emblem Wiki)
 
 - Changing class adds the difference between the two classes' bases and starts at Lv 1; seals work from Lv 10.
-- A child's growths are their own, their mother's and their father's averaged; their modifiers both parents' plus 1 (the Fire Emblem
-  Wiki's inheritance page). A child's real bases also take after their parents' stats; only the class's plus their own are shown.
+- Inheritance (`childOf` in `src/awakening/logic.ts`; Serenes Forest's children, base-stat, growth and modifier pages and the Fire
+  Emblem Wiki's inheritance page; tested against Serenes Forest's worked examples, Nah with Donnel and Severa with Henry):
+  - growths: the child's own, the mother's and the father's added, a third, rounded down;
+  - modifiers: both parents' added, plus 1 (no +1 for a Morgan whose other parent is a child);
+  - bases as they join: both parents' current stats less their class's bases, plus the child's own (+28), a third, plus the start
+    class's bases (the rounding is assumed). A parent's current stats are their Unit Planner plan's last row, or as they join;
+  - classes: the child's own set and each parent's set for the child's gender (the game's swaps), but never Lord (only Lucina has it),
+    Dancer or Conqueror; Taguel and Manakete pass only to Morgan;
+  - Morgan starts in the other parent's first class (Tactician after a Lord, Dancer or Conqueror).
+- Assumed, not in the sources: a child married to the Avatar passes Morgan what they inherited themselves (growths, modifiers,
+  classes) when their own parents are in the plan.
 - DLC and SpotPass characters aren't listed yet.
