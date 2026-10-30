@@ -13,8 +13,8 @@ new rule, add it here.
 - **One game picker; every tool for that game sits in the same tabs.** No extra menus or tool-picker steps. A game with nothing
   like a tool (no marriages, no skills) has no tab for it.
 - **Finish one game across every tab before starting the next.** Order: Fates, Path of Radiance, Radiant Dawn, Genealogy of the
-  Holy War, Thracia 776, The Binding Blade, The Blazing Blade, The Sacred Stones, Mystery of the Emblem, Awakening. Fortune's Weave
-  is skipped (too new for solid data).
+  Holy War, Thracia 776, The Binding Blade, The Blazing Blade, The Sacred Stones, Mystery of the Emblem, Awakening, then Shadows of
+  Valentia (the user added its files, 2026-10-30). Fortune's Weave is skipped (too new for solid data).
 - **Fates is finished** and is the model for the most any game will need (no other game has a web as complex). It's only
   touched to fix bugs.
 - **Only what the user owns.** Missing DLC is left out (or taken from wikis later), never obtained.
