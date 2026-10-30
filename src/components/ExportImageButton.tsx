@@ -129,7 +129,7 @@ export function ExportImageButton({ targetRef, tab }: { targetRef: React.RefObje
       // Forward slashes in `download` create subfolders inside the browser's downloads directory
       // (Chromium/Electron honor this) — keeps every tab's screenshots sorted into their own folder
       // instead of piling up loose in one place.
-      link.download = `Fates Unit Planner Screenshots/${TAB_LABELS[tab]}/${filename}`
+      link.download = `Fire Emblem Roster Screenshots/${TAB_LABELS[tab]}/${filename}`
       link.href = canvas.toDataURL('image/png')
       link.click()
       setStatus('done')

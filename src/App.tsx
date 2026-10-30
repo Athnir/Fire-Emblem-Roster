@@ -41,7 +41,7 @@ function App() {
       <IosInstallBanner />
       <header className="border-b border-neutral-800/80 bg-neutral-950/90 px-6 py-4 backdrop-blur-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-2xl font-semibold">Fates Unit Planner</h1>
+          <h1 className="text-2xl font-semibold">Fire Emblem Roster</h1>
           <div className="flex flex-wrap items-center gap-2">
             <ExportImageButton targetRef={mainRef} tab={tab} />
             <BackupControls />

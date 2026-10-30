@@ -1,11 +1,15 @@
-# Fates Unit Planner
+# Fire Emblem Roster
 
-A Fire Emblem Fates marriage, pair-up, class/skill build, and inheritance planner. Plan out
-parent pairings, see which children result and what they inherit, project a unit's stats through
-promotions and multi-classing, and build out skill loadouts — all client-side, nothing leaves your
-device.
+The unit half of a pair of Fire Emblem companion apps (its partner, the Fire Emblem Armory, covers
+weapons, maps and battle numbers). Plan out parent pairings, see which children result and what
+they inherit, project a unit's stats through promotions and multi-classing, and build out skill
+loadouts — all client-side, nothing leaves your device.
 
-**Live app:** https://athnir.github.io/Fire-Emblem-Fates-Unit-Planner/
+Fire Emblem Fates is in; the other games follow one at a time (Path of Radiance, Radiant Dawn,
+Genealogy of the Holy War, Thracia 776, The Binding Blade, The Blazing Blade, The Sacred Stones,
+Mystery of the Emblem, Awakening). This app was the Fates Unit Planner.
+
+**Live app:** https://athnir.github.io/Fire-Emblem-Roster/
 
 ## Installing
 

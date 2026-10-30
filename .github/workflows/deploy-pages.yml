@@ -1,8 +1,9 @@
 name: Deploy to GitHub Pages
 
-# GITHUB_PAGES=true (below) flips vite.config.ts's `base` to the repo's sub-path — this is the ONLY
-# build that needs that; `npm run dist:win` intentionally builds with the default base since the
-# Electron app serves dist/ at its own root, not a GitHub Pages sub-path.
+# PAGES_BASE (below) sets vite.config.ts's `base` to the repo's sub-path, read from the repo's own
+# name so a rename carries over — this is the ONLY build that needs that; `npm run dist:win`
+# intentionally builds with the default base since the Electron app serves dist/ at its own root,
+# not a GitHub Pages sub-path.
 on:
   push:
     branches: [main]
@@ -33,7 +34,7 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          GITHUB_PAGES: true
+          PAGES_BASE: /${{ github.event.repository.name }}/
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

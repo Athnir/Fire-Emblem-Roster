@@ -59,7 +59,7 @@ async function createWindow() {
   const win = new BrowserWindow({
     width: 1280,
     height: 900,
-    title: 'Fates Unit Planner',
+    title: 'Fire Emblem Roster',
     icon: path.join(DIST_DIR, 'icons', 'icon-512-v2.png'),
     autoHideMenuBar: true,
   })

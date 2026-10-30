@@ -10,8 +10,10 @@ export default defineConfig(() => ({
   // an explicit env var (set by .github/workflows/deploy-pages.yml) rather than just "is this a
   // production build", because `npm run dist:win` ALSO runs `vite build` under the hood, and the
   // Electron app's own local static server (electron/main.cjs) serves dist/ at its own root — it
-  // would 404 every asset if this same sub-path prefix leaked into that build too.
-  base: process.env.GITHUB_PAGES ? '/Fire-Emblem-Fates-Unit-Planner/' : '/',
+  // would 404 every asset if this same sub-path prefix leaked into that build too. The workflow
+  // passes the repo's own name rather than this file hard-coding it, so renaming the repo on GitHub
+  // (it was Fire-Emblem-Fates-Unit-Planner) can't leave the deploy pointing at a dead path.
+  base: process.env.PAGES_BASE ?? '/',
   // host: true binds the dev server to all network interfaces (not just localhost) so it's
   // reachable from a phone on the same Wi-Fi/LAN for mobile testing. allowedHosts lists the
   // Tailscale MagicDNS hostname too — Vite blocks any Host header it doesn't recognize by
@@ -48,9 +50,9 @@ export default defineConfig(() => ({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff,woff2}'],
       },
       manifest: {
-        name: 'Fates Unit Planner',
-        short_name: 'Unit Planner',
-        description: 'Fire Emblem Fates marriage, pair-up, and inheritance planner',
+        name: 'Fire Emblem Roster',
+        short_name: 'FE Roster',
+        description: 'Fire Emblem unit, marriage, pair-up, and inheritance planner',
         theme_color: '#7c3aed',
         background_color: '#16171d',
         display: 'standalone',

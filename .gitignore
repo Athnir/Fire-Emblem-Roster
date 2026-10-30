@@ -24,6 +24,15 @@ public/art/
 # public/art/ above. See scripts/import_skill_icons.py.
 public/skills/
 
+# Dumped game files (romfs, ROM images, anything read from the user's own copies) — only data
+# derived from them by the generators in scripts/ goes in the repo. See CLAUDE.md.
+data-raw/
+*.smc
+*.sfc
+*.gba
+*.3ds
+*.cia
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

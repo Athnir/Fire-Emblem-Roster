@@ -25,7 +25,7 @@ export function BackupControls() {
       const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' })
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
-      link.download = `Fates Unit Planner Backup ${formatTimestamp(new Date())}.json`
+      link.download = `Fire Emblem Roster Backup ${formatTimestamp(new Date())}.json`
       link.href = url
       link.click()
       URL.revokeObjectURL(url)

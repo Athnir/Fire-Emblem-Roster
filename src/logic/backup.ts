@@ -1,5 +1,7 @@
 import { getAllAssetEntries, putAllAssetEntries } from '../data/assetStorage'
 
+// Kept from when the app was the Fates Unit Planner: renaming it would orphan everything already
+// saved (and every backup already exported), so the Fates data keeps its keys.
 const LOCAL_STORAGE_PREFIX = 'fates-planner-'
 const BACKUP_FORMAT_VERSION = 1
 
@@ -51,7 +53,7 @@ export async function restoreBackup(file: File): Promise<void> {
     throw new Error('That file is not valid JSON — is it actually a backup exported from this app?')
   }
   if (!isBackupFile(parsed)) {
-    throw new Error('That file doesn\'t look like a Fates Unit Planner backup.')
+    throw new Error('That file doesn\'t look like a Fire Emblem Roster backup.')
   }
   for (const [key, value] of Object.entries(parsed.localStorage)) {
     if (key.startsWith(LOCAL_STORAGE_PREFIX)) window.localStorage.setItem(key, value)

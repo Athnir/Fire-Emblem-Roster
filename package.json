@@ -1,5 +1,5 @@
 {
-  "name": "fates-app",
+  "name": "fire-emblem-roster",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -37,8 +37,8 @@
     "vitest": "^4.1.10"
   },
   "build": {
-    "appId": "com.grantgoldsmith.fatesapp",
-    "productName": "Fates Unit Planner",
+    "appId": "com.grantgoldsmith.fireemblemroster",
+    "productName": "Fire Emblem Roster",
     "directories": {
       "output": "release"
     },
