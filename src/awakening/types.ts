@@ -70,3 +70,18 @@ export interface Fe13Class {
   skills: { skill: string; level: number }[]
   promotesTo: string[]
 }
+
+/** What the Avatar's asset or flaw changes. */
+export interface Fe13AssetChange {
+  bases: Fe13Stats
+  growths: Fe13Stats
+  /** HP's is always 0. */
+  modifiers: Fe13Stats
+}
+
+/** One stat's asset and flaw (GameData's PersonalityData). */
+export interface Fe13Asset {
+  stat: Fe13Stat
+  asset: Fe13AssetChange
+  flaw: Fe13AssetChange
+}

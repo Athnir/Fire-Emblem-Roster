@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Portrait } from '../components/Portrait'
 import { useScreenshotContextStore } from '../state/screenshotContextStore'
 import {
@@ -15,13 +15,14 @@ import {
   sameUnit,
   skillsOf,
   spousesOf,
+  withAvatar,
   type Fe13Child,
   type Fe13Data,
   type Fe13Parent,
   type Fe13Plan,
 } from './logic'
 import { useFe13Store } from './store'
-import { FE13_STATS, FE13_STAT_LABELS, type Fe13Stats, type Fe13Unit } from './types'
+import { FE13_STATS, FE13_STAT_LABELS, type Fe13Stat, type Fe13Stats, type Fe13Unit } from './types'
 
 const selectClass = 'rounded-md border border-neutral-700 bg-neutral-800 px-2 py-1 text-sm text-neutral-200'
 const panel = 'space-y-4 rounded-lg border border-neutral-800 bg-neutral-900 p-4'
@@ -32,6 +33,59 @@ function artId(name: string): string {
 
 function UnitPortrait({ unit, size = 64 }: { unit: Fe13Unit; size?: number }) {
   return <Portrait characterId={artId(unit.name)} isChild={!!unit.parent} size={size} />
+}
+
+/** The data with the Avatar's asset and flaw applied. */
+function useAvatarData(data: Fe13Data): Fe13Data {
+  const avatar = useFe13Store((s) => s.avatar)
+  return useMemo(() => withAvatar(data, avatar), [data, avatar])
+}
+
+const STAT_NAMES: Record<Fe13Stat, string> = {
+  hp: 'HP',
+  str: 'Strength',
+  mag: 'Magic',
+  skl: 'Skill',
+  spd: 'Speed',
+  lck: 'Luck',
+  def: 'Defence',
+  res: 'Resistance',
+}
+
+/** The Avatar's asset and flaw, for both Avatars. */
+function AvatarBuild() {
+  const avatar = useFe13Store((s) => s.avatar)
+  const setAvatar = useFe13Store((s) => s.setAvatar)
+  const pick = (label: string, key: 'asset' | 'flaw', other: Fe13Stat | null) => (
+    <label className="space-y-1">
+      <span className="block text-xs text-neutral-500">{label}</span>
+      <select
+        value={avatar[key] ?? ''}
+        onChange={(e) => setAvatar({ ...avatar, [key]: (e.target.value || null) as Fe13Stat | null })}
+        className={selectClass}
+      >
+        <option value="">None</option>
+        {FE13_STATS.filter((s) => s !== other).map((s) => (
+          <option key={s} value={s}>
+            {STAT_NAMES[s]}
+          </option>
+        ))}
+      </select>
+    </label>
+  )
+  return (
+    <div className="space-y-1">
+      <div className="flex flex-wrap items-end gap-2">
+        <span className="pb-1 text-sm font-semibold text-neutral-200">Avatar</span>
+        {pick('Asset', 'asset', avatar.flaw)}
+        {pick('Flaw', 'flaw', avatar.asset)}
+      </div>
+      <p className="text-xs text-neutral-500">
+        Changes both Avatars' bases, growths and modifiers, and so what Morgan and the Avatar's other children inherit (the game's
+        PersonalityData table). None is the person record's own numbers.
+      </p>
+    </div>
+  )
 }
 
 function fmt(v: number | undefined): string {
@@ -164,6 +218,7 @@ function UnitDetail({ data, unit }: { data: Fe13Data; unit: Fe13Unit }) {
           )}
         </div>
       </div>
+      {unit.id.startsWith('fe13-avatar') && <AvatarBuild />}
       <StatTable
         mov
         rows={[
@@ -185,7 +240,8 @@ function UnitDetail({ data, unit }: { data: Fe13Data; unit: Fe13Unit }) {
 }
 
 /** Everyone by the chapter they join; tapping one shows their data below the list. */
-export function Fe13Roster({ data }: { data: Fe13Data }) {
+export function Fe13Roster({ data: raw }: { data: Fe13Data }) {
+  const data = useAvatarData(raw)
   const [selectedId, setSelectedId] = useState(data.units[0]?.id ?? '')
   const detailRef = useRef<HTMLDivElement>(null)
   const selected = data.units.find((u) => u.id === selectedId) ?? data.units[0]
@@ -231,7 +287,8 @@ export function Fe13Roster({ data }: { data: Fe13Data }) {
 const MAX_STEPS = 4
 
 /** One unit's average stats through Master and Second Seals. Saved per unit. */
-export function Fe13Planner({ data }: { data: Fe13Data }) {
+export function Fe13Planner({ data: raw }: { data: Fe13Data }) {
+  const data = useAvatarData(raw)
   const [unitId, setUnitId] = useState(data.units[0]?.id ?? '')
   const unit = data.units.find((u) => u.id === unitId) ?? data.units[0]
   useScreenshotUnit(unit)
@@ -269,6 +326,7 @@ export function Fe13Planner({ data }: { data: Fe13Data }) {
     <div className="space-y-4">
       <UnitSelect data={data} value={unit.id} onChange={setUnitId} />
       <div className={panel}>
+        {(unit.id.startsWith('fe13-avatar') || isMorgan(unit)) && <AvatarBuild />}
         <div className="space-y-2 text-sm text-neutral-300">
           {rows.map(({ i, step, from, fromLevel: lv, options }) => (
             <div key={i} className="flex flex-wrap items-end gap-2">
@@ -352,7 +410,8 @@ export function Fe13Planner({ data }: { data: Fe13Data }) {
 }
 
 /** Each partner and the points C, B, A and S need. */
-export function Fe13Supports({ data }: { data: Fe13Data }) {
+export function Fe13Supports({ data: raw }: { data: Fe13Data }) {
+  const data = useAvatarData(raw)
   const [unitId, setUnitId] = useState(data.units[0]?.id ?? '')
   const unit = data.units.find((u) => u.id === unitId) ?? data.units[0]
   useScreenshotUnit(unit)
@@ -584,7 +643,8 @@ function Fe13PlanManager() {
 
 /** Marriages, as the Fates Marriage Planner builds them: pick someone, then one of their S partners, see the children, and add the
  * marriage to the plan. The plan shows as a tree, with every child it gives below. */
-export function Fe13MarriagePlanner({ data }: { data: Fe13Data }) {
+export function Fe13MarriagePlanner({ data: raw }: { data: Fe13Data }) {
+  const data = useAvatarData(raw)
   const spouses = useFe13Store((s) => s.spouses)
   const plans = useFe13Store((s) => s.plans)
   const marry = useFe13Store((s) => s.marry)
@@ -620,6 +680,7 @@ export function Fe13MarriagePlanner({ data }: { data: Fe13Data }) {
   return (
     <div className="space-y-6">
       <div className={panel}>
+        <AvatarBuild />
         <h3 className="text-base font-semibold text-neutral-100">New Marriage</h3>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <select
@@ -739,7 +800,8 @@ function StatGrid({ values, suffix = '', signed = false }: { values: Partial<Fe1
 
 /** As the Fates Parent Checker: pick a child and stack up candidates for their other parent to compare what each gives. A candidate
  * who's a child themselves (Morgan's other parent can be) gets a picker for their own other parent. */
-export function Fe13ParentChecker({ data }: { data: Fe13Data }) {
+export function Fe13ParentChecker({ data: raw }: { data: Fe13Data }) {
+  const data = useAvatarData(raw)
   const plans = useFe13Store((s) => s.plans)
   const [childId, setChildId] = useState('')
   const [ids, setIds] = useState<string[]>([])
@@ -791,6 +853,7 @@ export function Fe13ParentChecker({ data }: { data: Fe13Data }) {
               ))}
           </select>
         </label>
+        {child && isMorgan(child) && <AvatarBuild />}
         {child && (
           <label className="flex flex-col gap-1 text-xs text-neutral-400">
             Add a candidate other parent

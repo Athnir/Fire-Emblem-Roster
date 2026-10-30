@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { FE13_CHAPTERS, FE13_CLASSES, FE13_UNITS } from '../../data/fe13/fe13Units'
-import { childOf, isFamilyBlocked, type Fe13Data } from '../logic'
+import { FE13_ASSETS, FE13_CHAPTERS, FE13_CLASSES, FE13_UNITS } from '../../data/fe13/fe13Units'
+import { childOf, isFamilyBlocked, withAvatar, type Fe13Data } from '../logic'
 import { FE13_STATS } from '../types'
 
 const data: Fe13Data = { chapters: FE13_CHAPTERS, units: FE13_UNITS, classes: FE13_CLASSES }
@@ -72,5 +72,26 @@ describe('Awakening inheritance', () => {
     expect(isFamilyBlocked(data, 'fe13-inigo', 'fe13-morgan-f', spouses)).toBe(true)
     expect(isFamilyBlocked(data, 'fe13-inigo', 'fe13-morgan-f', {})).toBe(false)
     expect(isFamilyBlocked(data, 'fe13-avatar-f', 'fe13-inigo', spouses)).toBe(true)
+  })
+})
+
+describe("The Avatar's asset and flaw", () => {
+  const full: Fe13Data = { ...data, assets: FE13_ASSETS }
+  it("matches Serenes Forest's tables: bases, and its worked examples of growths and modifiers (Speed asset, Luck flaw)", () => {
+    const base = withAvatar(full, { asset: 'str', flaw: 'res' }).units.find((u) => u.id === 'fe13-avatar-m')!
+    // Strength asset and Resistance flaw: Str 8 and Res 3.
+    expect([base.bases.str, base.bases.res]).toEqual([8, 3])
+    const hp = withAvatar(full, { asset: 'hp', flaw: 'lck' }).units.find((u) => u.id === 'fe13-avatar-f')!
+    expect([hp.bases.hp, hp.bases.lck]).toEqual([19 + 5, 4 - 2])
+    const before = unit('avatar-m')
+    const after = withAvatar(full, { asset: 'spd', flaw: 'lck' }).units.find((u) => u.id === 'fe13-avatar-m')!
+    expect(FE13_STATS.map((s) => after.growths[s] - before.growths[s])).toEqual([0, -5, -5, 5, 15, -5, 0, 0])
+    expect(FE13_STATS.slice(1).map((s) => after.modifiers[s as 'str'] - before.modifiers[s as 'str'])).toEqual([-1, -1, 2, 4, -1, 0, 0])
+  })
+
+  it("passes through to Morgan's inheritance", () => {
+    const built = withAvatar(full, { asset: 'spd', flaw: 'lck' })
+    const morgan = childOf(built, unit('morgan-f'), marry(['avatar-m', 'sumia']))!
+    expect(morgan.modifiers.spd).toBe(4 + unit('sumia').modifiers.spd + 1)
   })
 })

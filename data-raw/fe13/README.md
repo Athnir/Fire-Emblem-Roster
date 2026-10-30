@@ -23,6 +23,14 @@ teaches (indexes into `RemovableSkillData`, 28 bytes each, the name label at +8)
 Forest), +81 Mov, +92 and +96 pointers to the classes it promotes to (Cavalier: Paladin, Great Knight). (The Armory's reader calls
 +64-+71 pair-up bonuses; they're these two skills.)
 
+## The Avatar's asset and flaw: GameData's `PersonalityData`
+
+Nine 56-byte records (`PersonalityDataNum`): +0 the name label (MID_個性_...), +8 the asset's bases, +16 its growths, +24 its
+modifiers, then the flaw's at +32, +40 and +48; 8 signed bytes each, HP to Res (HP's modifier is always 0). The first record (無し)
+changes nothing; the rest are HP to Res in order (HP asset: HP +5, growths HP +30, Def and Res +5, modifiers Str and Mag +1, Lck, Def
+and Res +2). It matches Serenes Forest's tables. The app adds the chosen asset's and flaw's rows to both Avatars' bases (and own
+bases), growths and modifiers; none leaves the person record's own numbers.
+
 ## Growths: encoded, so taken from Serenes Forest
 
 A record's 16 growth bytes pair byte i with byte i + 8: their difference (mod 256) depends on the growth alone within a set of

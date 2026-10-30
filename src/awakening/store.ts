@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Fe13Plan } from './logic'
+import type { Fe13Build, Fe13Plan } from './logic'
 
 /** A named set of marriages, as in the Fates Marriage Planner's saved plans. */
 export interface Fe13SavedPlan {
@@ -17,6 +17,9 @@ interface Fe13State {
   plans: Record<string, Fe13Plan>
   saved: Fe13SavedPlan[]
   activePlanId: string | null
+  /** The Avatar's asset and flaw (both Avatars: one per playthrough). */
+  avatar: Fe13Build
+  setAvatar: (build: Fe13Build) => void
   marry: (a: string, b: string | null) => void
   setPlan: (unitId: string, plan: Fe13Plan | null) => void
   clearSpouses: () => void
@@ -26,8 +29,8 @@ interface Fe13State {
   renamePlan: (id: string, name: string) => void
 }
 
-/** Awakening's marriages, saved marriage plans and unit plans. The key's `fe-roster-` prefix puts it in the backup
- * (src/logic/backup.ts). */
+/** Awakening's marriages, saved marriage plans, unit plans and the Avatar's asset and flaw. The key's `fe-roster-` prefix puts it in
+ * the backup (src/logic/backup.ts). */
 export const useFe13Store = create<Fe13State>()(
   persist(
     (set, get) => ({
@@ -35,6 +38,8 @@ export const useFe13Store = create<Fe13State>()(
       plans: {},
       saved: [],
       activePlanId: null,
+      avatar: { asset: null, flaw: null },
+      setAvatar: (avatar) => set({ avatar }),
       marry: (a, b) =>
         set((state) => {
           const spouses = { ...state.spouses }

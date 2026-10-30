@@ -1,11 +1,11 @@
 import { Fe13MarriagePlanner, Fe13ParentChecker, Fe13Planner, Fe13Roster, Fe13Supports } from '../awakening/screens'
 import type { Fe13Data } from '../awakening/logic'
-import { FE13_CHAPTERS, FE13_CLASSES, FE13_UNITS } from '../data/fe13/fe13Units'
+import { FE13_ASSETS, FE13_CHAPTERS, FE13_CLASSES, FE13_UNITS } from '../data/fe13/fe13Units'
 import { TelliusBulkUpload } from '../tellius/TelliusBulkUpload'
 import type { TelliusData } from '../tellius/types'
 import type { GameParts } from './index'
 
-export const FE13_DATA: Fe13Data = { chapters: FE13_CHAPTERS, units: FE13_UNITS, classes: FE13_CLASSES }
+export const FE13_DATA: Fe13Data = { chapters: FE13_CHAPTERS, units: FE13_UNITS, classes: FE13_CLASSES, assets: FE13_ASSETS }
 
 // The bulk upload matches portraits by unit name; Awakening's skill icons aren't uploaded here.
 const UPLOAD_DATA = { gameId: 'fe13', units: FE13_UNITS, skills: {} } as unknown as TelliusData

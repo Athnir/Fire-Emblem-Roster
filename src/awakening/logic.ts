@@ -1,9 +1,11 @@
-import { FE13_STATS, type Fe13Class, type Fe13Stat, type Fe13Stats, type Fe13Unit } from './types'
+import { FE13_STATS, type Fe13Asset, type Fe13Class, type Fe13Stat, type Fe13Stats, type Fe13Unit } from './types'
 
 export interface Fe13Data {
   chapters: { id: string; label: string }[]
   units: Fe13Unit[]
   classes: Record<string, Fe13Class>
+  /** The Avatar's asset and flaw table. */
+  assets?: Fe13Asset[]
 }
 
 export const MAX_LEVEL = 20
@@ -217,4 +219,31 @@ export function isFamilyBlocked(data: Fe13Data, a: string, b: string, spouses: R
 /** The children a marriage gives: each whose fixed parent is one of the two (Chrom and the Avatar can each have two). */
 export function childrenOf(data: Fe13Data, a: string, b: string): Fe13Unit[] {
   return data.units.filter((u) => u.parent && (u.parent === a || u.parent === b))
+}
+
+/** The Avatar's asset and flaw; null for none (the person record's own numbers, Serenes Forest's neutral tables). */
+export interface Fe13Build {
+  asset: Fe13Stat | null
+  flaw: Fe13Stat | null
+}
+
+/** The data with both Avatars' bases, growths and modifiers changed by an asset and flaw (GameData's PersonalityData). */
+export function withAvatar(data: Fe13Data, build: Fe13Build): Fe13Data {
+  const asset = data.assets?.find((a) => a.stat === build.asset)?.asset
+  const flaw = data.assets?.find((a) => a.stat === build.flaw)?.flaw
+  if (!asset && !flaw) return data
+  const add = <T extends Partial<Fe13Stats>>(base: T, key: 'bases' | 'growths' | 'modifiers'): T => {
+    const out = { ...base }
+    for (const s of FE13_STATS) {
+      if (out[s] === undefined) continue
+      ;(out as Record<string, number>)[s] = out[s]! + (asset?.[key][s] ?? 0) + (flaw?.[key][s] ?? 0)
+    }
+    return out
+  }
+  const units = data.units.map((u) =>
+    u.id.startsWith('fe13-avatar')
+      ? { ...u, bases: add(u.bases, 'bases'), personal: add(u.personal, 'bases'), growths: add(u.growths, 'growths'), modifiers: add(u.modifiers, 'modifiers') }
+      : u,
+  )
+  return { ...data, units }
 }
