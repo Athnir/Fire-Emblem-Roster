@@ -65,4 +65,10 @@ export const GAMES: Game[] = [
     short: 'Thracia 776',
     load: () => import('./fe5').then((m) => m.default),
   },
+  {
+    id: 'fe6',
+    title: 'Fire Emblem: The Binding Blade',
+    short: 'Binding Blade',
+    load: () => import('./fe6').then((m) => m.default),
+  },
 ]
