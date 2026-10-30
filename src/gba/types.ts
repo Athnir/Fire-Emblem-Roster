@@ -107,3 +107,16 @@ export interface GbaSupportBonus {
   receiver: string
   bonus: number
 }
+
+/** A support with bonuses per rank (Shadows of Valentia). Each bonus is [Hit, Crit, Avoid, Crit avoid], with no rank and then at C, B
+ * and A. */
+export interface GbaRankedSupport {
+  a: string
+  b: string
+  /** What a gets from b in reach, at each rank. */
+  aGets: number[][]
+  bGets: number[][]
+  /** The points C, B and A need, and the act each opens in; absent for a fixed bonus with no conversations. */
+  points?: number[]
+  acts?: number[]
+}

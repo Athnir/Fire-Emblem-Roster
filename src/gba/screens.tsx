@@ -14,6 +14,7 @@ import {
   type GbaStat,
   type GbaStory,
   type GbaSupport,
+  type GbaRankedSupport,
   type GbaSupportBonus,
   type GbaUnit,
 } from './types'
@@ -44,9 +45,9 @@ export interface GbaData {
   /** Fixed supports instead of support points (Mystery of the Emblem), and what they add, in words. */
   supportBonuses?: GbaSupportBonus[]
   supportBonusText?: string
-  /** Who supports whom, when what a support gives isn't read (Shadows of Valentia), and what to say about it. */
-  supportPairs?: { a: string; b: string }[]
-  supportPairsText?: string
+  /** Supports with a bonus per rank (Shadows of Valentia), and what to say about them. */
+  rankedSupports?: GbaRankedSupport[]
+  rankedSupportText?: string
   /** How a class change works, in the planner's note (the GBA games' promotion item when unset). */
   promotionText?: string
 }
@@ -248,12 +249,15 @@ function bonusPartnersOf(data: GbaData, unitId: string) {
   return [...gets, ...gives].filter((x) => !seen.has(x.partner.id) && seen.add(x.partner.id)).map((x) => ({ partner: x.partner }))
 }
 
-/** A unit's partners where only who supports whom is read. */
-function pairPartnersOf(data: GbaData, unitId: string) {
+/** A unit's ranked supports: each partner, what the unit gets and gives at each rank, and the points and acts. */
+function rankedOf(data: GbaData, unitId: string) {
   const byId = new Map(data.units.map((u) => [u.id, u]))
-  return (data.supportPairs ?? [])
+  return (data.rankedSupports ?? [])
     .filter((p) => p.a === unitId || p.b === unitId)
-    .map((p) => ({ partner: byId.get(p.a === unitId ? p.b : p.a)! }))
+    .map((p) => {
+      const mine = p.a === unitId
+      return { partner: byId.get(mine ? p.b : p.a)!, gets: mine ? p.aGets : p.bGets, gives: mine ? p.bGets : p.aGets, points: p.points, acts: p.acts }
+    })
     .filter((x) => x.partner)
 }
 
@@ -265,7 +269,7 @@ function turnsFor(levels: number[], s: GbaSupport): (number | null)[] {
 function UnitDetail({ data, unit }: { data: GbaData; unit: GbaUnit }) {
   const cls = data.classes[unit.classId]
   const promo = optionsOf(data, cls)
-  const supports = [...supportsOf(data, unit.id), ...bonusPartnersOf(data, unit.id), ...pairPartnersOf(data, unit.id)]
+  const supports = [...supportsOf(data, unit.id), ...bonusPartnersOf(data, unit.id), ...rankedOf(data, unit.id)]
   return (
     <div className="space-y-4 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
       <div className="flex flex-col items-start gap-4 sm:flex-row">
@@ -582,6 +586,8 @@ export function GbaPlanner({ data: game }: { data: GbaData }) {
 /** Each partner: affinity, starting points and gain per turn, the turns to each level, and what the pair gives per level. */
 export function GbaSupports({ data: game }: { data: GbaData }) {
   const { view: data, story, picker } = useStory(game)
+  // Partners from every story: Alm's and Celica's armies meet.
+  const everyone = { ...data, units: game.units }
   const [unitId, setUnitId] = useState(data.units[0]?.id ?? '')
   const unit = data.units.find((u) => u.id === unitId) ?? data.units[0]
   useScreenshotUnit(unit)
@@ -621,8 +627,8 @@ export function GbaSupports({ data: game }: { data: GbaData }) {
               {unit.affinity && <div className="text-xs text-neutral-400">Affinity: {unit.affinity}</div>}
             </div>
           </div>
-          {data.supportPairs ? (
-            <PairSupports data={data} unit={unit} onPick={setUnitId} />
+          {data.rankedSupports ? (
+            <RankedSupports data={everyone} unit={unit} onPick={(id) => data.units.some((u) => u.id === id) && setUnitId(id)} />
           ) : fixed ? (
             <FixedSupports data={data} unit={unit} fixed={fixed} onPick={setUnitId} />
           ) : partners.length === 0 ? (
@@ -720,23 +726,64 @@ function FixedSupports({
   )
 }
 
-/** Supports where only the partners are read. */
-function PairSupports({ data, unit, onPick }: { data: GbaData; unit: GbaUnit; onPick: (id: string) => void }) {
-  const partners = pairPartnersOf(data, unit.id)
+const RANKS = ['No rank', 'C', 'B', 'A']
+const BONUS_LABELS = ['Hit', 'Crit', 'Avo', 'CEv']
+
+function bonusText(b: number[]): string {
+  return (
+    b
+      .map((v, i) => (v ? `${BONUS_LABELS[i]} ${v > 0 ? '+' : ''}${v}` : ''))
+      .filter(Boolean)
+      .join(', ') || '–'
+  )
+}
+
+/** Ranked supports: per partner, each rank's points and act, and what each side gets. */
+function RankedSupports({ data, unit, onPick }: { data: GbaData; unit: GbaUnit; onPick: (id: string) => void }) {
+  const partners = rankedOf(data, unit.id)
   if (!partners.length) return <p className="text-sm text-neutral-400">{unit.name} has no supports.</p>
   return (
     <>
-      {data.supportPairsText && <p className="text-xs text-neutral-500">{data.supportPairsText}</p>}
-      <ul className="flex flex-wrap gap-2">
-        {partners.map(({ partner }) => (
-          <li key={partner.id}>
-            <button type="button" onClick={() => onPick(partner.id)} className="flex items-center gap-2 rounded-md border border-neutral-800 px-2 py-1 text-sm text-neutral-200 hover:border-neutral-600">
-              <UnitPortrait data={data} unit={partner} size={28} />
-              {partner.name}
-            </button>
-          </li>
-        ))}
-      </ul>
+      {data.rankedSupportText && <p className="text-xs text-neutral-500">{data.rankedSupportText}</p>}
+      <div className="space-y-3">
+        {partners.map(({ partner, gets, gives, points, acts }) => {
+          // No rank shows when it adds something; C, B and A when the pair has conversations.
+          const ranks = RANKS.map((label, i) => ({ label, i })).filter(({ i }) => (i === 0 ? gets[0].some(Boolean) || gives[0].some(Boolean) : !!points))
+          return (
+            <div key={partner.id} className="rounded-md border border-neutral-800 p-2">
+              <button type="button" onClick={() => onPick(partner.id)} className="mb-1 flex items-center gap-2 text-sm text-neutral-200 hover:text-violet-300">
+                <UnitPortrait data={data} unit={partner} size={28} />
+                {partner.name}
+                {!points && <span className="text-xs text-neutral-500">(fixed bonus, no conversations)</span>}
+              </button>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="text-neutral-500">
+                      <th className="py-0.5 pr-2 text-left font-normal">Rank</th>
+                      {points && <th className="px-1 py-0.5 text-right font-normal">Points</th>}
+                      {acts && <th className="px-1 py-0.5 text-right font-normal">Act</th>}
+                      <th className="py-0.5 pl-2 text-left font-normal">{unit.name} gets</th>
+                      <th className="py-0.5 pl-2 text-left font-normal">{partner.name} gets</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ranks.map(({ label, i }) => (
+                      <tr key={label} className="border-t border-neutral-800">
+                        <td className="whitespace-nowrap py-0.5 pr-2 text-neutral-400">{label}</td>
+                        {points && <td className="px-1 py-0.5 text-right tabular-nums text-neutral-300">{i ? points[i - 1] : ''}</td>}
+                        {acts && <td className="px-1 py-0.5 text-right tabular-nums text-neutral-300">{i ? acts[i - 1] : ''}</td>}
+                        <td className="py-0.5 pl-2 text-neutral-200">{bonusText(gets[i])}</td>
+                        <td className="py-0.5 pl-2 text-neutral-200">{bonusText(gives[i])}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )
+        })}
+      </div>
     </>
   )
 }

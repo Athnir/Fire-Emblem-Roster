@@ -1,4 +1,4 @@
-import { FE15_CHAPTERS, FE15_CLASSES, FE15_STORIES, FE15_SUPPORT_PAIRS, FE15_UNITS } from '../data/fe15/fe15Units'
+import { FE15_CHAPTERS, FE15_CLASSES, FE15_STORIES, FE15_SUPPORTS, FE15_UNITS } from '../data/fe15/fe15Units'
 import { GbaPlanner, GbaRoster, GbaSupports, type GbaData } from '../gba/screens'
 import { TelliusBulkUpload } from '../tellius/TelliusBulkUpload'
 import type { TelliusData } from '../tellius/types'
@@ -21,8 +21,9 @@ export const FE15_DATA: GbaData = {
   supports: [],
   supportLevels: [],
   affinities: [],
-  supportPairs: FE15_SUPPORT_PAIRS,
-  supportPairsText: "Who each unit can support, from the game's support table. What each support gives isn't read yet.",
+  rankedSupports: FE15_SUPPORTS,
+  rankedSupportText:
+    "From the game's support table: what each gets fighting near the other (within 3 tiles, Serenes Forest). Some pairs have a bonus from the start; the rest earn points fighting together and raise their rank by talking, once they have the points and have reached the act shown. Ranks with one partner replace each other; they don't stack.",
 }
 
 // The bulk upload matches portraits by unit name; there are no skill icons here.

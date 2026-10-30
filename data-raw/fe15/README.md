@@ -21,9 +21,20 @@ to them, and starts again at Lv 1. A Dread Fighter's change back to Villager, an
 
 ## Supports: `Data/Reliance.bin`
 
-The 支援効果 table: per character (SUPID_), a count and a list of 20-byte entries, [partner PID][16 bytes of bonuses]. Who supports
-whom is read; the bonuses' layout (four groups of four bytes, some levels' Hit or Avoid by the look of them) isn't decoded yet. The
-必要経験値 table holds three EXP patterns (C, B, A at 20/45/90, 15/35/60 or 10/25/45); which pair uses which isn't read.
+Four tables, read by `read_supports` in the generator:
+
+- 支援効果: per character (SUPID_), a count and a list of 20-byte entries, [partner PID][16 bytes]: what that character gets from the
+  partner in reach, four signed bytes (Hit, Crit, Avoid, Crit avoid) for each of no rank, C, B and A. A pair with only the first four
+  set has a fixed bonus from the start and no conversations (Alm and Gray). Bytes can be negative: Faye gets Avoid -5/-10/-15 from Alm.
+- 支援関係: a 40-byte row per PID, [PID][a byte per character in the same row order]; the lower half holds each pair once: the points
+  pattern of a pair with conversations (0 none).
+- 必要経験値: the patterns (REXID_), C, B and A's points: 1 is 20/45/90, 2 is 15/35/60, 3 is 10/25/45.
+- 支援会話条件: per character (RCID_), a count and 8-byte entries, [partner PID][the act C, B and A open in][0]. A pair with
+  conversations but no entry opens from Act 1.
+
+All of it matches Serenes Forest's support-bonus page but three values (the test lists them): Celica and Conrad's ranks open in Act 4
+here (Serenes Forest: 3; Conrad joins in Act 4), and Tatiana's B with Zeke gives Avoid +7 (Serenes Forest: +5). The range (3 tiles)
+is Serenes Forest's.
 
 ## Joins
 
