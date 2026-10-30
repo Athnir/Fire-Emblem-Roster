@@ -5,8 +5,8 @@ weapons, maps and battle numbers). Plan out parent pairings, see which children 
 they inherit, project a unit's stats through promotions and multi-classing, and build out skill
 loadouts — all client-side, nothing leaves your device.
 
-Fire Emblem Fates, Path of Radiance, Radiant Dawn, Genealogy of the Holy War, Thracia 776 and The Binding Blade are in; the other games follow one at a time (The Blazing Blade, The Sacred Stones,
-Mystery of the Emblem, Awakening). This app was the Fates Unit Planner.
+Fire Emblem Fates, Path of Radiance, Radiant Dawn, Genealogy of the Holy War, Thracia 776, The Binding Blade and The Blazing Blade
+are in; the other games follow one at a time (The Sacred Stones, Mystery of the Emblem, Awakening). This app was the Fates Unit Planner.
 
 **Live app:** https://athnir.github.io/Fire-Emblem-Roster/
 
@@ -22,6 +22,8 @@ Mystery of the Emblem, Awakening). This app was the Fates Unit Planner.
   Formats are in [data-raw/fe5/README.md](data-raw/fe5/README.md).
 - **The Binding Blade:** the clean Japanese ROM, read by `scripts/build-fe6-units.py`, with names from the FE6 Localization patch.
   Formats are in [data-raw/fe6/README.md](data-raw/fe6/README.md).
+- **The Blazing Blade:** the English (U) ROM, read by `scripts/build-fe7-units.py`. Formats are in
+  [data-raw/fe7/README.md](data-raw/fe7/README.md).
 - **Radiant Dawn:** the same, from the user's Wii disc, read by `scripts/build-fe10-units.py`. Formats are in
   [data-raw/fe10/README.md](data-raw/fe10/README.md).
 

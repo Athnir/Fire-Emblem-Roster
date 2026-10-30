@@ -18,9 +18,18 @@ export const GBA_STAT_LABELS: Record<GbaStat, string> = {
   mov: 'Mov',
 }
 
+/** A game told in more than one story (The Blazing Blade: Lyn's, Eliwood's, Hector's), each with its own chapters. */
+export interface GbaStory {
+  id: string
+  label: string
+  /** Supports can't be built in this story. */
+  noSupports?: boolean
+}
+
 export interface GbaChapter {
   id: string
   label: string
+  story?: string
 }
 
 export interface GbaJoin {
@@ -33,7 +42,9 @@ export interface GbaJoin {
 }
 
 export interface GbaUnit {
+  /** One id per character and army: a unit in two stories that share an army is listed once per story, under one id. */
   id: string
+  story?: string
   name: string
   classId: string
   level: number
@@ -53,6 +64,9 @@ export interface GbaClass {
   bases: GbaStats
   caps: Partial<GbaStats>
   promotesTo?: string
+  /** What promoting into this class adds (HP to Res), when the game keeps it in the class data; otherwise the difference between
+   * the two classes' bases. */
+  gains?: Partial<GbaStats>
 }
 
 export interface GbaSupport {

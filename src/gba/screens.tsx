@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { Portrait } from '../components/Portrait'
@@ -9,7 +9,9 @@ import {
   GBA_STAT_LABELS,
   type GbaAffinity,
   type GbaClass,
+  type GbaChapter,
   type GbaStats,
+  type GbaStory,
   type GbaSupport,
   type GbaUnit,
 } from './types'
@@ -17,12 +19,16 @@ import {
 /** Everything a GBA game's screens need, passed in so the screens don't import a game's data. */
 export interface GbaData {
   gameId: string
-  chapters: { id: string; label: string }[]
+  /** A game in more than one story shows a switch; its chapters and units each belong to one. */
+  stories?: GbaStory[]
+  chapters: GbaChapter[]
   units: GbaUnit[]
   classes: Record<string, GbaClass>
   supports: GbaSupport[]
   /** The points C, B and A need. */
   supportLevels: number[]
+  /** When a pair gains its points, where the game's code was read for it ("each turn the two are side by side"). */
+  supportGain?: string
   affinities: GbaAffinity[]
 }
 
@@ -37,7 +43,10 @@ interface GbaPlan {
 
 interface GbaState {
   plans: Record<string, Record<string, GbaPlan>>
+  /** The story picked in each game told in several, shared by its tabs. */
+  stories: Record<string, string>
   setPlan: (gameId: string, unitId: string, plan: GbaPlan | null) => void
+  setStory: (gameId: string, storyId: string) => void
 }
 
 /** Saved under `fe-roster-gba`, so the backup (src/logic/backup.ts) picks it up. */
@@ -45,6 +54,7 @@ const useGbaStore = create<GbaState>()(
   persist(
     (set) => ({
       plans: {},
+      stories: {},
       setPlan: (gameId, unitId, plan) =>
         set((state) => {
           const game = { ...state.plans[gameId] }
@@ -52,10 +62,43 @@ const useGbaStore = create<GbaState>()(
           else delete game[unitId]
           return { plans: { ...state.plans, [gameId]: game } }
         }),
+      setStory: (gameId, storyId) => set((state) => ({ stories: { ...state.stories, [gameId]: storyId } })),
     }),
     { name: 'fe-roster-gba' },
   ),
 )
+
+/** The game's data for the story picked (all of it for a game told in one), and the switch to pick another. */
+function useStory(data: GbaData): { view: GbaData; story?: GbaStory; picker: ReactNode } {
+  const picked = useGbaStore((s) => s.stories?.[data.gameId])
+  const setStory = useGbaStore((s) => s.setStory)
+  if (!data.stories?.length) return { view: data, picker: null }
+  const story = data.stories.find((s) => s.id === picked) ?? data.stories[data.stories.length > 1 ? 1 : 0]
+  const view: GbaData = {
+    ...data,
+    chapters: data.chapters.filter((c) => !c.story || c.story === story.id),
+    units: data.units.filter((u) => !u.story || u.story === story.id),
+  }
+  const picker = (
+    <div className="flex flex-wrap gap-1" role="radiogroup" aria-label="Story">
+      {data.stories.map((s) => (
+        <button
+          key={s.id}
+          type="button"
+          role="radio"
+          aria-checked={s.id === story.id}
+          onClick={() => setStory(data.gameId, s.id)}
+          className={`rounded-md border px-3 py-1 text-sm ${
+            s.id === story.id ? 'border-violet-500 bg-violet-950/50 text-neutral-100' : 'border-neutral-800 bg-neutral-900 text-neutral-400 hover:border-neutral-600'
+          }`}
+        >
+          {s.label}
+        </button>
+      ))}
+    </div>
+  )
+  return { view, story, picker }
+}
 
 const selectClass = 'rounded-md border border-neutral-700 bg-neutral-800 px-2 py-1 text-sm text-neutral-200'
 
@@ -126,7 +169,7 @@ function joinText(data: GbaData, u: GbaUnit): string {
   if (j.how === 'talk') return `${where}: talk to them with ${j.with?.join(' or ') ?? 'another unit'}`
   if (j.how === 'visit') return `${where}: visit their village${j.with?.length ? ` with ${j.with.join(' or ')}` : ''}`
   if (j.how === 'event') return `${where}: joins ${j.turn ? `on turn ${j.turn}` : 'during the chapter'}`
-  if (j.how === 'end') return `${where}: joins at the end of the chapter`
+  if (j.how === 'end') return `${where}: joins at the end of the chapter${j.with?.length ? ` if ${j.with.join(' or ')} talked to them` : ''}`
   return `${where}: joins at the start`
 }
 
@@ -215,13 +258,15 @@ function UnitDetail({ data, unit }: { data: GbaData; unit: GbaUnit }) {
 }
 
 /** Every playable unit by the chapter they join; tapping one shows their data below the list. */
-export function GbaRoster({ data }: { data: GbaData }) {
+export function GbaRoster({ data: game }: { data: GbaData }) {
+  const { view: data, picker } = useStory(game)
   const [selectedId, setSelectedId] = useState(data.units[0]?.id ?? '')
   const detailRef = useRef<HTMLDivElement>(null)
-  const selected = data.units.find((u) => u.id === selectedId)
+  const selected = data.units.find((u) => u.id === selectedId) ?? data.units[0]
   useScreenshotUnit(selected)
   return (
     <div className="space-y-6">
+      {picker}
       <div className="space-y-3">
         {data.chapters.map((ch) => {
           const units = data.units.filter((u) => u.joinChapter === ch.id)
@@ -239,7 +284,7 @@ export function GbaRoster({ data }: { data: GbaData }) {
                       requestAnimationFrame(() => detailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
                     }}
                     className={`flex items-center gap-2 rounded-md border px-2 py-1 text-sm ${
-                      u.id === selectedId ? 'border-violet-500 bg-violet-950/50 text-neutral-100' : 'border-neutral-800 bg-neutral-900 text-neutral-300 hover:border-neutral-600'
+                      u.id === selected?.id ? 'border-violet-500 bg-violet-950/50 text-neutral-100' : 'border-neutral-800 bg-neutral-900 text-neutral-300 hover:border-neutral-600'
                     }`}
                   >
                     <UnitPortrait data={data} unit={u} size={32} />
@@ -285,7 +330,13 @@ function project(data: GbaData, unit: GbaUnit, plan: GbaPlan): Stage[] {
     let stats = grow(unit.bases, at - unit.level, start)
     if (at > unit.level) stages.push({ classId: start.id, level: at, stats })
     stats = { ...stats }
-    for (const s of GBA_STATS) if (s !== 'lck') stats[s] += promoted.bases[s] - start.bases[s]
+    // The game's own gains when its class data has them (The Blazing Blade: 0x08029818 adds them, held at the new caps; Con and
+    // Mov come from the class); otherwise the difference between the two classes' bases.
+    const gains = promoted.gains
+    for (const s of GBA_STATS) {
+      if (s === 'lck') continue
+      stats[s] += gains && s !== 'con' && s !== 'mov' ? (gains[s] ?? 0) : promoted.bases[s] - start.bases[s]
+    }
     stats = capped(stats, promoted)
     stages.push({ classId: promoted.id, level: 1, stats })
     const target = Math.max(1, Math.min(MAX_LEVEL, plan.targetLevel))
@@ -298,9 +349,10 @@ function project(data: GbaData, unit: GbaUnit, plan: GbaPlan): Stage[] {
 }
 
 /** One unit's average stats through a promotion. Saved per unit. */
-export function GbaPlanner({ data }: { data: GbaData }) {
+export function GbaPlanner({ data: game }: { data: GbaData }) {
+  const { view: data, picker } = useStory(game)
   const [unitId, setUnitId] = useState(data.units[0]?.id ?? '')
-  const unit = data.units.find((u) => u.id === unitId)
+  const unit = data.units.find((u) => u.id === unitId) ?? data.units[0]
   useScreenshotUnit(unit)
   const saved = useGbaStore((s) => (unit ? s.plans[data.gameId]?.[unit.id] : undefined))
   const setPlan = useGbaStore((s) => s.setPlan)
@@ -314,7 +366,8 @@ export function GbaPlanner({ data }: { data: GbaData }) {
   const finalClass = data.classes[stages[stages.length - 1].classId]
   return (
     <div className="space-y-4">
-      <UnitSelect data={data} value={unitId} onChange={setUnitId} />
+      {picker}
+      <UnitSelect data={data} value={unit.id} onChange={setUnitId} />
       <div className="space-y-4 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
         <div className="flex flex-wrap items-end gap-4 text-sm text-neutral-300">
           {promoted && (
@@ -347,8 +400,11 @@ export function GbaPlanner({ data }: { data: GbaData }) {
           )}
         </div>
         <p className="text-xs text-neutral-500">
-          Average stats: each level adds the growth rate. Stats stop at the class's caps (green). A promotion item works from Lv 10, adds
-          the difference between the classes' bases and starts again at Lv 1 (Serenes Forest; not yet traced in the game's code).
+          Average stats: each level adds the growth rate. Stats stop at the class's caps (green). A promotion item works from Lv 10 and
+          starts again at Lv 1 (Serenes Forest).{' '}
+          {promoted?.gains
+            ? "Promoting adds the new class's promotion gains from the game's class data, and Con and Mov become the new class's."
+            : "Promoting adds the difference between the classes' bases (Serenes Forest; not yet traced in the game's code)."}
         </p>
         <StatTable
           rows={stages.map((st, i) => ({
@@ -363,9 +419,10 @@ export function GbaPlanner({ data }: { data: GbaData }) {
 }
 
 /** Each partner: affinity, starting points and gain per turn, the turns to each level, and what the pair gives per level. */
-export function GbaSupports({ data }: { data: GbaData }) {
+export function GbaSupports({ data: game }: { data: GbaData }) {
+  const { view: data, story, picker } = useStory(game)
   const [unitId, setUnitId] = useState(data.units[0]?.id ?? '')
-  const unit = data.units.find((u) => u.id === unitId)
+  const unit = data.units.find((u) => u.id === unitId) ?? data.units[0]
   useScreenshotUnit(unit)
   const partners = unit ? supportsOf(data, unit.id) : []
   const row = (name: string) => data.affinities.find((a) => a.name === name)
@@ -390,8 +447,10 @@ export function GbaSupports({ data }: { data: GbaData }) {
   }
   return (
     <div className="space-y-4">
-      <UnitSelect data={data} value={unitId} onChange={setUnitId} />
-      {unit && (
+      {picker}
+      {story?.noSupports && <p className="text-sm text-neutral-400">Supports can't be built in {story.label} (the game's support code skips it).</p>}
+      {!story?.noSupports && <UnitSelect data={data} value={unit?.id ?? ''} onChange={setUnitId} />}
+      {unit && !story?.noSupports && (
         <div className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
           <div className="flex items-center gap-3">
             <UnitPortrait data={data} unit={unit} size={48} />
@@ -405,7 +464,7 @@ export function GbaSupports({ data }: { data: GbaData }) {
           ) : (
             <>
               <p className="text-xs text-neutral-500">
-                A pair starts with some points and gains more each turn it ends within reach; C, B and A need {data.supportLevels.join(', ')}{' '}
+                A pair starts with some points and gains more {data.supportGain ?? 'each turn it ends within reach'}; C, B and A need {data.supportLevels.join(', ')}{' '}
                 points. Turns are counted from the start. A unit can hold five support levels at most. The bonus is what each level adds
                 with the partner within 3 tiles (both affinities summed and halved).
               </p>
