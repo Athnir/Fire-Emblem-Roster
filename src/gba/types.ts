@@ -1,8 +1,8 @@
 /** The GBA games' unit data (The Binding Blade, The Blazing Blade, The Sacred Stones; Mystery of the Emblem shares the screens), as
  * the generators write it. */
 
-export type GbaStat = 'hp' | 'str' | 'skl' | 'spd' | 'lck' | 'wlv' | 'def' | 'res' | 'con' | 'mov'
-/** A game keeps the stats it has: Mystery of the Emblem has a weapon level (wlv) and no Con. */
+export type GbaStat = 'hp' | 'str' | 'mag' | 'skl' | 'spd' | 'lck' | 'wlv' | 'def' | 'res' | 'con' | 'mov'
+/** A game keeps the stats it has: Mystery of the Emblem has a weapon level (wlv) and no Con; Shadow Dragon has Magic. */
 export type GbaStats = Partial<Record<GbaStat, number>>
 
 export const GBA_STATS: GbaStat[] = ['hp', 'str', 'skl', 'spd', 'lck', 'def', 'res', 'con', 'mov']
@@ -11,6 +11,7 @@ export const GBA_GROWING: GbaStat[] = ['hp', 'str', 'skl', 'spd', 'lck', 'def', 
 export const GBA_STAT_LABELS: Record<GbaStat, string> = {
   hp: 'HP',
   str: 'S/M',
+  mag: 'Mag',
   skl: 'Skl',
   spd: 'Spd',
   lck: 'Lck',
@@ -62,6 +63,8 @@ export interface GbaUnit {
   ranks: Partial<Record<string, string>>
   /** Their own maximums, where the game keeps them per character (Shadows of Valentia) instead of per class. */
   caps?: GbaStats
+  /** The classes they can reclass into (Shadow Dragon), both tiers: a change within a tier keeps the level. */
+  reclass?: string[]
 }
 
 export interface GbaClass {
@@ -81,6 +84,10 @@ export interface GbaClass {
   /** What promoting into this class adds (HP to Res), when the game keeps it in the class data; otherwise the difference between
    * the two classes' bases. */
   gains?: Partial<GbaStats>
+  /** Growth rates the class adds to the unit's own (Shadow Dragon). */
+  growths?: Partial<GbaStats>
+  /** A promoted class (a reclass stays within the tier). */
+  promoted?: boolean
 }
 
 export interface GbaSupport {

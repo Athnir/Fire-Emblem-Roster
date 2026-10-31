@@ -101,4 +101,10 @@ export const GAMES: Game[] = [
     short: 'Shadows of Valentia',
     load: () => import('./fe15').then((m) => m.default),
   },
+  {
+    id: 'fe11',
+    title: 'Fire Emblem: Shadow Dragon',
+    short: 'Shadow Dragon',
+    load: () => import('./fe11').then((m) => m.default),
+  },
 ]

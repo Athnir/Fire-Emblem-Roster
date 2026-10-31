@@ -305,10 +305,17 @@ function UnitDetail({ data, unit }: { data: GbaData; unit: GbaUnit }) {
         data={data}
         rows={[
           { label: 'Bases', values: unit.bases },
-          { label: 'Growths', values: unit.growths, suffix: '%' },
+          { label: cls.growths ? 'Personal growths' : 'Growths', values: unit.growths, suffix: '%' },
+          ...(cls.growths ? [{ label: `Growths as a ${cls.name}`, values: withClassGrowths(data, unit, cls), suffix: '%' }] : []),
           unit.caps ? { label: 'Maximums', values: unit.caps } : { label: `Caps (${cls.name})`, values: cls.caps },
         ]}
       />
+      {unit.reclass && (
+        <p className="text-sm text-neutral-300">
+          <span className="text-neutral-500">Reclass set: </span>
+          {unit.reclass.map((id) => data.classes[id]?.name ?? id).join(', ')}
+        </p>
+      )}
       {supports.length > 0 && (
         <p className="text-sm text-neutral-300">
           <span className="text-neutral-500">Supports: </span>
@@ -380,6 +387,23 @@ const minLevelOf = (cls: GbaClass) => cls.promoteLevel ?? PROMOTE_LEVEL
 const capsFor = (unit: GbaUnit, cls: GbaClass): GbaStats => unit.caps ?? cls.caps
 const optionsOf = (data: GbaData, cls: GbaClass) =>
   (cls.promotions ?? (cls.promotesTo ? [cls.promotesTo] : [])).map((id) => data.classes[id]).filter(Boolean)
+/** Every change on offer from a class: its promotions, then (Shadow Dragon) the unit's reclass set's classes of the same tier. */
+const changesOf = (data: GbaData, unit: GbaUnit, cls: GbaClass) => {
+  const promos = optionsOf(data, cls)
+  const reclass = (unit.reclass ?? [])
+    .map((id) => data.classes[id])
+    .filter((c) => c && c.id !== cls.id && !!c.promoted === !!cls.promoted && !promos.includes(c))
+  return [...promos, ...reclass]
+}
+/** A unit's growth in a class: their own plus what the class adds (Shadow Dragon), never below 0 (Serenes Forest's full growths: Marth's
+ * Magic as a Lord, 5 - 10, is 0). */
+const growthIn = (unit: GbaUnit, cls: GbaClass, s: GbaStat) => Math.max(0, (unit.growths[s] ?? 0) + (cls.growths?.[s] ?? 0))
+function withClassGrowths(data: GbaData, unit: GbaUnit, cls: GbaClass): GbaStats {
+  const out: GbaStats = {}
+  for (const s of growingOf(data)) out[s] = growthIn(unit, cls, s)
+  return out
+}
+const isPromotion = (data: GbaData, from: GbaClass, to: GbaClass) => optionsOf(data, from).some((c) => c.id === to.id)
 
 interface Step {
   from: GbaClass
@@ -388,6 +412,8 @@ interface Step {
   /** The level it's taken at; a trainee class's is its last level, and it can't be declined. */
   at: number
   forced: boolean
+  /** A promotion starts again at Lv 1; a reclass (Shadow Dragon) keeps the level. */
+  promotion: boolean
 }
 
 /** The promotions a plan takes: the first from the class the unit joins in, a second from the class that one leads to. */
@@ -401,16 +427,17 @@ function stepsOf(data: GbaData, unit: GbaUnit, plan: GbaPlan): Step[] {
     [plan.promoteAt3 ?? null, plan.to3],
   ]
   for (const [at, to] of wanted) {
-    const options = optionsOf(data, cls)
+    const options = changesOf(data, unit, cls)
     if (!options.length) break
     const forced = !!cls.autoPromote
     if (!forced && at === null) break
     const max = maxLevelOf(cls)
-    const taken = forced ? max : Math.max(level, minLevelOf(cls), Math.min(max, at!))
     const next = options.find((o) => o.id === to) ?? options[0]
-    steps.push({ from: cls, options, to: next, at: taken, forced })
+    const promotion = isPromotion(data, cls, next)
+    const taken = forced ? max : Math.max(level, promotion ? minLevelOf(cls) : level, Math.min(max, at!))
+    steps.push({ from: cls, options, to: next, at: taken, forced, promotion })
     cls = next
-    level = 1
+    level = promotion ? 1 : taken
   }
   return steps
 }
@@ -426,7 +453,7 @@ function project(data: GbaData, unit: GbaUnit, plan: GbaPlan): Stage[] {
   }
   const grow = (stats: GbaStats, levels: number, cls: GbaClass) => {
     const out = { ...stats }
-    for (const s of growingOf(data)) out[s] = (out[s] ?? 0) + ((unit.growths[s] ?? 0) / 100) * Math.max(0, levels)
+    for (const s of growingOf(data)) out[s] = (out[s] ?? 0) + (growthIn(unit, cls, s) / 100) * Math.max(0, levels)
     return capped(out, cls)
   }
   let cls = data.classes[unit.classId]
@@ -453,7 +480,7 @@ function project(data: GbaData, unit: GbaUnit, plan: GbaPlan): Stage[] {
     }
     stats = capped(stats, step.to)
     cls = step.to
-    level = 1
+    level = step.promotion ? 1 : step.at
     stages.push({ classId: cls.id, level, stats })
   }
   const target = Math.max(level, Math.min(maxLevelOf(cls), plan.targetLevel))
@@ -471,11 +498,11 @@ export function GbaPlanner({ data: game }: { data: GbaData }) {
   const setPlan = useGbaStore((s) => s.setPlan)
   if (!unit) return null
   const start = data.classes[unit.classId]
-  const first = optionsOf(data, start)
+  const first = changesOf(data, unit, start)
   const plan: GbaPlan = saved ?? {
     promoteAt: first.length ? maxLevelOf(start) : null,
     targetLevel: MAX_LEVEL,
-    promoteAt2: first.length && optionsOf(data, first[0]).length ? MAX_LEVEL : null,
+    promoteAt2: first.length && isPromotion(data, start, first[0]) && changesOf(data, unit, first[0]).length ? MAX_LEVEL : null,
   }
   const atOf = [plan.promoteAt, plan.promoteAt2 ?? null, plan.promoteAt3 ?? null]
   const patchAt = (i: number, v: number | null): Partial<GbaPlan> => (i === 0 ? { promoteAt: v } : i === 1 ? { promoteAt2: v } : { promoteAt3: v })
@@ -485,14 +512,17 @@ export function GbaPlanner({ data: game }: { data: GbaData }) {
   const stages = project(data, unit, plan)
   const levels = (from: number, to = MAX_LEVEL) => Array.from({ length: Math.max(0, to - from + 1) }, (_, i) => from + i)
   const finalClass = data.classes[stages[stages.length - 1].classId]
-  const lastLevel = steps.length ? 1 : unit.level
+  const last = steps[steps.length - 1]
+  const lastLevel = last ? (last.promotion ? 1 : last.at) : unit.level
   // The promotions offered: the first from the class the unit joins in, then one from wherever that leads.
   const offers: { index: number; from: GbaClass; options: GbaClass[]; fromLevel: number }[] = []
   if (first.length) offers.push({ index: 0, from: start, options: first, fromLevel: unit.level })
   for (const i of [1, 2]) {
     const prev = steps[i - 1]
-    if (prev && optionsOf(data, prev.to).length) offers.push({ index: i, from: prev.to, options: optionsOf(data, prev.to), fromLevel: 1 })
+    const next = prev ? changesOf(data, unit, prev.to) : []
+    if (prev && next.length) offers.push({ index: i, from: prev.to, options: next, fromLevel: prev.promotion ? 1 : prev.at })
   }
+  const reclassing = !!unit.reclass
   return (
     <div className="space-y-4">
       {picker}
@@ -503,15 +533,19 @@ export function GbaPlanner({ data: game }: { data: GbaData }) {
             const step = steps[index]
             const at = atOf[index]
             const to = step?.to.id ?? options[0].id
+            const promoting = isPromotion(data, from, data.classes[to])
             return (
               <div key={index} className="flex flex-wrap items-end gap-2">
                 {options.length > 1 ? (
                   <label className="space-y-1">
-                    <span className="block text-xs text-neutral-500">{from.name} promotes to</span>
+                    <span className="block text-xs text-neutral-500">
+                      {from.name} {reclassing ? 'changes' : 'promotes'} to
+                    </span>
                     <select value={to} onChange={(e) => update(patchTo(index, e.target.value))} className={selectClass}>
                       {options.map((o) => (
                         <option key={o.id} value={o.id}>
                           {o.name}
+                          {reclassing ? (isPromotion(data, from, o) ? ' (promotion)' : ' (reclass)') : ''}
                         </option>
                       ))}
                     </select>
@@ -530,8 +564,8 @@ export function GbaPlanner({ data: game }: { data: GbaData }) {
                       }}
                       className={selectClass}
                     >
-                      <option value="">Don't promote</option>
-                      {levels(Math.max(minLevelOf(from), fromLevel), maxLevelOf(from)).map((lv) => (
+                      <option value="">{reclassing ? "Don't change" : "Don't promote"}</option>
+                      {levels(Math.max(promoting ? minLevelOf(from) : fromLevel, fromLevel), maxLevelOf(from)).map((lv) => (
                         <option key={lv} value={lv}>
                           At Lv {lv}
                         </option>
