@@ -3,7 +3,8 @@ import type { GbaChapter, GbaClass, GbaUnit } from '../../gba/types'
 
 export const FE11_CHAPTERS: GbaChapter[] = [{"id": "fe11-p1", "label": "Prologue I"}, {"id": "fe11-p2", "label": "Prologue II"}, {"id": "fe11-p3", "label": "Prologue III"}, {"id": "fe11-p4", "label": "Prologue IV"}, {"id": "fe11-1", "label": "Ch. 1"}, {"id": "fe11-2", "label": "Ch. 2"}, {"id": "fe11-3", "label": "Ch. 3"}, {"id": "fe11-4", "label": "Ch. 4"}, {"id": "fe11-5", "label": "Ch. 5"}, {"id": "fe11-6", "label": "Ch. 6"}, {"id": "fe11-6x", "label": "Ch. 6x"}, {"id": "fe11-7", "label": "Ch. 7"}, {"id": "fe11-8", "label": "Ch. 8"}, {"id": "fe11-9", "label": "Ch. 9"}, {"id": "fe11-10", "label": "Ch. 10"}, {"id": "fe11-11", "label": "Ch. 11"}, {"id": "fe11-12", "label": "Ch. 12"}, {"id": "fe11-12x", "label": "Ch. 12x"}, {"id": "fe11-13", "label": "Ch. 13"}, {"id": "fe11-14", "label": "Ch. 14"}, {"id": "fe11-15", "label": "Ch. 15"}, {"id": "fe11-16", "label": "Ch. 16"}, {"id": "fe11-17", "label": "Ch. 17"}, {"id": "fe11-17x", "label": "Ch. 17x"}, {"id": "fe11-18", "label": "Ch. 18"}, {"id": "fe11-19", "label": "Ch. 19"}, {"id": "fe11-20", "label": "Ch. 20"}, {"id": "fe11-20x", "label": "Ch. 20x"}, {"id": "fe11-21", "label": "Ch. 21"}, {"id": "fe11-22", "label": "Ch. 22"}, {"id": "fe11-23", "label": "Ch. 23"}, {"id": "fe11-24", "label": "Ch. 24"}, {"id": "fe11-24x", "label": "Ch. 24x"}, {"id": "fe11-final", "label": "Endgame"}]
 
-// The female promoted set's column 0: the reclass list offers the Dracoknight, or the Falcoknight for a unit that has been one.
+// The female promoted set's column 0: the reclass list offers the Dracoknight, or the Falcoknight for a unit promoted with the
+// Elysian Whip (the only way to become one).
 export const FE11_RECLASS_SWAP: string[] = ["j5", "j3"]
 
 export const FE11_UNITS: GbaUnit[] = [

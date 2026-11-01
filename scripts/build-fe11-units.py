@@ -20,7 +20,7 @@ NAMES = {'JID_SWORDMASTER': 'Swordmaster', 'JID_SWORDMASTER_F': 'Swordmaster'}
 # The reclass sets are the class records' +0x34 (1 male A, 2 male B, 3 female; 4-6 their promoted classes; 0 none) and +0x35 (the
 # column, the class line the limits count): the preparations' reclass list (overlay 05, 0x2211058) offers every class whose +0x34 is the
 # unit's current class's. Of the female promoted set's two column-0 classes, it offers the Dracoknight, or the Falcoknight instead for a
-# unit with flag 0x20000000 (0x203c810: the unit's, person's or class's flags).
+# unit with flag 0x20000000 (tested at 0x203c810), which only promoting with the Elysian Whip sets (the promotion, arm9 0x203d840).
 # What a script leaves to the player, or decides by counting the army (Serenes Forest's recruitment page unless it says the file).
 NOTES = {
     'Frey': 'Only with the prologue (Normal mode).',
@@ -142,7 +142,8 @@ def main():
         '',
         f'export const FE11_CHAPTERS: GbaChapter[] = {js(chapters)}',
         '',
-        "// The female promoted set's column 0: the reclass list offers the Dracoknight, or the Falcoknight for a unit that has been one.",
+        "// The female promoted set's column 0: the reclass list offers the Dracoknight, or the Falcoknight for a unit promoted with the",
+        "// Elysian Whip (the only way to become one).",
         f"export const FE11_RECLASS_SWAP: string[] = {js([cid['JID_DRAGONKNIGHT_F'], cid['JID_FALCONKNIGHT_F']])}",
         '',
         'export const FE11_UNITS: GbaUnit[] = [',

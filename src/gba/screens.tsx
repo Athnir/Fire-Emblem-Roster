@@ -45,6 +45,9 @@ export interface GbaData {
   /** Fixed supports instead of support points (Mystery of the Emblem), and what they add, in words. */
   supportBonuses?: GbaSupportBonus[]
   supportBonusText?: string
+  /** A stat is the unit's own plus the current class's bases, read through the class's cap and floored at 0, so a class change keeps
+   * what a lower cap hides (Shadow Dragon, arm9 0x203c6c0). */
+  readsClassBases?: boolean
   /** Classes of a reclass set offered in turn (Shadow Dragon's Dracoknight and Falcoknight): the first, or the next once the unit has
    * been in it. */
   reclassSwap?: string[]
@@ -459,18 +462,32 @@ function project(data: GbaData, unit: GbaUnit, plan: GbaPlan): Stage[] {
     for (const s of statsOf(data)) if (caps[s] !== undefined && out[s] !== undefined) out[s] = Math.min(out[s]!, caps[s]!)
     return out
   }
+  // Shadow Dragon keeps the unit's own stats and reads them through the class (arm9 0x203c6c0): `stats` stays uncapped through class
+  // changes, and is capped and floored at 0 only as it's shown. A level-up adds nothing to a stat at its cap (0x203d6dc).
+  const raw = !!data.readsClassBases
+  const shown = (stats: GbaStats, cls: GbaClass) => {
+    if (!raw) return stats
+    const out = capped(stats, cls)
+    for (const s of statsOf(data)) if (out[s] !== undefined) out[s] = Math.max(0, out[s]!)
+    return out
+  }
   const grow = (stats: GbaStats, levels: number, cls: GbaClass) => {
     const out = { ...stats }
-    for (const s of growingOf(data)) out[s] = (out[s] ?? 0) + (growthIn(unit, cls, s) / 100) * Math.max(0, levels)
-    return capped(out, cls)
+    const caps = capsFor(unit, cls)
+    for (const s of growingOf(data)) {
+      const cur = out[s] ?? 0
+      const next = cur + (growthIn(unit, cls, s) / 100) * Math.max(0, levels)
+      out[s] = raw && caps[s] !== undefined ? (cur >= caps[s]! ? cur : Math.min(caps[s]!, next)) : next
+    }
+    return raw ? out : capped(out, cls)
   }
   let cls = data.classes[unit.classId]
   let level = unit.level
   let stats: GbaStats = { ...unit.bases }
-  const stages: Stage[] = [{ classId: cls.id, level, stats }]
+  const stages: Stage[] = [{ classId: cls.id, level, stats: shown(stats, cls) }]
   for (const step of stepsOf(data, unit, plan)) {
     stats = grow(stats, step.at - level, cls)
-    if (step.at > level) stages.push({ classId: cls.id, level: step.at, stats })
+    if (step.at > level) stages.push({ classId: cls.id, level: step.at, stats: shown(stats, cls) })
     stats = { ...stats }
     // The game's own gains when its class data has them (The Blazing Blade 0x08029818, The Sacred Stones 0x0802BC20: added, held at
     // the new caps; Con and Mov come from the class); otherwise the difference between the two classes' bases.
@@ -484,15 +501,15 @@ function project(data: GbaData, unit: GbaUnit, plan: GbaPlan): Stage[] {
       for (const s of data.promotion.difference) stats[s] = (stats[s] ?? 0) + diff(s)
       for (const s of data.promotion.raise) stats[s] = Math.max(stats[s] ?? 0, step.to.bases[s] ?? 0)
     } else {
-      for (const s of statsOf(data)) if (s !== 'lck') stats[s] = (stats[s] ?? 0) + diff(s)
+      for (const s of statsOf(data)) if (s !== 'lck' || raw) stats[s] = (stats[s] ?? 0) + diff(s)
     }
-    stats = capped(stats, step.to)
+    if (!raw) stats = capped(stats, step.to)
     cls = step.to
     level = step.promotion ? 1 : step.at
-    stages.push({ classId: cls.id, level, stats })
+    stages.push({ classId: cls.id, level, stats: shown(stats, cls) })
   }
   const target = Math.max(level, Math.min(maxLevelOf(cls), plan.targetLevel))
-  if (target > level) stages.push({ classId: cls.id, level: target, stats: grow(stats, target - level, cls) })
+  if (target > level) stages.push({ classId: cls.id, level: target, stats: shown(grow(stats, target - level, cls), cls) })
   return stages
 }
 
