@@ -30,8 +30,8 @@ The Sacred Stones, Mystery of the Emblem, Awakening, Shadows of Valentia and Sha
   Formats are in [data-raw/fe3/README.md](data-raw/fe3/README.md).
 - **Awakening:** the user's own cartridge and DLC dumps, read by `scripts/build-fe13-units.py` (growths deciphered as the game does,
   `scripts/fe13_growths.py`; the DLC recruits, `scripts/fe13_dlc.py`). Formats are in [data-raw/fe13/README.md](data-raw/fe13/README.md).
-- **Shadows of Valentia:** the user's own cartridge dump, read by `scripts/build-fe15-units.py` (joins and class-change levels from
-  Serenes Forest). Formats are in [data-raw/fe15/README.md](data-raw/fe15/README.md).
+- **Shadows of Valentia:** the user's own cartridge dump, read by `scripts/build-fe15-units.py` (joins from the event files,
+  `scripts/fe15_joins.py`; class-change levels from Serenes Forest). Formats are in [data-raw/fe15/README.md](data-raw/fe15/README.md).
 - **Shadow Dragon:** the user's own cartridge dump, read by `scripts/build-fe11-units.py` (the class-change rules from Serenes Forest; the
   reclass sets are the game's). Formats are in [data-raw/fe11/README.md](data-raw/fe11/README.md).
 - **Radiant Dawn:** the same, from the user's Wii disc, read by `scripts/build-fe10-units.py`. Formats are in

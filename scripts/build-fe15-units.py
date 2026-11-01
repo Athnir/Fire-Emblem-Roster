@@ -1,6 +1,7 @@
 """
 Build src/data/fe15/fe15Units.ts from the user's own Shadows of Valentia dump (data-raw/fe15/romfs, from scripts/fe15_extract.py; see
-data-raw/fe15/README.md): both armies, their bases, growths and maximums, the class tree, and the supports (who, what each rank gives, the points each needs
+data-raw/fe15/README.md): both armies, who joins where and how (the event sheets, scripts/fe15_joins.py), their bases, growths and
+maximums, the class tree, and the supports (who, what each rank gives, the points each needs
 and the act it opens in).
 
 Run: python scripts/build-fe15-units.py
@@ -11,6 +12,7 @@ import os
 import fates_text
 from fates_lz import decompress
 from fe13_bin import Bin
+import fe15_joins as J
 from fe15_recruitment import RECRUITMENT
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
@@ -90,17 +92,6 @@ def read_supports(by_pid):
     return out
 
 
-def how_of(text):
-    t = text.lower()
-    if t.startswith('automatically from the start'):
-        return 'start'
-    if t.startswith('talk'):
-        return 'talk'
-    if 'end of' in t:
-        return 'end'
-    return 'event'
-
-
 def main():
     names = fates_text.read(os.path.join(ROMFS, 'm', '@NOA_EN', 'Name.bin.lz'))
     jnames = fates_text.read(os.path.join(ROMFS, 'm', '@NOA_EN', 'Job.bin.lz'))
@@ -124,23 +115,48 @@ def main():
             if nm and nm not in people:
                 people[nm] = o
     units, used = [], set()
-    chapters = []
-    for story in ('alm', 'celica'):
-        acts = sorted({act for nm, (act, _) in RECRUITMENT.items() if nm in people and ARMIES.get(pb.str(people[nm] + 24)) == story})
-        chapters += [{'id': f'fe15-{story}-{a}', 'label': f'Act {a}', 'story': story} for a in acts]
-    for nm, (act, text) in RECRUITMENT.items():
+    # Who joins, in which act, where and how: the event sheets and map scripts (scripts/fe15_joins.py). The conditions a join's variables
+    # carry (survived the battle, Sonya or Deen) are given in Serenes Forest's words.
+    found = J.joins()
+    leaders = {'アルム': 'Joins as the Prologue ends.', 'セリカ': 'Joins as Act 1 ends (its closing event).'}
+    entries = []
+    for n, (key, j) in enumerate(found.items()):
+        nm = names.get('MPID_' + key)
         o = people.get(nm)
         if o is None:
-            continue  # DLC (Cipher Legends): not in the user's dump
+            continue
         story = ARMIES.get(pb.str(o + 24))
+        lord = 'Alm' if story == 'alm' else 'Celica'
+        act, how = j['act'], j['how']
+        if key in leaders:
+            # A leader joins in an act's (or the Prologue's) closing event: theirs from the next act's start.
+            act, how = (act or 0) + 1, 'start'
+            note = leaders[key]
+        else:
+            if j['key'].endswith('の砦') and how == 'end':
+                how, place = 'event', f"When the battle at {j['place']} is won (its map script)."
+            else:
+                place = f"At {j['place']}."
+            note = place
+            if j['celica']:
+                note += " The village's events also let Celica's army recruit them, from Act 4."
+            if nm in RECRUITMENT:
+                note += f' Serenes Forest: {RECRUITMENT[nm][1]}.'
+        join = {'how': how, **({'with': [lord]} if how == 'talk' else {}), 'note': note}
+        entries.append(((0 if story == 'alm' else 1, act, n), nm, o, story, act, join))
+    entries.sort(key=lambda e: e[0])
+    chapters = []
+    for story in ('alm', 'celica'):
+        acts = sorted({e[4] for e in entries if e[3] == story})
+        chapters += [{'id': f'fe15-{story}-{a}', 'label': f'Act {a}', 'story': story} for a in acts]
+    for _, nm, o, story, act, join in entries:
         raw = pb.d[0x20 + o:0x20 + o + PERSON]
         cls = pb.str(o + 8)
         used.add(cls)
         mov = job(cls)['raw'][43]
         units.append({
             'id': f'fe15-{nm.lower()}', 'story': story, 'name': nm, 'classId': f'j{jid[cls]}', 'level': raw[29],
-            'joinChapter': f'fe15-{story}-{act}',
-            'join': {'how': how_of(text), 'note': f'{text} (Serenes Forest).'},
+            'joinChapter': f'fe15-{story}-{act}', 'join': join,
             'bases': {**dict(zip(STATS, raw[52:59])), 'mov': mov},
             'growths': dict(zip(STATS, raw[68:75])),
             'caps': dict(zip(STATS, raw[60:67])),

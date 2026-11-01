@@ -36,8 +36,25 @@ All of it matches Serenes Forest's support-bonus page but three values (the test
 here (Serenes Forest: 3; Conrad joins in Act 4), and Tatiana's B with Zeke gives Avoid +7 (Serenes Forest: +5). The range (3 tiles)
 is Serenes Forest's.
 
-## Joins
+## Joins (`scripts/fe15_joins.py`)
 
-Joins are spread over the town and dungeon events (`Data/Event/*.bin`: labels like エフィ加入, "Faye joins", in a module per act), the
-chapter scripts and the game's code; they aren't read yet. The act each unit joins in and how are Serenes Forest's recruitment page's
-(`scripts/fe15_recruitment.py`), and say so. The DLC's Cipher Legends units aren't in the user's dump.
+From the event sheets (`Data/Event/<location>.bin`, one per place, in Awakening's container) and the map scripts (`Scripts/*.cmb`, Fates'
+bytecode, `scripts/fates_cmb.py`):
+
+- A sheet is sections (DAT_ labels: 共通 shared, 1章-5章 an act's) of 44-byte rows: [sequence (where one starts), command, condition 1,
+  comparison (1 ==, 2 !=, 4 >=), condition 2, arguments 1-6]. A unit joins by `仲間入り` (join the party; the people in arguments 1, 4
+  and 5). The `アドベンチャーをスキップ` sequences (skipping the adventure parts) repeat the joins and are left out.
+- Back from the join: sequences are entered by `サブルーチン呼び出し`, `ジャンプ`, `はい選択` / `いいえ選択` (a yes/no answer) and
+  `イベントジャンプ`, or by talking to a portrait a spot adds (`立ち絵追加`: argument 1 the sequence, argument 4 the person). A talk to
+  the person before any scene jump makes the join a talk (most are a talk then a yes/no); an act's closing event (`...エンディング`) an
+  ending; otherwise a scene on arrival (Lukas, Gray and Tobin; Mae and Boey; Clive).
+- The act: an act section on the way, a chapter condition (`*章` == or >= N), or the act the game's own variable names carry
+  (`G_<location><N>_...`), the earliest; with none on the way, the act the location's variables carry. The place: the location's name
+  (`m/@NOA_EN/Name.bin`, MID_<location>). The army: the person's (Person.bin +24); Ram Village's talks with Faye and Kliff also have a
+  Celica's-army branch, opened from Act 4.
+- Conrad joins in Dolth Keep's map script (its winning handler calls `ev::JoinUnit('PID_コンラート')`); the only script join.
+- Alm joins as the Prologue ends and Celica as Act 1 ends (each in that part's closing event): each is listed from the next act's start.
+
+Every act matches Serenes Forest's recruitment page, and so does the way but Clair's (there "automatically"; the file's cell scene is a
+talk with a choice). The conditions a join's variables carry (survived the battle, Sonya or Deen, after Clive joins) are Serenes Forest's
+words (`scripts/fe15_recruitment.py`). The DLC's Cipher Legends units aren't in the user's dump.

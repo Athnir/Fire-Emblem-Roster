@@ -1,4 +1,6 @@
-# Serenes Forest (fire-emblem-echoes-shadows-valentia/characters/recruitment): the act each unit joins in and how.
+# Serenes Forest (fire-emblem-echoes-shadows-valentia/characters/recruitment): the act each unit joins in and how. The act, place and
+# way are read from the game's event sheets (fe15_joins.py); this is kept for the conditions the sheets' variables carry, and as the
+# tests' check.
 RECRUITMENT = {
     'Alm': (1, 'Automatically from the start'),
     'Lukas': (1, 'Automatically before leaving Ram Village'),
