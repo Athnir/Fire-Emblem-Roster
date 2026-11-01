@@ -11,7 +11,7 @@ import os
 import fe13_data as D
 from fe13_bin import Bin, ROMFS
 from fates_lz import decompress
-from fe13_growth_tables import CLASS_GROWTHS, PERSONAL_GROWTHS
+import fe13_growths as G
 from fe13_joins import AVATAR, CHAPTERS, joins, order
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
@@ -46,15 +46,6 @@ def label(key):
 
 def s8(v):
     return v - 256 if v > 127 else v
-
-
-def class_growths(c):
-    name = c['name']
-    for k, v in CLASS_GROWTHS.items():
-        names = [k] if '/' not in k else [k.split('/')[0], k.split(' ')[0] + ' ' + k.split('/')[1]]
-        if name in names or (name == 'Taguel' and k == f"Taguel ({'F' if c['female'] else 'M'})"):
-            return dict(zip(STATS, v))
-    return None
 
 
 def read_assets():
@@ -133,7 +124,6 @@ def main():
                 supports.append({'partner': partner, 'levels': [x if x != 99 else None for x in lv]})
             k += 8
         name = name_of(pid)
-        growth_name = 'Avatar' if pid in AVATARS else 'Morgan' if pid in MORGAN else name
         notes = []
         if rest and 'starts' in rest:
             notes.append(f'{name} starts the talk.')
@@ -149,7 +139,7 @@ def main():
             'join': {'how': how, **({'with': [name_of(w) if w in rec else 'Avatar' for w in dict.fromkeys(with_)]} if with_ else {}),
                      **({'turn': turn} if turn else {}), **({'note': ' '.join(notes)} if notes else {})},
             'bases': bases, 'personal': dict(zip(STATS, personal)),
-            'growths': dict(zip(STATS, PERSONAL_GROWTHS[growth_name])),
+            'growths': dict(zip(STATS, G.person_growths(raw, o))),
             'modifiers': dict(zip(STATS[1:], [s8(x) for x in raw[53:60]])),
             'classSets': sets,
             **({'parent': b.str(o + 132)} if (o + 132) in ptrs else {}),
@@ -185,11 +175,11 @@ def main():
         promoted = bool(raw[0] & 8)
         levels = (5, 15) if promoted else (1, 10)
         learn = [{'skill': skills[raw[64 + 2 * n]], 'level': levels[n]} for n in range(2) if raw[64 + 2 * n]]
-        g = class_growths(c)
+        g = dict(zip(STATS, G.class_growths(raw, i)))
         classes[f'c{i}'] = {
             'id': f'c{i}', 'name': c['name'], 'female': c['female'], 'promoted': promoted,
             'bases': {**dict(zip(STATS, raw[24:32])), 'mov': c['mov']}, 'caps': dict(zip(STATS, raw[48:56])),
-            **({'growths': g} if g else {}), 'skills': learn, 'promotesTo': [f'c{j}' for j in promotions(i)],
+            'growths': g, 'skills': learn, 'promotesTo': [f'c{j}' for j in promotions(i)],
         }
 
     chapters = [{'id': f'fe13-{k.lower()}', 'label': label(k)} for k in keys]

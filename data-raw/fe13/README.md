@@ -8,7 +8,7 @@ are the Armory's, copied. `scripts/build-fe13-units.py` writes `src/data/fe13/fe
 ## The army: `data/person/static.bin`, 568 bytes per person
 
 +0 SID flags (0x01 a woman), +8 PID, +16 the class (JID), +20 the name label, +28-+35 their own bases (HP, Str, Mag, Skl, Spd, Lck,
-Def, Res; signed), +36-+51 the growths, encoded (below), +52-+59 the stat modifiers (HP's always 0, then Str to Res; signed), +69 the
+Def, Res; signed), +36-+43 the growths, enciphered (below), +52-+59 the stat modifiers (HP's always 0, then Str to Res; signed), +69 the
 level, +108 / +112 / +116 the classes a Second Seal opens to them as a man and +120 / +124 / +128 as a woman (a child takes each
 parent's set for the child's own gender), +132 a child's fixed parent (the mother, Chrom for Lucina, the Avatar for Morgan), +136 on
 their supports: [partner PID][the points C, B, A and S need] (99: no S).
@@ -18,7 +18,7 @@ Dancer, Villager, Manakete, Taguel, and the unique classes), as Serenes Forest g
 
 ## Classes: GameData's `JobData`, 128 bytes
 
-+0 flags (0x01 a woman's, 0x08 promoted), +24-+31 bases, +32-+47 the growths, encoded, +48-+55 maximums, +64 and +66 the skills it
++0 flags (0x01 a woman's, 0x08 promoted), +24-+31 bases, +32-+39 the growths, enciphered, +48-+55 maximums, +64 and +66 the skills it
 teaches (indexes into `RemovableSkillData`, 28 bytes each, the name label at +8): at Lv 1 and 10, or 5 and 15 promoted (Serenes
 Forest), +81 Mov, +92 and +96 pointers to the classes it promotes to (Cavalier: Paladin, Great Knight). (The Armory's reader calls
 +64-+71 pair-up bonuses; they're these two skills.)
@@ -31,13 +31,20 @@ changes nothing; the rest are HP to Res in order (HP asset: HP +5, growths HP +3
 and Res +2). It matches Serenes Forest's tables. The app adds the chosen asset's and flaw's rows to both Avatars' bases (and own
 bases), growths and modifiers; none leaves the person record's own numbers.
 
-## Growths: encoded, so taken from Serenes Forest
+## Growths: enciphered, decoded as the program does (`scripts/fe13_growths.py`)
 
-A record's 16 growth bytes pair byte i with byte i + 8: their difference (mod 256) depends on the growth alone within a set of
-records (every character but the Avatars and Yen'fay shares one mapping: 40 gives 2, 10 gives 223, 35 gives 209...), but the Avatars,
-Yen'fay and the classes use other mappings, and the routine that decodes them wasn't found. So the personal and class growths are
-Serenes Forest's (`scripts/fe13_growth_tables.py`): its personal growths, and its class growths with Luck 0 (its full growths less the
-personal ones give 0 for every class).
+A person's growths are 8 bytes at +36, a class's at JobData +32. The program (code.bin) decodes each byte with a key from the record's
+place in its table and the stat (0 HP to 7 Res), then looks it up in GameData's `CipherData` (256 signed bytes, found by name at start-up,
+0x3d52f4):
+
+- A person (read at 0x264858, decoded at 0x2cf0ec): the index is the record's offset from the table's records over 568 (0x2da13c; the
+  records follow an 8-byte header). key = (((index ^ 0xa7) - 33 i) * 99) ^ 0xd9; growth = CipherData[(byte - key) & 0xff].
+- A class (0x2cf094): the index is its place in JobData. key = (((index ^ 0x46) - 241 i) * 35) ^ 0x78.
+
+The 8 bytes after each (a person's +44, a class's +40) aren't read for growths: they're made from the same key, which is why the two
+halves' difference looked like an encoding of its own. 0x264858 adds to the person's growth the Avatar's asset's
+(PersonalityData +16) and flaw's (+40); the class's is decoded on its own (0x2cf094). Every unit and class matches Serenes Forest's tables (the
+test); the generic units (the Risen, the merchant) decode to 0.
 
 ## Joins (`scripts/fe13_joins.py`)
 
