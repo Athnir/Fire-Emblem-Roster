@@ -62,6 +62,23 @@ the Armory's readers:
 What a script leaves to the player (Donnel's level, Gangrel's three talks, Walhart, Emmeryn and Aversa surviving) is Serenes Forest's
 and says so.
 
+## The DLC recruits (`scripts/fe13_dlc.py`)
+
+From the user's DLC dump (`dlc/E0xx`, each episode's files; `dlc/<content id>/E0xx_GLB.arc`, its global archive):
+
+- `data/OtherData_DLC.bin`, table `ユニットデータ`: the unit the episode gives. +4 its name label, +8 an id (0x01000000 a woman), +12 its
+  asset and +13 its flaw (PersonalityData indexes, 1 HP to 8 Res), +36 the person it's made from (`旧マルス`, the old Marth, for Marth;
+  `プレイヤー援軍`, the Avatar's twin, for the rest: both in static.bin), +40 its class, +44 its level, +46-+53 its stats as it joins,
+  +54 weapon experience, +80 its skills. 17 episodes give one; E004, E005 and E022-E027 none.
+- Growths: the template's, plus its asset's and flaw's (the level-up's growth, 0x264858, adds the unit's asset and flaw to its person's);
+  modifiers likewise. Its class set is its own class and every regular class of its gender, as the Avatar's (Serenes Forest's class sets).
+  They have no supports.
+- English: the episode's `m/E/E000.bin` (its title, MCID_E000, and the unit's name) and the global archives' `m/E/E0xxG.bin` (the DLC
+  classes and skills: Dread Fighter, Bride, Resistance +10, Aggressor, Rally Heart, Bond, Limit Breaker...), read from the archives.
+- Every recruit's level, stats, Mov, skills and modifiers match Serenes Forest's DLC pages (the test); Roy's growths are its worked
+  example. Lodestar's record teaches no skills. When an episode opens (after Chapter 4) and the Path of a Grandmaster episodes'
+  conditions are Serenes Forest's.
+
 ## Not traced in the code (taken from Serenes Forest or the Fire Emblem Wiki)
 
 - Changing class adds the difference between the two classes' bases and starts at Lv 1; seals work from Lv 10.
@@ -76,4 +93,6 @@ and says so.
   - Morgan starts in the other parent's first class (Tactician after a Lord, Dancer or Conqueror).
 - Assumed, not in the sources: a child married to the Avatar passes Morgan what they inherited themselves (growths, modifiers,
   classes) when their own parents are in the plan.
-- DLC and SpotPass characters aren't listed yet.
+- A special class (neither promoted nor promoting: Villager, Dancer, Taguel, Manakete, Conqueror, Lodestar, Dread Fighter, Bride) goes
+  to Lv 30, the rest to 20 (no field for it was found in JobData).
+- The SpotPass characters aren't listed (by choice).

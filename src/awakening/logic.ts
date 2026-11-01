@@ -9,6 +9,8 @@ export interface Fe13Data {
 }
 
 export const MAX_LEVEL = 20
+/** A class's last level: 30 for a special class (Villager, Dancer, the DLC's Dread Fighter...), else 20. */
+export const maxLevelOf = (cls: Fe13Class) => cls.maxLevel ?? MAX_LEVEL
 /** A Master Seal promotes, and a Second Seal changes class, from Lv 10 (Serenes Forest). */
 export const SEAL_LEVEL = 10
 
@@ -75,7 +77,7 @@ export function project(
   for (const step of plan.steps) {
     const next = data.classes[step.to]
     if (!next) break
-    const at = Math.max(level, Math.min(MAX_LEVEL, step.at))
+    const at = Math.max(level, Math.min(maxLevelOf(cls), step.at))
     if (at > level) {
       stats = grow(stats, at - level, cls)
       stages.push({ classId: cls.id, level: at, stats })
@@ -87,7 +89,7 @@ export function project(
     level = 1
     stages.push({ classId: cls.id, level, stats })
   }
-  const target = Math.max(level, Math.min(MAX_LEVEL, plan.targetLevel))
+  const target = Math.max(level, Math.min(maxLevelOf(cls), plan.targetLevel))
   if (target > level) stages.push({ classId: cls.id, level: target, stats: grow(stats, target - level, cls) })
   return stages
 }

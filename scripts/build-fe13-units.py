@@ -1,7 +1,7 @@
 """
 Build src/data/fe13/fe13Units.ts from the user's own Fire Emblem Awakening dump (data-raw/fe13/romfs, from scripts/fe13_extract.py; see
-data-raw/fe13/README.md): the army, when and how each joins, their classes and class sets, supports, parents, and the classes' stats,
-skills and promotions.
+data-raw/fe13/README.md): the army, when and how each joins, their classes and class sets, supports, parents, the DLC episodes' recruits
+(scripts/fe13_dlc.py), and the classes' stats, skills and promotions.
 
 Run: python scripts/build-fe13-units.py
 """
@@ -11,6 +11,7 @@ import os
 import fe13_data as D
 from fe13_bin import Bin, ROMFS
 from fates_lz import decompress
+import fe13_dlc as X
 import fe13_growths as G
 from fe13_joins import AVATAR, CHAPTERS, joins, order
 
@@ -31,6 +32,14 @@ NOTES = {
     'PID_インバース': 'Only if she (the green unit) survives the chapter (Serenes Forest).',
     'PID_バジーリオ': 'After Validar is defeated (Serenes Forest).',
     'PID_フラヴィア': 'After Validar is defeated (Serenes Forest).',
+}
+# The DLC: when an episode opens, and the Path of a Grandmaster episodes' conditions (Serenes Forest's recruitment page).
+DLC_OPENS = 'DLC episodes open after Chapter 4 (Serenes Forest).'
+DLC_NOTES = {
+    'E018': 'Only if Algol is defeated within 10 turns (Serenes Forest).',
+    'E017': 'Only if all five NPC Annas survive (Serenes Forest).',
+    'E016': 'Only if all 7 Revenants (starting and reinforcements) are defeated (Serenes Forest).',
+    'E019': 'Only if all five enemy waves on the normal route are defeated (Serenes Forest).',
 }
 
 
@@ -73,10 +82,17 @@ def main():
     ptrs = set(b.ptrs)
     rec = {name: o for o, name in b.labels}
     jobs = D.classes()
+    # The DLC's classes and skills are named in its own text (Dread Fighter, Bride, Aggressor...).
+    dlc_text = X.global_text()
     gd = D.gamedata()
     job_recs = D.table('JobData', 128)
     jid_index = {c['jid']: i for i, c in enumerate(jobs)}
-    skills = [D.name_of(gd.str(gd.at['RemovableSkillData'] + 28 * k + 8)) for k in range(gd.u32(gd.at['RemovableSkillDataNum']))]
+    skill_recs = [gd.at['RemovableSkillData'] + 28 * k for k in range(gd.u32(gd.at['RemovableSkillDataNum']))]
+    skills = [D.name_of(gd.str(r + 8)) or dlc_text.get(gd.str(r + 8)) for r in skill_recs]
+    skill_by_id = {gd.str(r): name for r, name in zip(skill_recs, skills)}
+    for i, c in enumerate(jobs):
+        if not c['name']:
+            c['name'] = dlc_text.get(gd.str(job_recs[i] + 16))
     found = joins()
 
     def avatar_classes(female):
@@ -145,7 +161,38 @@ def main():
             **({'parent': b.str(o + 132)} if (o + 132) in ptrs else {}),
             'supports': supports,
         })
-    pid_to_id = {u['pid']: u['id'] for u in units}
+    # The DLC: the unit each episode gives, made from a template person (the Avatar's twin, or Marth's) with its own asset and flaw.
+    assets = read_assets()
+    dlc_chapters = []
+    for r in X.recruits():
+        cls = jid_index[r['jid']]
+        used.add(cls)
+        c = jobs[cls]
+        t = rec[r['template']]
+        traw = b.d[0x20 + t:0x20 + t + PERSON]
+        tg = G.person_growths(traw, t)
+        a, f = assets[r['asset'] - 1]['asset'], assets[r['flaw'] - 1]['flaw']
+        bases = dict(zip(STATS, r['stats']))
+        cbase = c['raw'][24:32]
+        sets = {}
+        for g in ('male', 'female'):
+            # Their own class and every regular class of their gender, as the Avatar (Serenes Forest's class sets).
+            own = [cls] if r['female'] == (g == 'female') else []
+            sets[g] = [f'c{i}' for i in dict.fromkeys(own + avatar_classes(g == 'female'))]
+            used.update(int(x[1:]) for x in sets[g])
+        chapter = f'fe13-{r["episode"].lower()}'
+        dlc_chapters.append({'id': chapter, 'label': f'DLC: {r["title"]}'})
+        notes = [x for x in (DLC_NOTES.get(r['episode']), DLC_OPENS) if x]
+        units.append({
+            'id': 'fe13-' + ''.join(ch if ch.isalnum() else '-' for ch in r['name'].lower()).strip('-').replace('--', '-'),
+            'pid': None, 'name': r['name'], 'female': r['female'], 'classId': f'c{cls}', 'level': r['level'], 'joinChapter': chapter,
+            'join': {'how': 'end', 'note': ' '.join(notes)},
+            'bases': {**bases, 'mov': c['mov']}, 'personal': {s: bases[s] - cbase[i] for i, s in enumerate(STATS)},
+            'growths': {s: tg[i] + a['growths'][s] + f['growths'][s] for i, s in enumerate(STATS)},
+            'modifiers': {s: s8(traw[52 + i]) + a['modifiers'][s] + f['modifiers'][s] for i, s in enumerate(STATS) if s != 'hp'},
+            'classSets': sets, 'supports': [], 'skills': [skill_by_id[k] for k in r['skills'] if skill_by_id.get(k)],
+        })
+    pid_to_id = {u['pid']: u['id'] for u in units if u['pid']}
     for u in units:
         if 'parent' in u:
             u['parent'] = pid_to_id.get(u['parent'], 'fe13-avatar-' + ('f' if u['parent'].endswith('女') else 'm'))
@@ -180,14 +227,16 @@ def main():
             'id': f'c{i}', 'name': c['name'], 'female': c['female'], 'promoted': promoted,
             'bases': {**dict(zip(STATS, raw[24:32])), 'mov': c['mov']}, 'caps': dict(zip(STATS, raw[48:56])),
             'growths': g, 'skills': learn, 'promotesTo': [f'c{j}' for j in promotions(i)],
+            # A special class (neither promoted nor promoting: Villager, Dancer, Taguel, Manakete, Conqueror and the DLC's Lodestar,
+            # Dread Fighter, Bride) goes to Lv 30 (Serenes Forest's class sets).
+            **({'maxLevel': 30} if not promoted and not promotions(i) else {}),
         }
 
-    chapters = [{'id': f'fe13-{k.lower()}', 'label': label(k)} for k in keys]
+    chapters = [{'id': f'fe13-{k.lower()}', 'label': label(k)} for k in keys] + dlc_chapters
 
     def js(v):
         return json.dumps(v, ensure_ascii=False)
 
-    assets = read_assets()
     lines = [
         "// Generated by scripts/build-fe13-units.py from the user's own Fire Emblem Awakening dump. Don't edit by hand.",
         "import type { Fe13Asset, Fe13Chapter, Fe13Class, Fe13Unit } from '../../awakening/types'",

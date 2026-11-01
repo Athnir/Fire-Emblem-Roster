@@ -13,6 +13,12 @@ const SF_PERSONAL_GROWTHS: Record<string, number[]> = {"Avatar": [40, 40, 35, 35
 // "A/B" names both classes; Taguel (M) and (F) are the two Taguel classes.
 const SF_CLASS_GROWTHS: Record<string, number[]> = {"Lord": [40, 20, 0, 20, 20, 0, 10, 5], "Great Lord": [40, 20, 0, 20, 20, 0, 10, 5], "Tactician": [40, 15, 15, 15, 15, 0, 10, 10], "Grandmaster": [40, 15, 15, 15, 15, 0, 10, 10], "Cavalier": [45, 20, 0, 20, 20, 0, 10, 5], "Paladin": [45, 20, 0, 20, 20, 0, 10, 10], "Great Knight": [50, 25, 0, 15, 15, 0, 15, 5], "Knight": [50, 25, 0, 15, 10, 0, 15, 5], "General": [50, 25, 0, 15, 10, 0, 15, 10], "Myrmidon": [40, 20, 0, 25, 25, 0, 5, 5], "Swordmaster": [40, 20, 0, 25, 25, 0, 5, 10], "Mercenary": [45, 20, 0, 25, 20, 0, 10, 5], "Hero": [45, 20, 0, 25, 20, 0, 10, 5], "Fighter": [45, 25, 0, 20, 15, 0, 10, 5], "Warrior": [45, 25, 0, 20, 15, 0, 10, 5], "Barbarian": [50, 25, 0, 15, 20, 0, 5, 5], "Berserker": [50, 25, 0, 15, 20, 0, 5, 5], "Archer": [45, 15, 0, 30, 15, 0, 10, 5], "Sniper": [45, 15, 0, 30, 15, 0, 15, 5], "Bow Knight": [50, 20, 0, 25, 20, 0, 5, 5], "Thief": [35, 15, 5, 25, 25, 0, 5, 5], "Assassin": [40, 20, 0, 30, 25, 0, 5, 5], "Trickster": [35, 10, 15, 25, 20, 0, 5, 10], "Pegasus Knight": [40, 15, 5, 25, 25, 0, 5, 10], "Falcon Knight": [40, 15, 10, 25, 25, 0, 5, 10], "Dark Flier": [40, 10, 15, 20, 20, 0, 5, 10], "Wyvern Rider/Lord": [45, 30, 0, 15, 15, 0, 10, 5], "Griffon Rider": [45, 25, 0, 20, 20, 0, 5, 5], "Mage": [35, 0, 20, 20, 20, 0, 5, 10], "Sage": [35, 0, 20, 20, 20, 0, 5, 10], "Dark Mage": [50, 5, 15, 15, 15, 0, 10, 10], "Sorcerer": [45, 0, 20, 15, 15, 0, 10, 10], "Dark Knight": [50, 15, 15, 15, 15, 0, 10, 5], "Priest": [35, 5, 15, 15, 15, 0, 5, 15], "Cleric": [35, 5, 15, 15, 15, 0, 5, 15], "War Monk/Cleric": [45, 15, 15, 10, 15, 0, 10, 10], "Troubadour": [35, 0, 20, 10, 20, 0, 5, 15], "Valkyrie": [35, 0, 20, 10, 20, 0, 5, 15], "Villager": [35, 10, 0, 5, 5, 0, 10, 5], "Dancer": [35, 5, 0, 25, 25, 0, 5, 5], "Taguel (M)": [45, 20, 0, 15, 15, 0, 15, 5], "Taguel (F)": [40, 15, 0, 20, 20, 0, 10, 5], "Manakete": [50, 20, 5, 20, 20, 0, 15, 15], "Lodestar": [40, 20, 0, 20, 20, 0, 10, 5], "Conqueror": [50, 20, 5, 15, 15, 0, 10, 10], "Dread Fighter": [40, 20, 10, 20, 20, 0, 10, 10], "Bride": [40, 20, 10, 20, 20, 0, 10, 10], "Soldier": [40, 10, 0, 10, 10, 0, 5, 5]}
 
+// DLC recruits (characters/base-stats/dlc): Lv, HP, Str, Mag, Skl, Spd, Lck, Def, Res, Mov (a skill's bonus, Luck +4 or Resistance +10,
+// left off), and their skills; (characters/maximum-stats/modifiers, DLC characters): Str to Res, then the asset and the flaw.
+const SF_DLC_BASES: Record<string, number[]> = {"Pr. Marth": [8, 25, 10, 2, 12, 12, 8, 7, 3, 6], "Roy": [11, 27, 11, 1, 13, 12, 6, 8, 0, 5], "Micaiah": [12, 26, 2, 13, 12, 11, 14, 7, 11, 5], "Leif": [1, 40, 22, 20, 25, 28, 24, 17, 12, 6], "Alm": [21, 50, 26, 5, 21, 20, 18, 22, 17, 6], "Seliph": [2, 43, 22, 11, 23, 28, 25, 19, 12, 6], "Elincia": [6, 40, 16, 18, 24, 25, 19, 12, 19, 8], "Eirika": [23, 44, 20, 12, 26, 26, 22, 17, 16, 6], "Lyn": [8, 44, 23, 8, 31, 36, 21, 14, 12, 6], "Ephraim": [20, 71, 40, 3, 35, 33, 31, 36, 10, 7], "Celica": [20, 53, 6, 35, 31, 31, 34, 21, 25, 6], "Ike": [20, 76, 41, 16, 38, 37, 30, 33, 18, 6], "Eldigan": [14, 54, 27, 8, 34, 26, 11, 29, 31, 8], "Est": [5, 20, 6, 2, 7, 13, 11, 8, 6, 7], "Catria": [20, 58, 31, 24, 34, 44, 34, 24, 18, 8], "Palla": [20, 60, 38, 27, 45, 40, 25, 27, 22, 8], "Katarina": [20, 56, 12, 37, 36, 35, 34, 24, 25, 6]}
+const SF_DLC_SKILLS: Record<string, string[]> = {"Pr. Marth": ["Aptitude", "Charm"], "Roy": ["Dual Strike+", "Aegis"], "Micaiah": ["Shadowgift", "Rally Luck"], "Leif": ["Underdog", "Locktouch", "Renewal"], "Alm": ["Resistance +10", "Aggressor", "Rally Resistance"], "Seliph": ["Galeforce", "Avoid +10", "Charm"], "Elincia": ["Charm", "Rally Speed", "Dual Support+", "Renewal"], "Eirika": ["Rally Heart", "Bond", "Luck +4", "Miracle"], "Lyn": ["Avoid +10", "Zeal", "Acrobat", "Astra"], "Ephraim": ["Conquest", "Outdoor Fighter", "Luna", "Deliverer", "Defender"], "Celica": ["Rightful King", "Tomefaire", "Miracle", "Aegis", "Dual Support+"], "Ike": ["Aether", "Patience", "Sol", "Axebreaker", "Luna"], "Eldigan": ["Outdoor Fighter", "Defender", "Charm", "Swordfaire"], "Est": ["Galeforce", "Aptitude", "Underdog", "Luck +4", "Luna"], "Catria": ["Galeforce", "Dual Strike+", "Lancefaire", "Tomefaire", "Astra"], "Palla": ["Galeforce", "Counter", "Rally Strength", "Rally Speed", "Sol"], "Katarina": ["Shadowgift", "Rally Strength", "Rally Magic", "Rally Speed", "Rally Spectrum"]}
+const SF_DLC_MODIFIERS: Record<string, (number | string)[]> = {"Pr. Marth": [1, 1, 0, 0, 3, -1, -1, "Lck", "HP"], "Roy": [-1, 0, 3, 0, 0, 1, 0, "Skl", "Str"], "Micaiah": [0, 4, 0, 2, -1, -3, 1, "Mag", "Def"], "Leif": [-1, 0, -1, 4, 2, -1, 0, "Spd", "Skl"], "Alm": [4, 0, 1, -3, -1, 2, 0, "Str", "Spd"], "Seliph": [4, 0, 1, -3, -1, 2, 0, "Str", "Spd"], "Elincia": [-1, 3, 0, 2, -1, -1, 1, "Mag", "HP"], "Eirika": [0, 0, 2, 4, 1, -3, -1, "Spd", "Def"], "Lyn": [0, 0, 2, 4, 1, -3, -1, "Spd", "Def"], "Ephraim": [4, -1, 2, -1, 0, 2, -3, "Str", "Res"], "Celica": [-3, 4, -1, 2, 0, -1, 2, "Mag", "Str"], "Ike": [3, -1, 2, 0, -3, 2, 0, "Str", "Lck"], "Eldigan": [1, -1, 4, 0, -3, 2, 0, "Skl", "Lck"], "Est": [4, -3, 2, -1, 0, 2, -1, "Str", "Mag"], "Catria": [-1, -1, 2, 4, 1, -1, -1, "Spd", "HP"], "Palla": [2, 0, 3, -3, -1, 2, 0, "Skl", "Spd"], "Katarina": [-1, 3, 0, 2, -3, 0, 2, "Mag", "Lck"]}
+
 const STATS = ['hp', 'str', 'mag', 'skl', 'spd', 'lck', 'def', 'res'] as const
 const unit = (name: string) => FE13_UNITS.find((u) => u.name === name)!
 const cls = (id: string) => FE13_CLASSES[id].name
@@ -94,7 +100,7 @@ describe('Awakening units', () => {
 
   it("decodes every unit's and class's growths to Serenes Forest's", () => {
     let units = 0
-    for (const u of FE13_UNITS) {
+    for (const u of FE13_UNITS.filter((x) => !x.joinChapter.startsWith('fe13-e0'))) {
       const sf = SF_PERSONAL_GROWTHS[u.name] ?? SF_PERSONAL_GROWTHS[u.name.replace(/ \([MF]\)$/, '')]
       expect([u.name, !!sf]).toEqual([u.name, true])
       expect([u.name, ...STATS.map((s) => u.growths[s])]).toEqual([u.name, ...sf])
@@ -112,5 +118,25 @@ describe('Awakening units', () => {
       classes++
     }
     expect(classes).toBe(Object.keys(FE13_CLASSES).length)
+  })
+
+  it("reads the DLC recruits as Serenes Forest lists them: level, stats, Mov, skills, asset and flaw, and modifiers", () => {
+    const dlc = FE13_UNITS.filter((u) => u.joinChapter.startsWith('fe13-e0'))
+    expect(dlc.map((u) => u.name).sort()).toEqual(Object.keys(SF_DLC_BASES).sort())
+    for (const u of dlc) {
+      expect([u.name, u.level, ...STATS.map((s) => u.bases[s]), u.bases.mov]).toEqual([u.name, ...SF_DLC_BASES[u.name]])
+      // The same skills; the game's order is kept (Lyn's: Zeal first).
+      expect([u.name, [...u.skills!].sort()]).toEqual([u.name, [...SF_DLC_SKILLS[u.name]].sort()])
+      const sf = SF_DLC_MODIFIERS[u.name]
+      expect([u.name, ...STATS.slice(1).map((s) => u.modifiers[s as Exclude<typeof s, 'hp'>])]).toEqual([u.name, ...sf.slice(0, 7)])
+      expect(u.supports).toEqual([])
+    }
+  })
+
+  it("gives a DLC recruit its template's growths plus its asset's and flaw's: Serenes Forest's worked example, Roy", () => {
+    const roy = unit('Roy')
+    expect(STATS.map((s) => roy.growths[s])).toEqual([40, 35, 35, 45, 35, 55, 30, 20])
+    // Marth is made from the old Marth (45, 40, 20, 45, 45, 80, 35, 25) with a Luck asset and an HP flaw.
+    expect(STATS.map((s) => unit('Pr. Marth').growths[s])).toEqual([25, 45, 25, 45, 45, 95, 30, 20])
   })
 })

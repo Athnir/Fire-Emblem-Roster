@@ -3,6 +3,7 @@ import { Portrait } from '../components/Portrait'
 import { useScreenshotContextStore } from '../state/screenshotContextStore'
 import {
   MAX_LEVEL,
+  maxLevelOf,
   SEAL_LEVEL,
   capsOf,
   childOf,
@@ -151,7 +152,7 @@ function joinText(data: Fe13Data, u: Fe13Unit): string {
   if (j.how === 'talk') return `${where}: talk with ${j.with?.join(' or ') ?? 'another unit'}`
   if (j.how === 'visit') return `${where}: visit a village${j.with?.length ? ` with ${j.with.join(' or ')}` : ''}`
   if (j.how === 'event') return `${where}: joins ${j.turn ? `on turn ${j.turn}` : 'during the chapter'}`
-  if (j.how === 'end') return `${where}: joins at the end of the chapter`
+  if (j.how === 'end') return `${where}: joins at the end of the ${where.startsWith('DLC') ? 'episode' : 'chapter'}`
   return `${where}: joins at the start`
 }
 
@@ -204,6 +205,12 @@ function UnitDetail({ data, unit }: { data: Fe13Data; unit: Fe13Unit }) {
             <div>
               <span className="text-neutral-500">Parent: </span>
               {byId.get(unit.parent)?.name ?? unit.parent}
+            </div>
+          )}
+          {unit.skills && unit.skills.length > 0 && (
+            <div>
+              <span className="text-neutral-500">Skills: </span>
+              {unit.skills.join(', ')}
             </div>
           )}
           <div>
@@ -296,7 +303,7 @@ export function Fe13Planner({ data: raw }: { data: Fe13Data }) {
   const spouses = useFe13Store((s) => s.spouses)
   const plans = useFe13Store((s) => s.plans)
   const setPlan = useFe13Store((s) => s.setPlan)
-  const plan: Fe13Plan = saved ?? { steps: [], targetLevel: MAX_LEVEL }
+  const plan: Fe13Plan = saved ?? { steps: [], targetLevel: maxLevelOf(data.classes[unit.classId]) }
   const update = (patch: Partial<Fe13Plan>) => setPlan(unit.id, { ...plan, ...patch })
   // A child whose parent is married in the Marriage Planner joins with what they inherit (Morgan in the other parent's class).
   const child = unit.parent ? childOf(data, unit, spouses, plans) : null
@@ -315,7 +322,7 @@ export function Fe13Planner({ data: raw }: { data: Fe13Data }) {
     return row
   })
   const finalClass = data.classes[current]
-  const levels = (from: number) => Array.from({ length: MAX_LEVEL - from + 1 }, (_, i) => from + i)
+  const levels = (from: number, to = MAX_LEVEL) => Array.from({ length: Math.max(0, to - from + 1) }, (_, i) => from + i)
   const setStep = (i: number, patch: Partial<{ at: number; to: string }>) => {
     const steps = plan.steps.slice(0, i + 1).map((s, k) => (k === i ? { ...s, ...patch } : s))
     // Changing a step's class drops the steps after it: their choices may not be open any more.
@@ -344,7 +351,7 @@ export function Fe13Planner({ data: raw }: { data: Fe13Data }) {
               <label className="space-y-1">
                 <span className="block text-xs text-neutral-500">At Lv</span>
                 <select value={step.at} onChange={(e) => setStep(i, { at: Number(e.target.value) })} className={selectClass}>
-                  {levels(Math.max(SEAL_LEVEL, lv)).map((l) => (
+                  {levels(Math.max(SEAL_LEVEL, lv), maxLevelOf(data.classes[from])).map((l) => (
                     <option key={l} value={l}>
                       {l}
                     </option>
@@ -360,7 +367,7 @@ export function Fe13Planner({ data: raw }: { data: Fe13Data }) {
             {plan.steps.length < MAX_STEPS && nextOptions.length > 0 && (
               <button
                 type="button"
-                onClick={() => update({ steps: [...plan.steps, { at: MAX_LEVEL, to: (finalClass.promotesTo[0] ?? nextOptions[0]) as string }] })}
+                onClick={() => update({ steps: [...plan.steps, { at: maxLevelOf(finalClass), to: (finalClass.promotesTo[0] ?? nextOptions[0]) as string }] })}
                 className="rounded-md bg-neutral-800 px-3 py-1 text-sm text-neutral-300 hover:bg-neutral-700"
               >
                 Add a class change
@@ -368,8 +375,12 @@ export function Fe13Planner({ data: raw }: { data: Fe13Data }) {
             )}
             <label className="space-y-1">
               <span className="block text-xs text-neutral-500">Up to Lv (as {finalClass.name})</span>
-              <select value={Math.max(rows.length ? 1 : unit.level, plan.targetLevel)} onChange={(e) => update({ targetLevel: Number(e.target.value) })} className={selectClass}>
-                {levels(rows.length ? 1 : unit.level).map((l) => (
+              <select
+                value={Math.min(maxLevelOf(finalClass), Math.max(rows.length ? 1 : unit.level, plan.targetLevel))}
+                onChange={(e) => update({ targetLevel: Number(e.target.value) })}
+                className={selectClass}
+              >
+                {levels(rows.length ? 1 : unit.level, maxLevelOf(finalClass)).map((l) => (
                   <option key={l} value={l}>
                     {l}
                   </option>

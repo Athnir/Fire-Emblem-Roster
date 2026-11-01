@@ -55,6 +55,8 @@ export interface Fe13Unit {
   classSets: { male: string[]; female: string[] }
   /** A child's fixed parent. */
   parent?: string
+  /** The skills they join with (the DLC recruits). */
+  skills?: string[]
   supports: Fe13Support[]
 }
 
@@ -69,6 +71,8 @@ export interface Fe13Class {
   /** The skills it teaches and the class level they come at. */
   skills: { skill: string; level: number }[]
   promotesTo: string[]
+  /** The level it stops at: 30 for a special class (neither promoted nor promoting), else 20. */
+  maxLevel?: number
 }
 
 /** What the Avatar's asset or flaw changes. */
