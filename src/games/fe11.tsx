@@ -14,9 +14,9 @@ export const FE11_DATA: GbaData = {
   growing: ['hp', 'str', 'mag', 'skl', 'spd', 'lck', 'def', 'res'],
   statLabels: { str: 'Str' },
   promotionText:
-    "Growths are the unit's own plus the class's, never below 0; the game also adds a catch-up bonus to a stat that has fallen behind its growth, not counted here. A stat is the unit's own plus the class's bases, held at the class's cap and shown as 0 below 0, so a class change swaps one class's bases for the other's and a lower cap hides nothing for good (the game's code). From Chapter 4, at the battle preparations, a unit can reclass within its set and tier, keeping its level; one promoted with the Elysian Whip is offered the Falcoknight in place of the Dracoknight. A Master Seal promotes from Lv 10, back to Lv 1 (the code; the Lv 10 and Chapter 4 are Serenes Forest's). Lords, Thieves, Ballisticians, the Freelancer and Manaketes have no set.",
+    "Growths are the unit's own plus the class's, never below 0, and a stat that has fallen behind its growths gets a catch-up bonus of a tenth of the shortfall; the averages count it exactly, through every level-up and class change (the game's code). A stat is the unit's own plus the class's bases, held at the class's cap and shown as 0 below 0, so a class change swaps one class's bases for the other's and a lower cap hides nothing for good (the game's code). From Chapter 4, at the battle preparations, a unit can reclass within its set and tier, keeping its level; one promoted with the Elysian Whip is offered the Falcoknight in place of the Dracoknight. A Master Seal promotes from Lv 10, back to Lv 1 (the code; the Lv 10 and Chapter 4 are Serenes Forest's). Lords, Thieves, Ballisticians, the Freelancer and Manaketes have no set.",
   reclassSwap: FE11_RECLASS_SWAP,
-  readsClassBases: true,
+  catchUp: true,
   supports: [],
   supportLevels: [],
   affinities: [],

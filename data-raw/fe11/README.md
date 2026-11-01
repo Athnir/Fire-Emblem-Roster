@@ -57,8 +57,11 @@ Serenes Forest lists a unit joining at a chapter's end under the next chapter; t
   other's, and a stat a lower cap holds back comes back in a class with a higher one.
 - A level-up (0x203d6dc), each stat: the chance is the person's growth + the class's, plus a catch-up bonus of a tenth of how far the
   points gained (x100) are behind a running total of the growths (unit +0x58, adding each level the growth, never below 0, unless the
-  stat is at its cap). 100 or more gives a point and the rest is rolled; nothing is added at the cap. The app's averages don't count the
-  catch-up.
+  stat is at its cap). 100 or more gives a point and the rest is rolled; nothing is added at the cap. A unit joins with no points gained
+  and running totals of 0 (unit creation, 0x2039ff8: gained from the placement record's +0x1c-+0x23, 0 for every recruit; the totals
+  zeroed; only foes the Hard modes level, records flagged 0x10 / 0x100, get them seeded). The planner works the averages out exactly
+  (`src/gba/dynamicGrowth.ts`: each stat a distribution of [points, total] through every level-up and class change). Serenes Forest's
+  "dynamic growth" page describes the same rule from play.
 - The promotion (0x203d840): the class given, or the class's own (+0x40); Lv 1, experience 0.
 
 ## Not found in the program (Serenes Forest's)

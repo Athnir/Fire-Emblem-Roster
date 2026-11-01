@@ -18,6 +18,7 @@ import {
   type GbaSupportBonus,
   type GbaUnit,
 } from './types'
+import { averageShown, joinState, levelUp } from './dynamicGrowth'
 
 /** Everything a GBA game's screens need, passed in so the screens don't import a game's data. */
 export interface GbaData {
@@ -45,9 +46,10 @@ export interface GbaData {
   /** Fixed supports instead of support points (Mystery of the Emblem), and what they add, in words. */
   supportBonuses?: GbaSupportBonus[]
   supportBonusText?: string
-  /** A stat is the unit's own plus the current class's bases, read through the class's cap and floored at 0, so a class change keeps
-   * what a lower cap hides (Shadow Dragon, arm9 0x203c6c0). */
-  readsClassBases?: boolean
+  /** Shadow Dragon's stats and level-ups (arm9 0x203c6c0, 0x203d6dc): a stat is the unit's own base + the class's + the points gained,
+   * read through the class's cap and floored at 0, and a level-up adds a catch-up bonus; averages worked out exactly, stat by stat
+   * (`dynamicGrowth.ts`). */
+  catchUp?: boolean
   /** Classes of a reclass set offered in turn (Shadow Dragon's Dracoknight and Falcoknight): the first, or the next once the unit has
    * been in it. */
   reclassSwap?: string[]
@@ -453,41 +455,70 @@ function stepsOf(data: GbaData, unit: GbaUnit, plan: GbaPlan): Step[] {
   return steps
 }
 
+/** Shadow Dragon's averages with the catch-up bonus: each stat a distribution of [points gained, running total] through every level-up
+ * of the plan, shown as the average of the stat as the game reads it (the unit's own base + the class's + the points, 0 below 0, held at
+ * the cap). A class change keeps the points and running totals and swaps the class's bases, caps and growths. */
+function projectCatchUp(data: GbaData, unit: GbaUnit, plan: GbaPlan): Stage[] {
+  const start = data.classes[unit.classId]
+  const own: GbaStats = {}
+  for (const s of statsOf(data)) own[s] = (unit.bases[s] ?? 0) - (start.bases[s] ?? 0)
+  const growing = new Set(growingOf(data))
+  const states = new Map(growingOf(data).map((s) => [s, joinState()]))
+  const shown = (cls: GbaClass): GbaStats => {
+    const caps = capsFor(unit, cls)
+    const out: GbaStats = {}
+    for (const s of statsOf(data)) {
+      const base = (own[s] ?? 0) + (cls.bases[s] ?? 0)
+      out[s] = growing.has(s) ? averageShown(states.get(s)!, base, caps[s]) : Math.max(0, base)
+    }
+    return out
+  }
+  const levelUps = (cls: GbaClass, count: number) => {
+    const caps = capsFor(unit, cls)
+    for (let i = 0; i < count; i++)
+      for (const s of growing)
+        states.set(s, levelUp(states.get(s)!, (unit.growths[s] ?? 0) + (cls.growths?.[s] ?? 0), (own[s] ?? 0) + (cls.bases[s] ?? 0), caps[s]))
+  }
+  let cls = start
+  let level = unit.level
+  const stages: Stage[] = [{ classId: cls.id, level, stats: shown(cls) }]
+  for (const step of stepsOf(data, unit, plan)) {
+    levelUps(cls, step.at - level)
+    if (step.at > level) stages.push({ classId: cls.id, level: step.at, stats: shown(cls) })
+    cls = step.to
+    level = step.promotion ? 1 : step.at
+    stages.push({ classId: cls.id, level, stats: shown(cls) })
+  }
+  const target = Math.max(level, Math.min(maxLevelOf(cls), plan.targetLevel))
+  if (target > level) {
+    levelUps(cls, target - level)
+    stages.push({ classId: cls.id, level: target, stats: shown(cls) })
+  }
+  return stages
+}
+
 /** Average stats: each level adds the growth rate, held at the class's caps. Promoting adds the new class's gains where the game keeps
  * them (Con and Mov from the class), otherwise the difference between the classes' bases, and starts again at level 1. */
 function project(data: GbaData, unit: GbaUnit, plan: GbaPlan): Stage[] {
+  if (data.catchUp) return projectCatchUp(data, unit, plan)
   const capped = (stats: GbaStats, cls: GbaClass) => {
     const out = { ...stats }
     const caps = capsFor(unit, cls)
     for (const s of statsOf(data)) if (caps[s] !== undefined && out[s] !== undefined) out[s] = Math.min(out[s]!, caps[s]!)
     return out
   }
-  // Shadow Dragon keeps the unit's own stats and reads them through the class (arm9 0x203c6c0): `stats` stays uncapped through class
-  // changes, and is capped and floored at 0 only as it's shown. A level-up adds nothing to a stat at its cap (0x203d6dc).
-  const raw = !!data.readsClassBases
-  const shown = (stats: GbaStats, cls: GbaClass) => {
-    if (!raw) return stats
-    const out = capped(stats, cls)
-    for (const s of statsOf(data)) if (out[s] !== undefined) out[s] = Math.max(0, out[s]!)
-    return out
-  }
   const grow = (stats: GbaStats, levels: number, cls: GbaClass) => {
     const out = { ...stats }
-    const caps = capsFor(unit, cls)
-    for (const s of growingOf(data)) {
-      const cur = out[s] ?? 0
-      const next = cur + (growthIn(unit, cls, s) / 100) * Math.max(0, levels)
-      out[s] = raw && caps[s] !== undefined ? (cur >= caps[s]! ? cur : Math.min(caps[s]!, next)) : next
-    }
-    return raw ? out : capped(out, cls)
+    for (const s of growingOf(data)) out[s] = (out[s] ?? 0) + (growthIn(unit, cls, s) / 100) * Math.max(0, levels)
+    return capped(out, cls)
   }
   let cls = data.classes[unit.classId]
   let level = unit.level
   let stats: GbaStats = { ...unit.bases }
-  const stages: Stage[] = [{ classId: cls.id, level, stats: shown(stats, cls) }]
+  const stages: Stage[] = [{ classId: cls.id, level, stats }]
   for (const step of stepsOf(data, unit, plan)) {
     stats = grow(stats, step.at - level, cls)
-    if (step.at > level) stages.push({ classId: cls.id, level: step.at, stats: shown(stats, cls) })
+    if (step.at > level) stages.push({ classId: cls.id, level: step.at, stats })
     stats = { ...stats }
     // The game's own gains when its class data has them (The Blazing Blade 0x08029818, The Sacred Stones 0x0802BC20: added, held at
     // the new caps; Con and Mov come from the class); otherwise the difference between the two classes' bases.
@@ -501,15 +532,15 @@ function project(data: GbaData, unit: GbaUnit, plan: GbaPlan): Stage[] {
       for (const s of data.promotion.difference) stats[s] = (stats[s] ?? 0) + diff(s)
       for (const s of data.promotion.raise) stats[s] = Math.max(stats[s] ?? 0, step.to.bases[s] ?? 0)
     } else {
-      for (const s of statsOf(data)) if (s !== 'lck' || raw) stats[s] = (stats[s] ?? 0) + diff(s)
+      for (const s of statsOf(data)) if (s !== 'lck') stats[s] = (stats[s] ?? 0) + diff(s)
     }
-    if (!raw) stats = capped(stats, step.to)
+    stats = capped(stats, step.to)
     cls = step.to
     level = step.promotion ? 1 : step.at
-    stages.push({ classId: cls.id, level, stats: shown(stats, cls) })
+    stages.push({ classId: cls.id, level, stats })
   }
   const target = Math.max(level, Math.min(maxLevelOf(cls), plan.targetLevel))
-  if (target > level) stages.push({ classId: cls.id, level: target, stats: shown(grow(stats, target - level, cls), cls) })
+  if (target > level) stages.push({ classId: cls.id, level: target, stats: grow(stats, target - level, cls) })
   return stages
 }
 
@@ -527,7 +558,8 @@ export function GbaPlanner({ data: game }: { data: GbaData }) {
   const plan: GbaPlan = saved ?? {
     promoteAt: first.length ? maxLevelOf(start) : null,
     targetLevel: MAX_LEVEL,
-    promoteAt2: first.length && isPromotion(data, start, first[0]) && changesOf(data, unit, first[0]).length ? MAX_LEVEL : null,
+    // A second promotion by default only where there is one (a trainee's), never a reclass.
+    promoteAt2: first.length && isPromotion(data, start, first[0]) && optionsOf(data, first[0]).length ? MAX_LEVEL : null,
   }
   const atOf = [plan.promoteAt, plan.promoteAt2 ?? null, plan.promoteAt3 ?? null]
   const patchAt = (i: number, v: number | null): Partial<GbaPlan> => (i === 0 ? { promoteAt: v } : i === 1 ? { promoteAt2: v } : { promoteAt3: v })
@@ -618,7 +650,8 @@ export function GbaPlanner({ data: game }: { data: GbaData }) {
           )}
         </div>
         <p className="text-xs text-neutral-500">
-          Average stats: each level adds the growth rate. Stats stop at the {unit.caps ? "unit's own maximums" : "class's caps"} (green).{' '}
+          {data.catchUp ? 'Average stats, from the level-up rule below.' : 'Average stats: each level adds the growth rate.'} Stats stop at the{' '}
+          {unit.caps ? "unit's own maximums" : "class's caps"} (green).{' '}
           {data.promotionText ?? 'A promotion item works from Lv 10 and starts again at Lv 1 (Serenes Forest).'}{' '}
           {data.promotionText
             ? ''
