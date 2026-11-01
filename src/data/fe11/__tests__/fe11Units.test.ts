@@ -59,13 +59,25 @@ describe('Shadow Dragon units', () => {
     }
   })
 
-  it('keeps reclass sets within a tier, and leaves the unique classes out', () => {
+  it("reads the reclass sets from the class data, as Serenes Forest's three sets", () => {
+    // Serenes Forest's reclassing page: male A, male B and female, base then promoted. The game's female promoted set (+0x34 = 6) also
+    // holds the Falcoknight, which the reclass list offers in the Dracoknight's place to a unit that has been one.
+    const SF_SETS: Record<string, string[]> = {
+      'male A': ['Cavalier', 'Archer', 'Myrmidon', 'Mage', 'Curate', 'Paladin', 'Dracoknight', 'Sniper', 'Swordmaster', 'Sage', 'Bishop'],
+      'male B': ['Knight', 'Mercenary', 'Fighter', 'Hunter', 'Pirate', 'Dark Mage', 'General', 'Hero', 'Warrior', 'Horseman', 'Berserker', 'Sorcerer'],
+      female: ['Peg. Knight', 'Archer', 'Myrmidon', 'Mage', 'Cleric', 'Paladin', 'Dracoknight', 'Falcoknight', 'Sniper', 'Swordmaster', 'Sage', 'Bishop'],
+    }
     const set = (n: string) => FE11_UNITS.find((u) => u.name === n)!.reclass?.map((id) => FE11_CLASSES[id].name)
-    expect(set('Marth')).toBeUndefined()
-    expect(set('Julian')).toBeUndefined()
-    expect(set('Frey')).toEqual(['Cavalier', 'Archer', 'Myrmidon', 'Mage', 'Curate', 'Paladin', 'Dracoknight', 'Sniper', 'Swordmaster', 'Sage', 'Bishop'])
-    expect(set('Draug')).toEqual(['Knight', 'Mercenary', 'Fighter', 'Hunter', 'Pirate', 'Dark Mage', 'General', 'Hero', 'Warrior', 'Horseman', 'Berserker', 'Sorcerer'])
-    expect(set('Caeda')!.slice(0, 5)).toEqual(['Peg. Knight', 'Archer', 'Myrmidon', 'Mage', 'Cleric'])
+    for (const n of ['Marth', 'Julian', 'Rickard', 'Jake', 'Beck', 'Xane', 'Bantu', 'Tiki', 'Nagi']) expect([n, set(n)]).toEqual([n, undefined])
+    const sorted = (x: string[]) => [...x].sort()
+    expect(sorted(set('Frey')!)).toEqual(sorted(SF_SETS['male A']))
+    expect(sorted(set('Jagen')!)).toEqual(sorted(SF_SETS['male A']))
+    expect(sorted(set('Draug')!)).toEqual(sorted(SF_SETS['male B']))
+    expect(sorted(set('Horace')!)).toEqual(sorted(SF_SETS['male B']))
+    expect(sorted(set('Caeda')!)).toEqual(sorted(SF_SETS.female))
+    expect(sorted(set('Midia')!)).toEqual(sorted(SF_SETS.female))
+    // Base classes first, each tier in the game's column order (+0x35).
+    expect(set('Frey')!.slice(5, 7)).toEqual(['Dracoknight', 'Paladin'])
   })
 
   it("gives every unit's growths in each class of their set as Serenes Forest's full growths: own plus the class's, never below 0", () => {

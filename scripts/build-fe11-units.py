@@ -17,15 +17,10 @@ WEAPONS = ['sword', 'lance', 'axe', 'bow', 'tome', 'staff']
 PERSON, JOB = 80, 92
 # The class's name where the English text spells it with glyphs it can't show.
 NAMES = {'JID_SWORDMASTER': 'Swordmaster', 'JID_SWORDMASTER_F': 'Swordmaster'}
-# The reclass sets (Serenes Forest's reclassing page; not found in the program): a unit's set is the one its starting class is in.
-SETS = {
-    'male A': ['SOCIALKNIGHT', 'ARCHER', 'SWORDFIGHTER', 'MAGE', 'PRIEST', 'PALADIN', 'DRAGONKNIGHT', 'SNIPER', 'SWORDMASTER', 'SAGE',
-               'BISHOP'],
-    'male B': ['ARMORKNIGHT', 'MERCENARY', 'FIGHTER', 'HUNTER', 'PIRATES', 'DARKMAGE', 'GENERAL', 'HERO', 'WARRIOR', 'HORSEMEN',
-               'BERSERKER', 'SORCERER'],
-    'female': ['PEGASUSKNIGHT_F', 'ARCHER_F', 'SWORDFIGHTER_F', 'MAGE_F', 'SISTER_F', 'PALADIN_F', 'DRAGONKNIGHT_F', 'SNIPER_F',
-               'SWORDMASTER_F', 'SAGE_F', 'BISHOP_F'],
-}
+# The reclass sets are the class records' +0x34 (1 male A, 2 male B, 3 female; 4-6 their promoted classes; 0 none) and +0x35 (the
+# column, the class line the limits count): the preparations' reclass list (overlay 05, 0x2211058) offers every class whose +0x34 is the
+# unit's current class's. Of the female promoted set's two column-0 classes, it offers the Dracoknight, or the Falcoknight instead for a
+# unit with flag 0x20000000 (0x203c810: the unit's, person's or class's flags).
 # What a script leaves to the player, or decides by counting the army (Serenes Forest's recruitment page unless it says the file).
 NOTES = {
     'Frey': 'Only with the prologue (Normal mode).',
@@ -71,6 +66,7 @@ def main():
             'name': NAMES.get(jid) or j['name'], 'bases': {**dict(zip(STATS, map(signed, r[8:16]))), 'mov': r[0x29]},
             'growths': dict(zip(STATS, map(signed, r[0x10:0x18]))), 'caps': dict(zip(STATS, r[0x20:0x28])),
             'wexp': list(r[0x2c:0x32]), 'promoted': bool(r[0x39] & 0x08), 'to': job_ptr(o, 0x40), 'from': job_ptr(o, 0x3c),
+            'set': r[0x34], 'column': signed(r[0x35]),
         }
 
     J = {jid: job(jid) for jid in by_jid}
@@ -80,10 +76,14 @@ def main():
     for jid, v in J.items():
         if v['from'] and jid not in promotions[v['from']]:
             promotions[v['from']].append(jid)
-    set_of = {}
-    for name, members in SETS.items():
-        for m in members:
-            set_of.setdefault('JID_' + m, name)
+    # A unit's set: its starting class's +0x34 and the same set's other tier (+-3), base classes first, each tier by column.
+    def set_of(jid):
+        code = J[jid]['set']
+        if not code:
+            return []
+        family = {code, code + 3} if code <= 3 else {code - 3, code}
+        members = [x for x in J if J[x]['set'] in family]
+        return sorted(members, key=lambda x: (J[x]['set'] > 3, J[x]['column'], by_jid[x][0]['index']))
 
     units, used = [], set()
     for pid, j in joins().items():
@@ -111,13 +111,12 @@ def main():
             'joinChapter': j['chapter'], 'join': join, 'bases': bases, 'growths': dict(zip(STATS, map(signed, r[0x14:0x1c]))),
             'ranks': ranks,
         }
-        group = set_of.get(jid)
-        if group:
-            unit['reclass'] = [cid['JID_' + m] for m in SETS[group]]
+        members = set_of(jid)
+        if members:
+            unit['reclass'] = [cid[m] for m in members]
         units.append(unit)
         used.add(jid)
-        for m in SETS.get(group, []):
-            used.add('JID_' + m)
+        used.update(members)
     todo = list(used)
     while todo:
         for c in promotions[todo.pop()]:
@@ -142,6 +141,9 @@ def main():
         "import type { GbaChapter, GbaClass, GbaUnit } from '../../gba/types'",
         '',
         f'export const FE11_CHAPTERS: GbaChapter[] = {js(chapters)}',
+        '',
+        "// The female promoted set's column 0: the reclass list offers the Dracoknight, or the Falcoknight for a unit that has been one.",
+        f"export const FE11_RECLASS_SWAP: string[] = {js([cid['JID_DRAGONKNIGHT_F'], cid['JID_FALCONKNIGHT_F']])}",
         '',
         'export const FE11_UNITS: GbaUnit[] = [',
         *[f'  {js(u)},' for u in units],

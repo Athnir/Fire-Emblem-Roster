@@ -1,4 +1,4 @@
-import { FE11_CHAPTERS, FE11_CLASSES, FE11_UNITS } from '../data/fe11/fe11Units'
+import { FE11_CHAPTERS, FE11_CLASSES, FE11_RECLASS_SWAP, FE11_UNITS } from '../data/fe11/fe11Units'
 import { GbaPlanner, GbaRoster, type GbaData } from '../gba/screens'
 import { TelliusBulkUpload } from '../tellius/TelliusBulkUpload'
 import type { TelliusData } from '../tellius/types'
@@ -14,7 +14,8 @@ export const FE11_DATA: GbaData = {
   growing: ['hp', 'str', 'mag', 'skl', 'spd', 'lck', 'def', 'res'],
   statLabels: { str: 'Str' },
   promotionText:
-    "Growths are the unit's own plus the class's. From Chapter 4, at the battle preparations, a unit can reclass into another class of its set and tier, keeping its level; a Master Seal promotes from Lv 10 and starts again at Lv 1 (the Elysian Whip makes a Pegasus Knight a Falcoknight). Either change adds the difference between the two classes' bases (Serenes Forest; the class data is the game's). Lords, Thieves, Ballisticians, the Freelancer and Manaketes can't reclass.",
+    "Growths are the unit's own plus the class's. From Chapter 4, at the battle preparations, a unit can reclass into another class of its set and tier (the game's class data), keeping its level; a woman who has been a Falcoknight is offered it in place of the Dracoknight. A Master Seal promotes from Lv 10 and starts again at Lv 1 (the Elysian Whip makes a Pegasus Knight a Falcoknight). Either change adds the difference between the two classes' bases (Serenes Forest). Lords, Thieves, Ballisticians, the Freelancer and Manaketes have no set.",
+  reclassSwap: FE11_RECLASS_SWAP,
   supports: [],
   supportLevels: [],
   affinities: [],

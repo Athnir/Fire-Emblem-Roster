@@ -45,6 +45,9 @@ export interface GbaData {
   /** Fixed supports instead of support points (Mystery of the Emblem), and what they add, in words. */
   supportBonuses?: GbaSupportBonus[]
   supportBonusText?: string
+  /** Classes of a reclass set offered in turn (Shadow Dragon's Dracoknight and Falcoknight): the first, or the next once the unit has
+   * been in it. */
+  reclassSwap?: string[]
   /** Supports with a bonus per rank (Shadows of Valentia), and what to say about them. */
   rankedSupports?: GbaRankedSupport[]
   rankedSupportText?: string
@@ -387,12 +390,15 @@ const minLevelOf = (cls: GbaClass) => cls.promoteLevel ?? PROMOTE_LEVEL
 const capsFor = (unit: GbaUnit, cls: GbaClass): GbaStats => unit.caps ?? cls.caps
 const optionsOf = (data: GbaData, cls: GbaClass) =>
   (cls.promotions ?? (cls.promotesTo ? [cls.promotesTo] : [])).map((id) => data.classes[id]).filter(Boolean)
-/** Every change on offer from a class: its promotions, then (Shadow Dragon) the unit's reclass set's classes of the same tier. */
-const changesOf = (data: GbaData, unit: GbaUnit, cls: GbaClass) => {
+/** Every change on offer from a class: its promotions, then (Shadow Dragon) the unit's reclass set's classes of the same tier. `been`:
+ * the classes the unit has been in, for the swap (the Falcoknight replaces the Dracoknight once the unit has been one). */
+const changesOf = (data: GbaData, unit: GbaUnit, cls: GbaClass, been: string[] = [cls.id]) => {
   const promos = optionsOf(data, cls)
+  const [first, second] = data.reclassSwap ?? []
+  const hidden = second && been.includes(second) ? first : second
   const reclass = (unit.reclass ?? [])
     .map((id) => data.classes[id])
-    .filter((c) => c && c.id !== cls.id && !!c.promoted === !!cls.promoted && !promos.includes(c))
+    .filter((c) => c && c.id !== cls.id && c.id !== hidden && !!c.promoted === !!cls.promoted && !promos.includes(c))
   return [...promos, ...reclass]
 }
 /** A unit's growth in a class: their own plus what the class adds (Shadow Dragon), never below 0 (Serenes Forest's full growths: Marth's
@@ -426,8 +432,9 @@ function stepsOf(data: GbaData, unit: GbaUnit, plan: GbaPlan): Step[] {
     [plan.promoteAt2 ?? null, plan.to2],
     [plan.promoteAt3 ?? null, plan.to3],
   ]
+  const been = [cls.id]
   for (const [at, to] of wanted) {
-    const options = changesOf(data, unit, cls)
+    const options = changesOf(data, unit, cls, been)
     if (!options.length) break
     const forced = !!cls.autoPromote
     if (!forced && at === null) break
@@ -436,6 +443,7 @@ function stepsOf(data: GbaData, unit: GbaUnit, plan: GbaPlan): Step[] {
     const promotion = isPromotion(data, cls, next)
     const taken = forced ? max : Math.max(level, promotion ? minLevelOf(cls) : level, Math.min(max, at!))
     steps.push({ from: cls, options, to: next, at: taken, forced, promotion })
+    been.push(next.id)
     cls = next
     level = promotion ? 1 : taken
   }
@@ -519,7 +527,7 @@ export function GbaPlanner({ data: game }: { data: GbaData }) {
   if (first.length) offers.push({ index: 0, from: start, options: first, fromLevel: unit.level })
   for (const i of [1, 2]) {
     const prev = steps[i - 1]
-    const next = prev ? changesOf(data, unit, prev.to) : []
+    const next = prev ? changesOf(data, unit, prev.to, [unit.classId, ...steps.slice(0, i).map((s) => s.to.id)]) : []
     if (prev && next.length) offers.push({ index: i, from: prev.to, options: next, fromLevel: prev.promotion ? 1 : prev.at })
   }
   const reclassing = !!unit.reclass
