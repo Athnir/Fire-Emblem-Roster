@@ -177,7 +177,7 @@ export const characters: Character[] = [
   },
   {
     id: 'gunter', name: 'Gunter', gender: 'M', route: ['Conquest', 'Revelation'], startingLevel: {Conquest: 10},
-    startingClass: 'Cavalier', secondaryClass: 'Mercenary', joinClass: 'Great Knight',
+    startingClass: 'Cavalier', secondaryClass: 'Mercenary', tertiaryClass: 'Wyvern Rider', joinClass: 'Great Knight',
     baseStats: s(34, 17, 0, 24, 10, 13, 20, 6), growthRates: s(15, 5, 0, 5, 0, 15, 5, 5),
     statCaps: s(65, 35, 25, 29, 27, 28, 37, 28), maxStatModifiers: s(0, 2, 0, 1, -2, 0, 2, -2),
     personalSkill: 'Forceful Partner', supportOptions: [], canMarry: [], isChild: false,
@@ -226,7 +226,7 @@ export const characters: Character[] = [
   },
   {
     id: 'flora', name: 'Flora', gender: 'F', route: ['Conquest', 'Revelation'], startingLevel: {Conquest: 5, Revelation: 5},
-    startingClass: 'Troubadour', secondaryClass: 'Dark Mage', joinClass: 'Maid',
+    startingClass: 'Troubadour', secondaryClass: 'Dark Mage', tertiaryClass: 'Mercenary', joinClass: 'Maid',
     baseStats: s(29, 18, 16, 25, 15, 11, 14, 23), growthRates: s(35, 40, 20, 45, 30, 35, 30, 30),
     statCaps: s(50, 28, 31, 33, 33, 32, 29, 29), maxStatModifiers: s(0, 1, -1, 2, 0, -1, 1, -1),
     personalSkill: 'Icy Blood', supportOptions: [], canMarry: [], isChild: false,
@@ -310,7 +310,7 @@ export const characters: Character[] = [
   },
   {
     id: 'reina', name: 'Reina', gender: 'F', route: ['Birthright', 'Revelation'], startingLevel: {Birthright: 1, Revelation: 1},
-    startingClass: 'Sky Knight', secondaryClass: 'Diviner', joinClass: 'Kinshi Knight',
+    startingClass: 'Sky Knight', secondaryClass: 'Diviner', tertiaryClass: 'Ninja', joinClass: 'Kinshi Knight',
     baseStats: s(28, 17, 5, 14, 20, 14, 10, 13), growthRates: s(40, 45, 5, 20, 45, 10, 20, 10),
     statCaps: s(50, 27, 26, 33, 31, 34, 25, 31), maxStatModifiers: s(0, 2, 0, 0, 2, -1, -2, -1),
     personalSkill: 'Morbid Celebration', supportOptions: [], canMarry: [], isChild: false,
@@ -324,28 +324,28 @@ export const characters: Character[] = [
   },
   {
     id: 'scarlet', name: 'Scarlet', gender: 'F', route: ['Birthright'], startingLevel: {Birthright: 1},
-    startingClass: 'Wyvern Rider', secondaryClass: 'Outlaw', joinClass: 'Wyvern Lord',
+    startingClass: 'Wyvern Rider', secondaryClass: 'Outlaw', tertiaryClass: 'Knight', joinClass: 'Wyvern Lord',
     baseStats: s(30, 23, 4, 17, 19, 14, 22, 6), growthRates: s(30, 45, 20, 40, 50, 40, 25, 20),
     statCaps: s(60, 33, 25, 33, 29, 28, 35, 26), maxStatModifiers: s(0, 2, 0, 0, 1, -1, 1, -2),
     personalSkill: 'In Extremis', supportOptions: [], canMarry: [], isChild: false,
   },
   {
     id: 'yukimura', name: 'Yukimura', gender: 'M', route: ['Birthright'], startingLevel: {Birthright: 10},
-    startingClass: 'Apothecary', secondaryClass: 'Samurai', joinClass: 'Mechanist',
+    startingClass: 'Apothecary', secondaryClass: 'Samurai', tertiaryClass: 'Monk', joinClass: 'Mechanist',
     baseStats: s(38, 25, 3, 29, 23, 18, 21, 22), growthRates: s(25, 25, 5, 40, 15, 30, 25, 30),
     statCaps: s(60, 30, 25, 33, 30, 30, 31, 31), maxStatModifiers: s(0, -1, 0, 3, -1, 0, -1, 0),
     personalSkill: 'Perspicacious', supportOptions: [], canMarry: [], isChild: false,
   },
   {
     id: 'shura', name: 'Shura', gender: 'M', route: ['all'], startingLevel: {Birthright: 10, Conquest: 2, Revelation: 10},
-    startingClass: 'Outlaw', secondaryClass: 'Ninja', joinClass: 'Adventurer',
+    startingClass: 'Outlaw', secondaryClass: 'Ninja', tertiaryClass: 'Fighter', joinClass: 'Adventurer',
     baseStats: s(34, 20, 11, 23, 27, 15, 14, 24), growthRates: s(30, 25, 10, 20, 35, 30, 15, 35),
     statCaps: s(50, 27, 31, 27, 34, 27, 25, 34), maxStatModifiers: s(0, -1, 0, -1, 3, -1, -2, 2),
     personalSkill: 'Highwayman', supportOptions: [], canMarry: [], isChild: false,
   },
   {
     id: 'izana', name: 'Izana', gender: 'M', route: ['Birthright', 'Conquest'], startingLevel: {Birthright: 5, Conquest: 5},
-    startingClass: 'Monk', secondaryClass: 'Samurai', joinClass: 'Onmyoji',
+    startingClass: 'Monk', secondaryClass: 'Samurai', tertiaryClass: 'Apothecary', joinClass: 'Onmyoji',
     baseStats: s(31, 8, 23, 25, 18, 17, 14, 24), growthRates: s(45, 15, 35, 55, 30, 45, 35, 35),
     statCaps: s(45, 25, 33, 31, 32, 27, 25, 31), maxStatModifiers: s(0, 0, 1, 1, -2, 0, 0, 1),
     personalSkill: 'Peacebringer', supportOptions: [], canMarry: [], isChild: false,
@@ -373,7 +373,7 @@ export const characters: Character[] = [
   {
     // DLC-exclusive (Anna on the Run); available in all three routes once unlocked.
     id: 'anna', name: 'Anna', gender: 'F', route: ['all'],
-    startingClass: 'Outlaw', secondaryClass: 'Troubadour',
+    startingClass: 'Outlaw', secondaryClass: 'Troubadour', tertiaryClass: 'Apothecary',
     baseStats: s(23, 9, 11, 10, 14, 15, 6, 5), growthRates: s(35, 30, 55, 30, 40, 70, 20, 45),
     statCaps: s(35, 18, 19, 20, 23, 20, 15, 24), maxStatModifiers: s(0, -1, 1, 0, -1, 2, -2, 2),
     personalSkill: 'Make a Killing', supportOptions: [], canMarry: [], isChild: false,

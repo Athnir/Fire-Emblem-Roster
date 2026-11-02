@@ -44,7 +44,7 @@ export interface Character {
   startingClass: string
   /** Secondary/alternate class in this character's class set (used by class inheritance rules). */
   secondaryClass?: string
-  /** Third class in this character's Class Set, for the rare characters with a 3-class Standard Set (currently only Fuga: Samurai/Oni Savage/Monk). */
+  /** Third class in this character's Class Set, for the nine with three (Gunter, Flora, Shura, Izana, Reina, Scarlet, Yukimura, Fuga, Anna: their person record's second reclass slot in GameData.bin). Heart Seals only: neither inheritance nor a seal ever passes it on. */
   tertiaryClass?: string
   /** Personal battle class this character actually joins as, if different from startingClass (display/flavor only, e.g. Xander joins as a Paladin-tier unit despite his Class Set default being Cavalier). */
   joinClass?: string
@@ -149,8 +149,15 @@ export interface SupportPair {
   route: Route[]
 }
 
-/** Mother's default class -> parallel class substituted when both of the mother's classes are already in the child's set. */
+/**
+ * Each base class's parallel class: what a parent or seal partner gives when neither of their own two classes can be given (see
+ * offeredClasses in classResolution.ts). From the class records in GameData.bin (+0x6a), which agree with Serenes Forest's
+ * Parallel Classes page; null where the record has none.
+ */
 export const PARALLEL_CLASS_TABLE: Record<string, string | null> = {
+  'Nohr Prince(ss)': null,
+  Kitsune: 'Apothecary',
+  Wolfskin: 'Outlaw',
   Songstress: 'Troubadour',
   Cavalier: 'Ninja',
   Ninja: 'Cavalier',

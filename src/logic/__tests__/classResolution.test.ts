@@ -54,22 +54,41 @@ describe('getSealReclassClass', () => {
     expect(getSealReclassClass(laslow, keaton)).toBe('Fighter')
   })
 
-  it("falls back to the other's secondary when it collides with self's SECONDARY class, not just their default — corrected to self's own gender (Monk, not Shrine Maiden, for Corrin M)", () => {
+  // Both seals run the program's parent-class routine in seal mode with no class list (0x21a62c Partner Seal, 0x21a284 Friendship
+  // Seal), so only the receiver's own default class counts.
+  it("only checks the receiver's default class: a partner's default that matches their second class is still lent", () => {
     const corrinM = applyCorrinBuild(charactersById['corrin_m'], { boon: null, bane: null, talentClass: 'Samurai' })
-    const hana = charactersById['hana'] // Samurai/Shrine Maiden
-    expect(getSealReclassClass(corrinM, hana)).toBe('Monk')
+    expect(getSealReclassClass(corrinM, charactersById['hana'])).toBe('Samurai') // Samurai/Shrine Maiden: nothing new for him
+    expect(getSealReclassClass(corrinM, charactersById['hinata'])).toBe('Samurai') // Samurai/Oni Savage
+    expect(getSealReclassClass(charactersById['effie'], charactersById['jakob'])).toBe('Troubadour') // Effie: Knight/Troubadour
   })
 
-  it('resolves two different partners who share the same default independently, each to their own fallback, when both collide with a shared Talent', () => {
-    const corrinM = applyCorrinBuild(charactersById['corrin_m'], { boon: null, bane: null, talentClass: 'Samurai' })
-    const hinata = charactersById['hinata'] // Samurai/Oni Savage
-    expect(getSealReclassClass(corrinM, hinata)).toBe('Oni Savage')
+  it("follows Serenes Forest's three worked examples on its Class-Changing page", () => {
+    // Saizo's Ninja is Kaze's own default, so Saizo lends his second class, Samurai, though Kaze already has it.
+    expect(getSealReclassClass(charactersById['kaze'], charactersById['saizo'])).toBe('Samurai')
+    // Azura's Songstress can't be lent and her Sky Knight is Hinoka's own default: Songstress's parallel class.
+    expect(getSealReclassClass(charactersById['hinoka'], charactersById['azura'])).toBe('Troubadour')
+    // Corrin's Nohr Prince(ss) can't be lent and a Samurai Talent is Ryoma's own default: the Talent's parallel class.
+    const corrinF = applyCorrinBuild(charactersById['corrin_f'], { boon: null, bane: null, talentClass: 'Samurai' })
+    expect(getSealReclassClass(charactersById['ryoma'], corrinF)).toBe('Mercenary')
   })
 
-  it('cascades to the parallel-class substitute when even the fallback is redundant with a locked partner (Corrin Talent = Sky Knight, Azura)', () => {
+  it("lends Azura's Sky Knight to a Sky Knight-Talent Corrin: only his default, Nohr Prince(ss), counts", () => {
     const corrinM = applyCorrinBuild(charactersById['corrin_m'], { boon: null, bane: null, talentClass: 'Sky Knight' })
-    const azura = charactersById['azura'] // Songstress[locked]/Sky Knight -> parallel: Troubadour
-    expect(getSealReclassClass(corrinM, azura)).toBe('Troubadour')
+    expect(getSealReclassClass(corrinM, charactersById['azura'])).toBe('Sky Knight')
+  })
+
+  it("gives the beast classes' parallel classes from the class records: Wolfskin -> Outlaw, Kitsune -> Apothecary", () => {
+    // Keaton (Wolfskin/Fighter) to Arthur, whose default is Fighter; Kaden (Kitsune/Diviner) to Hayato, a Diviner.
+    expect(getSealReclassClass(charactersById['arthur'], charactersById['keaton'])).toBe('Outlaw')
+    expect(getSealReclassClass(charactersById['charlotte'], charactersById['keaton'])).toBe('Outlaw')
+    expect(getSealReclassClass(charactersById['hayato'], charactersById['kaden'])).toBe('Apothecary')
+  })
+
+  it("treats Monk and Shrine Maiden as one class when checking the receiver's default", () => {
+    // Azama's Monk is Sakura's own Shrine Maiden, so he lends Apothecary; her Shrine Maiden is his Monk, so she lends Sky Knight.
+    expect(getSealReclassClass(charactersById['sakura'], charactersById['azama'])).toBe('Apothecary')
+    expect(getSealReclassClass(charactersById['azama'], charactersById['sakura'])).toBe('Sky Knight')
   })
 
   it("corrects Monk/Shrine Maiden to the RECEIVING partner's own gender, not the giver's — not just Corrin, any Monk/Shrine Maiden holder", () => {

@@ -3,7 +3,7 @@ import { characters, charactersById } from '../data/characters'
 import { classes as allClasses } from '../data/classes'
 import { skills, skillsById } from '../data/skills'
 import { supports } from '../data/supports'
-import type { Character, ClassData, Gender, Skill } from '../data/types'
+import type { ClassData, Gender, Skill } from '../data/types'
 import {
   classSkillsForGender,
   gen1UnreachableSkillIds,
@@ -292,31 +292,11 @@ export function SkillPlanner() {
     childComputeResult?.inheritedClasses.filter((name) => !guaranteedChildClassNames.has(name)) ?? []
   const variableParentClassLines = variableParentClassNames.flatMap((name) => getClassLine(name, activeRoute))
 
-  // getSealReclassClass checks collisions against self.startingClass/secondaryClass/tertiaryClass —
-  // correct as-is for an adult (that IS their full Class Set), but for a child that's only their OWN
-  // 2-class Set, missing whatever their fixed/variable parents already guarantee them (e.g. Shigure's
-  // own Set is just Sky Knight/Troubadour, but pairing him with Subaki also guarantees Samurai via
-  // inheritance — a Marriage/Friendship Seal partner whose default is Samurai needs to see THAT
-  // collision too, not just his own 2). Substituting the child's full guaranteed set (own class +
-  // both parents' contributions, deduped — conveniently at most 3, the same number of slots
-  // startingClass/secondaryClass/tertiaryClass provide) into those 3 fields makes the existing
-  // collision check see the whole picture without changing getSealReclassClass itself. Before a
-  // variable parent is picked, falls back to just own + fixed parent (all that's known yet).
-  const childGuaranteedClasses = childComputeResult
-    ? childComputeResult.inheritedClasses
-    : Array.from(guaranteedChildClassNames).filter((n): n is string => Boolean(n))
-  const selfForSeal: Character | undefined =
-    character && character.isChild
-      ? {
-          ...character,
-          startingClass: childGuaranteedClasses[0] ?? character.startingClass,
-          secondaryClass: childGuaranteedClasses[1],
-          tertiaryClass: childGuaranteedClasses[2],
-        }
-      : character
-  const marriageClassName = selfForSeal && wife ? getSealReclassClass(selfForSeal, wife) : undefined
+  // A seal only checks the receiver's own default class (getSealReclassClass), so a child is passed as is: the classes their
+  // parents give them don't stop a partner lending one of those.
+  const marriageClassName = character && wife ? getSealReclassClass(character, wife) : undefined
   const marriageClassLine = marriageClassName ? getClassLine(marriageClassName, activeRoute) : []
-  const friendClassName = selfForSeal && friend ? getSealReclassClass(selfForSeal, friend) : undefined
+  const friendClassName = character && friend ? getSealReclassClass(character, friend) : undefined
   const friendClassLine = friendClassName ? getClassLine(friendClassName, activeRoute) : []
 
   // DLC classes are open to anyone; Amiibo classes are gender-locked (e.g. Witch/Great Lord are

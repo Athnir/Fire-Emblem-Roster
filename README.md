@@ -13,7 +13,9 @@ The Sacred Stones, Mystery of the Emblem, Awakening, Shadows of Valentia and Sha
 ## Data sources
 
 - **Fates:** Serenes Forest's base stats, growth rates, maximum stats, class sets and supports, cross-checked against the Fire
-  Emblem Wiki.
+  Emblem Wiki. The class sets are tested against the game's own `GameData.bin` (`scripts/build-fates-class-sets.py`), and class
+  inheritance and the Partner and Friendship Seals follow the game's program. Formats and routines are in
+  [data-raw/fates/README.md](data-raw/fates/README.md).
 - **Path of Radiance:** the game's own files (the user's disc), read by `scripts/build-fe9-units.py`, and checked against
   Serenes Forest's tables in the tests. Formats are in [data-raw/fe9/README.md](data-raw/fe9/README.md).
 - **Genealogy of the Holy War:** the clean Japanese ROM, read by `scripts/build-fe4-units.py`, with English names from the

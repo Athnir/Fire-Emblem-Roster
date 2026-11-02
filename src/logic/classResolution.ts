@@ -3,13 +3,49 @@ import { skillsById } from '../data/skills'
 import { PARALLEL_CLASS_TABLE, type Character, type ClassData, type Gender, type Route } from '../data/types'
 
 /**
- * Classes that are personal to one character (or character group) and can never be reclassed into
- * directly via Partner Seal or Friendship Seal. Verified against Serenes Forest's Class-Changing
- * page: there is no mechanical distinction between the two seals here — a partner/friend whose
- * Class Set default is one of these always lends their SECOND Class Set class instead, never the
- * locked class itself (e.g. a Friendship Seal on Keaton grants Fighter, his 2nd set, not Wolfskin).
+ * Classes no Partner or Friendship Seal can lend: in GameData.bin, Songstress's class record carries SPID_継承禁止 (never passed
+ * on at all) and the other four SPID_支援継承禁止 (not passed by a support), which the program's class check (0x3c5a0c) rejects
+ * in seal mode. A partner whose default is one of these lends the next class they offer instead (see offeredClasses), e.g. a
+ * Friendship Seal with Keaton gives Fighter, not Wolfskin.
  */
 const LOCKED_STARTING_CLASSES = new Set(['Nohr Prince(ss)', 'Songstress', 'Villager', 'Kitsune', 'Wolfskin'])
+
+/** The one class no child can inherit (SPID_継承禁止): Azura passes on her second class or a parallel class instead. */
+const NOT_INHERITABLE_CLASSES = new Set(['Songstress'])
+
+const isCorrinOrKana = (c: Character): boolean =>
+  c.id === 'corrin_m' || c.id === 'corrin_f' || c.id === 'kana_m' || c.id === 'kana_f'
+
+const parallelOf = (className: string | undefined): string | undefined =>
+  className ? (PARALLEL_CLASS_TABLE[className] ?? undefined) : undefined
+
+/**
+ * The classes a parent passes to a child, or a seal partner lends, in the order the game tries them (0x3c5c48 in the program;
+ * read from the Azahar memory dump, base 0x100000): their default class, their second class, the default's parallel class,
+ * then the second's. The first that fits is given. Corrin and Kana offer Nohr Prince(ss), then the Talent, then the Talent's
+ * parallel (0x21a900 and 0x3c5dd8). A second-generation unit's second class is the one their fixed parent passed them (the game
+ * works it out again from that parent), and there's no parallel step for it, since their own second reclass slot is empty.
+ */
+export function offeredClasses(giver: Character): string[] {
+  const offered = isCorrinOrKana(giver)
+    ? [giver.startingClass, giver.secondaryClass, parallelOf(giver.secondaryClass)]
+    : [giver.startingClass, giver.secondaryClass, parallelOf(giver.startingClass), giver.isChild ? undefined : parallelOf(giver.secondaryClass)]
+  return offered.filter((c): c is string => Boolean(c))
+}
+
+/**
+ * The class `parent` passes to `child`, given the classes the child already has from the other parent (`taken`). Each offered
+ * class is turned into the child's gender first (Monk and Shrine Maiden are one class to the game), and it can't be the child's
+ * own class, one already taken, or Songstress (the program's check, 0x3c5a0c, in inheritance mode).
+ */
+export function parentContribution(parent: Character, child: Character, taken: string[]): string | undefined {
+  for (const offered of offeredClasses(parent)) {
+    if (NOT_INHERITABLE_CLASSES.has(offered)) continue
+    const cls = correctGenderedClass(offered, child.gender)
+    if (cls !== child.startingClass && !taken.includes(cls)) return cls
+  }
+  return undefined
+}
 
 /**
  * Each locked class's own skills, plus any promotion reachable ONLY through that locked class (so
@@ -110,13 +146,12 @@ export function gen1UnreachableSkillIds(character: Character): string[] {
 }
 
 /**
- * Monk (male) and Shrine Maiden (female) are mechanically identical, split only by a gendered
- * display name — every real character's own class data is already baked in correctly for their
- * own gender, so this only ever needs correcting for Corrin's Talent, which is shared between
- * corrin_m/corrin_f (one build covers either) and so isn't gender-locked at the source the way
- * everyone else's is. Applied at each point Corrin's Talent reaches a specific recipient: Corrin's
- * own display (corrinBuild.ts), Kana's Nohr-Prince(ss)-collision fallback (childCalculator.ts),
- * and Corrin's Partner Seal spouse (getSealReclassClass below).
+ * Monk (male) and Shrine Maiden (female) are one class to the game: each class record in
+ * GameData.bin names its other-gender counterpart (+0x68), and the program turns every class it
+ * passes on into the receiver's gender before checking for clashes. So a class passed to someone
+ * of the other gender (Azama's Monk to Mitama, Corrin's shared Talent to Kana) is corrected to
+ * the receiver's gender first, then compared (parentContribution, getSealReclassClass), and
+ * Corrin's own display corrects the Talent too (corrinBuild.ts).
  */
 const GENDERED_CLASS_PAIR: Record<string, string> = {
   Monk: 'Shrine Maiden',
@@ -149,60 +184,22 @@ export function classSkillsForGender(cls: ClassData, gender: Gender): string[] {
 
 /**
  * The class a character gains access to (via Partner Seal, once married, or Friendship Seal, at
- * A+ support) by pairing with `other`. Per Serenes Forest's Class-Changing page: you get `other`'s
- * default (first) Class Set class, UNLESS that default is personal/locked (see
- * LOCKED_STARTING_CLASSES) or already redundant with a class `self` already has — either way you
- * get their second Class Set class instead. Both conditions resolve identically for Partner Seal
- * and Friendship Seal.
- *
- * This mostly only bites in practice for Corrin (2-class units elsewhere rarely collide even once,
- * and this app's multi-class picker can offer Corrin dozens of Friendship Seal partners at once —
- * see friendshipClassSources in multiClass.ts). If even the SECOND Class Set class is redundant too
- * (only reachable when self's own second class happens to match a locked partner's own second
- * class, e.g. Corrin's Talent set to Sky Knight paired with Azura, whose own second class is also
- * Sky Knight) it cascades one step further into the same parallel-class substitute table normal
- * child-inheritance already falls back to for a fully-collided parent (PARALLEL_CLASS_TABLE /
- * normalParentContribution in childCalculator.ts) — e.g. Corrin ends up with Troubadour (Songstress's
- * parallel), the same substitute Shigure (Azura's own child) already gets from her unconditionally.
- * A normal (non-locked) partner's second class never needs this cascade in practice, since it would
- * require `self` to independently collide with BOTH of that partner's classes at once, and no
- * character in this roster has enough of their own classes for that to happen outside Corrin+a
- * locked partner.
+ * A+ support) by pairing with `other`: the first class `other` offers (see offeredClasses) that no
+ * seal is barred from lending and that isn't `self`'s own default class. The program's Partner Seal
+ * (0x21a62c) and Friendship Seal (0x21a284) both run the parent-class routine in seal mode with no
+ * class list, so only `self`'s default counts: `self`'s second class doesn't, and the seal may lend
+ * a class `self` already has (Kaze's Friendship Seal with Saizo gives Samurai, as Serenes Forest's
+ * Class-Changing page says). Each class is turned into `self`'s gender first, so Monk and Shrine
+ * Maiden count as one class, and Corrin's shared Talent comes out right for whichever Corrin it is.
+ * Undefined when nothing fits, e.g. Corrin before a Talent is picked.
  */
 export function getSealReclassClass(self: Character, other: Character): string | undefined {
-  const ownClasses = [self.startingClass, self.secondaryClass, self.tertiaryClass].filter(
-    (n): n is string => Boolean(n),
-  )
-  const locked = LOCKED_STARTING_CLASSES.has(other.startingClass)
-  const redundantWithDefault = ownClasses.includes(other.startingClass)
-  const result = (() => {
-    if (!locked && !redundantWithDefault) return other.startingClass
-    // Locked/redundant defaults fall back to the second Class Set class instead — but that
-    // fallback doesn't exist for Corrin until a Talent is picked (their Class Set has no second
-    // class yet), so there's nothing to grant at all. Without this check the `?? other.startingClass`
-    // that used to sit here would silently hand back the locked Nohr Prince(ss) itself.
-    if (!other.secondaryClass) return undefined
-    const fallback = other.secondaryClass
-    if (!ownClasses.includes(fallback)) return fallback
-    // Both of `other`'s classes are now blocked. Prefer the locked default's own dedicated
-    // substitute when it has one (Azura's Songstress always cascades to Troubadour specifically,
-    // regardless of what her real secondary turned out to be — same fixed rule childCalculator.ts's
-    // Azura branch uses). Kana's default (Nohr Prince(ss)) has no such fixed substitute, since her
-    // secondary is Corrin's player-chosen Talent rather than fixed data — for her (and anyone else
-    // without a fixed-default entry) fall back to mirroring whatever actually collided instead.
-    return PARALLEL_CLASS_TABLE[other.startingClass] ?? PARALLEL_CLASS_TABLE[fallback] ?? fallback
-  })()
-  if (!result) return undefined
-
-  // Whoever actually receives a class via Partner/Friendship Seal needs Monk/Shrine Maiden
-  // corrected to THEIR own gender, not the giver's — matters most for Corrin (whose Talent is
-  // shared between corrin_m/corrin_f, so it isn't gender-locked at the source the way everyone
-  // else's own class data already is), but applies just as well any time a Monk (Azama, etc.) or
-  // Shrine Maiden (Sakura, etc.) holder passes it to an opposite-gender partner. This also
-  // transparently handles the game's two same-sex exceptions (Corrin M x Niles, Corrin F x
-  // Rhajat): since the correction always targets the recipient's real gender rather than assuming
-  // the opposite of the giver's, those cases just don't need a flip at all.
-  return correctGenderedClass(result, self.gender)
+  for (const offered of offeredClasses(other)) {
+    if (LOCKED_STARTING_CLASSES.has(offered)) continue
+    const cls = correctGenderedClass(offered, self.gender)
+    if (cls !== self.startingClass) return cls
+  }
+  return undefined
 }
 
 /** True while Corrin's player-chosen Talent hasn't been picked yet in the Corrin Build panel — the only state where Corrin's own Class Set (or Kana's, which always mirrors it via withKanaTalent) has no second class at all. */

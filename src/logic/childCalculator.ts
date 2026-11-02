@@ -1,7 +1,8 @@
 import { charactersById } from '../data/characters'
 import { classesByName } from '../data/classes'
-import { PARALLEL_CLASS_TABLE, type Character, type ClassData, type Route, type StatBlock } from '../data/types'
-import { correctGenderedClass, getClassLine } from './classResolution'
+import type { Character, ClassData, Route, StatBlock } from '../data/types'
+import { getClassLine, parentContribution } from './classResolution'
+import { classGrowthRate } from './levelProjection'
 import { computeBaseStats, computeGrowthRates, computeMaxStatModifiers } from './statCalculator'
 
 type ParentSide = 'father' | 'mother'
@@ -75,79 +76,31 @@ export function getHairSourceInfo(child: Character): HairSourceInfo | undefined 
 }
 
 /**
- * A normal parent contributes exactly one of their two classes — their default, unless it
- * collides with a class already present, in which case their alternate (or, if BOTH would
- * collide, the parallel-class-table substitute) is used instead. Per formulas doc section 6.
- * Corrin's "default" is Nohr Prince(ss) and "alternate" is their chosen Talent — same shape as any
- * other character's Class Set, following the same beast-shifter-style collision rule.
- *
- * Azura is a single exception, not a second case: her Songstress is uniquely non-inheritable, so
- * she never contributes it as a "default" — only her real secondary (Sky Knight), and only the
- * parallel substitute for Songstress (Troubadour) in the collision case (i.e. only for Shigure,
- * whose own primary already IS Sky Knight). Either way she still contributes exactly ONE class,
- * same as any other parent — never both Sky Knight and Troubadour at once.
- *
- * Any contributed class also gets corrected to the CHILD's own gender when it's Monk/Shrine
- * Maiden — matters most for Corrin's Talent (shared between corrin_m/corrin_f, only reachable via
- * the Nohr-Prince(ss) collision fallback, i.e. only for Kana), but applies just as well to any
- * other Monk/Shrine-Maiden-holding parent (Azama, Sakura, etc.) passing it to an opposite-gender
- * child — same as Corrin's own display, this needs the RECIPIENT's gender, not the giver's.
- */
-function normalParentContribution(classSet: Set<string>, parent: Character, childGender: Character['gender']): string | undefined {
-  const raw = (() => {
-    if (parent.id === 'azura') {
-      const secondary = parent.secondaryClass
-      if (!secondary) return undefined
-      return classSet.has(secondary) ? (PARALLEL_CLASS_TABLE[parent.startingClass] ?? secondary) : secondary
-    }
-    const def = parent.startingClass
-    const alt = parent.secondaryClass
-    const bothAlreadyPresent = classSet.has(def) && alt !== undefined && classSet.has(alt)
-    if (bothAlreadyPresent) return PARALLEL_CLASS_TABLE[def] ?? alt
-    if (!classSet.has(def)) return def
-    return alt
-  })()
-  return raw ? correctGenderedClass(raw, childGender) : undefined
-}
-
-/**
- * The fixed parent's contributed class, computable independent of who the variable parent turns
- * out to be — only the child's own class factors into the collision check, since the fixed
- * parent's identity (and thus their contribution) never depends on the other side of the pairing.
+ * The fixed parent's class as it comes out when the other parent's class doesn't clash with it. For
+ * a child whose fixed parent is their father it's always what they get, since the father goes first
+ * (see inheritClasses). For Shigure and male Kana, whose fixed parent is their mother, the father
+ * can take it first; then she gives her next class instead, so it's only certain once the father
+ * is known.
  */
 export function fixedParentContribution(child: Character, fixedParent: Character): string[] {
-  const contributed = normalParentContribution(new Set([child.startingClass]), fixedParent, child.gender)
+  const contributed = parentContribution(fixedParent, child, [])
   return contributed ? [contributed] : []
 }
 
-const isCorrin = (c: Character): boolean => c.id === 'corrin_m' || c.id === 'corrin_f'
-
 /**
- * Explicit rule function (not a static table) per formulas doc section 6.
- *
- * Order matters when the two parents' contributions would otherwise collide with each other (not
- * just with the child's own class): whichever parent is processed first "claims" a class with no
- * collision recorded, so if the SECOND parent's own default/alternate turns out to be that same
- * class, normalParentContribution sees it as if BOTH of the second parent's options were already
- * taken and falls all the way to a generic parallel-class substitute — even though the first
- * parent still had their own alternate available and could have yielded it instead.
- *
- * Corrin is always processed first when involved, so that a collision falls to the OTHER, ordinary
- * parent's alternate class rather than discarding Corrin's Talent (a deliberate player choice, not
- * background data) for an unrelated substitute — e.g. Kana with a Mercenary-talent Corrin and a
- * Laslow father (whose default is also Mercenary) should get Laslow's real secondary, Ninja, not a
- * parallel-table filler in place of Corrin's chosen Talent.
+ * A child's classes: their own, one from their father, then one from their mother (see
+ * parentContribution). The father always goes first, Shigure and male Kana included: the program
+ * puts the father in the first of a child's two parent slots, swapping them when the fixed parent is
+ * female (0x3d396c), and the class list is built slot by slot (0x21a900). So when both parents
+ * would give the same class, the mother gives way.
  */
 export function inheritClasses(child: Character, father: Character, mother: Character): string[] {
-  const classSet = new Set<string>([child.startingClass])
-
-  const orderedParents = isCorrin(mother) && !isCorrin(father) ? [mother, father] : [father, mother]
-  for (const parent of orderedParents) {
-    const contributed = normalParentContribution(classSet, parent, child.gender)
-    if (contributed) classSet.add(contributed)
+  const taken: string[] = []
+  for (const parent of [father, mother]) {
+    const contributed = parentContribution(parent, child, taken)
+    if (contributed) taken.push(contributed)
   }
-
-  return Array.from(classSet)
+  return [child.startingClass, ...taken]
 }
 
 export interface ComputeChildInput {
@@ -180,11 +133,15 @@ export function computeChild(input: ComputeChildInput): ComputedChild {
   const variableParentGrowths =
     variableParent === 'father' ? father.growthRates : mother.growthRates
   const growthRates = computeGrowthRates(variableParentGrowths, child.growthRates)
+  // The levels above 10 grow at the child's full growth in their class (the inherited personal growth plus the class's own), as
+  // Serenes Forest's child-stat formula counts them.
+  const startingClassData = classesByName[child.startingClass]
+  const fullGrowthRates = startingClassData ? classGrowthRate(growthRates, startingClassData) : growthRates
 
   const baseStats = computeBaseStats(
     child.baseStats,
     classBaseStatsFor(child.startingClass),
-    growthRates,
+    fullGrowthRates,
     level,
     fatherCurrentStats,
     classBaseStatsFor(father.joinClass ?? father.startingClass),

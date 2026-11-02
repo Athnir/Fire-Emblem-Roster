@@ -16,6 +16,8 @@ const REV: Route[] = ['Revelation']
 const ALL: Route[] = ['all']
 const BC: Route[] = ['Birthright', 'Conquest']
 const BR_ONLY: Route[] = ['Birthright']
+/** Gunter joins in Revelation but can't hold supports there (Fire Emblem Wiki, Gunter): his supports are Conquest's alone. */
+const CQ_ONLY: Route[] = ['Conquest']
 
 /**
  * S-support (marriage) pairs for the current 21-character adult roster, verified against
@@ -168,7 +170,7 @@ export const supports: SupportPair[] = [
   pair('corrin_m', 'mozu', ALL),
 
   // Corrin (F) x new retainers
-  pair('corrin_f', 'gunter', CR),
+  pair('corrin_f', 'gunter', CQ_ONLY),
   pair('corrin_f', 'subaki', BR),
   pair('corrin_f', 'saizo', BR),
   pair('corrin_f', 'azama', BR),
@@ -659,7 +661,7 @@ export const supports: SupportPair[] = [
   pairA('corrin_m', 'benny', CR),
   pairA('corrin_m', 'dwyer', ALL),
   pairA('corrin_m', 'forrest', CR),
-  pairA('corrin_m', 'gunter', CR),
+  pairA('corrin_m', 'gunter', CQ_ONLY),
   pairA('corrin_m', 'hayato', BR),
   pairA('corrin_m', 'hinata', BR),
   pairA('corrin_m', 'hisame', BR),
@@ -706,7 +708,7 @@ export const supports: SupportPair[] = [
   pairA('hinoka', 'takumi', BR),
   pairA('hisame', 'percy', REV),
   pairA('ignatius', 'percy', CR),
-  pairA('jakob', 'gunter', CR),
+  pairA('jakob', 'gunter', CQ_ONLY),
   // Kana(M) same-sex friendship (as opposed to Kana(F)'s opposite-sex marriage with the same boys, above).
   pairA('kana_m', 'shiro', BR),
   pairA('kana_m', 'siegbert', CR),
