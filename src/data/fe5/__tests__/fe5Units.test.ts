@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
+import { ranksOf } from '../../../thracia/logic'
 import { FE5_STATS } from '../../../thracia/types'
-import { FE5_CHAPTERS, FE5_SCROLLS, FE5_SUPPORTS, FE5_UNITS } from '../fe5Units'
+import { FE5_CHAPTERS, FE5_CHOICES, FE5_CLASSES, FE5_MANUALS, FE5_RINGS, FE5_SCROLLS, FE5_SUPPORTS, FE5_UNITS } from '../fe5Units'
 
 // Serenes Forest's Thracia 776 tables, copied here to check the data built from the ROM against them.
 // Base stats: Lv, HP, Str, Mag, Skl, Spd, Lck, Def, Con, Mov (characters/base-stats), under the patch's names.
@@ -10,19 +11,18 @@ const SF_GROWTHS: Record<string, number[]> = {"Leif": [70, 35, 10, 35, 40, 40, 2
 
 const unitByName = new Map(FE5_UNITS.map((u) => [u.name, u]))
 const labelOf = (id: string) => FE5_CHAPTERS.find((c) => c.id === id)!.label
+const className = (id?: string) => (id ? FE5_CLASSES[id].name : undefined)
 
 describe('Thracia 776 units', () => {
   it("matches Serenes Forest's levels and bases", () => {
-    // The one exception: Galzus's record gives Spd 21; Serenes lists 20 (the game holds stats at 20, $85:F0A9).
+    // What's shown: the class's base plus the unit's own, held at 20 ($83:90BE). Galzus's own Spd 13 and the Hero's 8 make 21,
+    // shown as 20, as Serenes lists it.
     for (const [name, sf] of Object.entries(SF_BASES)) {
       const u = unitByName.get(name)!
-      const ours = [u.level, ...FE5_STATS.map((s) => u.bases[s])]
-      if (name === 'Galzus') {
-        expect(ours).toEqual([20, 54, 20, 9, 20, 21, 17, 14, 18, 7])
-        continue
-      }
-      expect([name, ...ours]).toEqual([name, ...sf])
+      expect([name, u.level, ...FE5_STATS.map((s) => u.bases[s])]).toEqual([name, ...sf])
     }
+    const galzus = unitByName.get('Galzus')!
+    expect(galzus.own.spd + FE5_CLASSES[galzus.classId].bases.spd).toBe(21)
   })
 
   it("matches Serenes Forest's growth rates", () => {
@@ -32,26 +32,117 @@ describe('Thracia 776 units', () => {
     }
   })
 
-  it("joins where Serenes Forest's recruitment page says", () => {
+  it('joins where the scripts put them (Serenes Forest agrees, with fewer conditions)', () => {
     const join = (name: string) => `${labelOf(unitByName.get(name)!.joinChapter)} ${unitByName.get(name)!.join.how}`
     expect(join('Leif')).toBe('Ch.1 start')
     expect(join('Dagdar')).toBe('Ch.1 event')
+    expect(join('Ronan')).toBe('Ch.2 visit')
+    expect(join('Safy')).toBe('Ch.2x end')
+    expect(join('Lifis')).toBe('Ch.2x end')
     expect(join('Asbel')).toBe('Ch.4x talk')
     expect(join('Shiva')).toBe('Ch.7 talk')
     expect(join('Olwen')).toBe('Ch.11x talk')
+    expect(join('Salem')).toBe('Ch.12x start')
+    expect(join('Homer')).toBe('Ch.14 visit')
+    expect(join('Linoan')).toBe('Ch.14x start')
+    expect(join('Schroff')).toBe('Ch.16A visit')
+    expect(join('Misha')).toBe('Ch.17A end')
+    expect(join('Sara')).toBe('Ch.17A visit')
+    expect(join('Miranda')).toBe('Ch.16B event')
     expect(join('Galzus')).toBe('Ch.24 talk')
-    expect(join('Misha')).toBe('Ch.17A event')
     expect(unitByName.get('Dalsin')!.join.with).toEqual(['Leif', 'Lifis'])
     expect(unitByName.get('Perne')!.join.with).toEqual(['Salem', 'Lifis', 'Lara'])
+    expect(unitByName.get('Homer')!.join.with).toEqual(['Nanna'])
+    // Sara's route B join, once the route pick says so.
+    expect(unitByName.get('Sara')!.altJoin).toMatchObject({ choice: 'fe5-route', option: 2, joinChapter: 'fe5-16b', join: { how: 'talk', with: ['Leif'] } })
+    expect(unitByName.get('Misha')!.level).toBe(4)
   })
 
-  it('reads the holy scrolls as Serenes Forest lists them', () => {
+  it("promotes as the Master Seal's table and the story say (the Fire Emblem Wiki agrees)", () => {
+    const promo = (name: string) => {
+      const p = unitByName.get(name)!.promotion
+      return p ? `${className(p.classId)} ${p.by}` : 'none'
+    }
+    expect(promo('Leif')).toBe('Prince story')
+    expect(promo('Linoan')).toBe('Sage story')
+    expect(promo('Finn')).toBe('Duke Knight seal')
+    expect(promo('Osian')).toBe('Hero seal')
+    expect(promo('Halvan')).toBe('Hero seal')
+    expect(promo('Macha')).toBe('Hero seal')
+    expect(promo('Shiva')).toBe('Swordmaster seal')
+    expect(promo('Mareeta')).toBe('Swordmaster seal')
+    expect(promo('Dalsin')).toBe('General seal')
+    expect(promo('Asbel')).toBe('Sage seal')
+    expect(promo('Homer')).toBe('Sage seal')
+    expect(promo('Sara')).toBe('Sage seal')
+    expect(promo('Nanna')).toBe('Paladin seal')
+    expect(promo('Miranda')).toBe('Mage Knight seal')
+    expect(promo('Lara')).toBe('Rogue seal')
+    // Ralph's entry is the Hero class he already is.
+    expect(promo('Ralph')).toBe('none')
+    expect(className(unitByName.get('Lara')!.storyStep!.classId)).toBe('Dancer')
+    expect(FE5_UNITS.filter((u) => u.promotion?.by === 'seal')).toHaveLength(32)
+  })
+
+  it("shows weapon ranks as the Fire Emblem Wiki lists them: the class's points plus the unit's own", () => {
+    const ranks = (name: string) => {
+      const u = unitByName.get(name)!
+      return ranksOf(FE5_CLASSES[u.classId], u).map((r) => `${r.weapon} ${r.letter}`)
+    }
+    expect(ranks('Leif')).toEqual(['sword C'])
+    expect(ranks('Finn')).toEqual(['lance B'])
+    expect(ranks('Osian')).toEqual(['axe E'])
+    expect(ranks('Asbel')).toEqual(['fire E', 'thunder E', 'wind C'])
+    expect(ranks('Ced')).toEqual(['staff A', 'fire A', 'thunder B', 'wind A', 'light A'])
+    // Osian "Axes E (+40)", Macha "Swords D (+30)": the wiki's points over the class's.
+    const points = (name: string) => ranksOf(FE5_CLASSES[unitByName.get(name)!.classId], unitByName.get(name)!)[0].points
+    expect(points('Osian')).toBe(90)
+    expect(points('Macha')).toBe(130)
+  })
+
+  it("has the skills Serenes Forest's skills page lists", () => {
+    const skills = (name: string) => unitByName.get(name)!.skills
+    expect(skills('Leif')).toEqual(['Adept'])
+    expect(skills('Finn')).toEqual(['Miracle'])
+    expect(skills('Perne')).toEqual(['Steal', 'Sol'])
+    expect(skills('Sara')).toEqual(['Miracle', 'Wrath', 'Paragon'])
+    expect(skills('Xavier')).toEqual(['Accost', 'Pavise', 'Wrath'])
+    expect(skills('Galzus')).toEqual(['Astra', 'Luna'])
+    expect(skills('Shannam')).toEqual(['Bargain'])
+    expect(FE5_UNITS.filter((u) => u.skills.length).length).toBe(28)
+    expect(FE5_CLASSES[unitByName.get('Lifis')!.classId].skills).toEqual(['Steal'])
+    expect(FE5_CLASSES[unitByName.get('Finn')!.classId].skills).toEqual(['Canto'])
+    expect(unitByName.get('Mareeta')!.storySkill?.skill).toBe('Astra')
+  })
+
+  it('has the leadership the scripts set (Serenes Forest agrees)', () => {
+    const stars = Object.fromEntries(FE5_UNITS.filter((u) => u.leadership).map((u) => [u.name, u.leadership]))
+    expect(stars).toEqual({ Finn: 1, Eyvel: 1, Glade: 1, Xavier: 1, Amalda: 1, Conomor: 1, Ced: 1, Saias: 3 })
+    expect(unitByName.get('Leif')!.leadershipNote).toContain('2 from the end of Ch.9')
+  })
+
+  it('reads the holy scrolls, the rings and the manuals', () => {
     const bonus = (name: string) => FE5_STATS.map((s) => FE5_SCROLLS.find((x) => x.name === name)!.growths[s])
     expect(bonus("Od's Scroll")).toEqual([0, 0, 0, 30, 0, 0, 0, 0, 0])
+    expect(Object.fromEntries(FE5_RINGS.map((r) => [r.name, `${r.stat} +${r.amount}`]))).toEqual({
+      'Luck Ring': 'lck +3', 'Life Ring': 'hp +7', 'Speed Ring': 'spd +3', 'Magic Ring': 'mag +2', 'Strength Ring': 'str +3',
+      'Body Ring': 'con +3', 'Shield Ring': 'def +2', 'Skill Ring': 'skl +3', 'Leg Ring': 'mov +2',
+    })
+    expect(FE5_MANUALS.map((m) => m.skill).sort()).toEqual(['Accost', 'Adept', 'Luna', 'Nihil', 'Paragon', 'Sol', 'Vantage', 'Wrath'])
   })
 
-  it('reads the supports table', () => {
-    expect(FE5_SUPPORTS.length).toBeGreaterThan(50)
-    for (const s of FE5_SUPPORTS) expect(FE5_UNITS.some((u) => u.id === s.gets) && FE5_UNITS.some((u) => u.id === s.gives)).toBe(true)
+  it('reads every support, the givers who are not playable too', () => {
+    expect(FE5_SUPPORTS).toHaveLength(68)
+    const name = (id: string) => FE5_UNITS.find((u) => u.id === id)?.name
+    expect(FE5_SUPPORTS.filter((s) => s.bonus === 20).map((s) => `${name(s.gets)} from ${name(s.gives)}`)).toEqual([
+      'Glade from Selphina', 'Dean from Linoan', 'Conomor from Miranda', 'Galzus from Mareeta',
+    ])
+    expect(FE5_SUPPORTS.filter((s) => s.giverNote).map((s) => name(s.gets)).sort()).toEqual(['Asbel', 'Karin', 'Macha', 'Olwen', 'Olwen'])
+    for (const s of FE5_SUPPORTS) expect(FE5_UNITS.some((u) => u.id === s.gets)).toBe(true)
+  })
+
+  it("has the story's picks: the route, Olwen or Ilios, Ced or Saias", () => {
+    expect(FE5_CHOICES.map((c) => c.id)).toEqual(['fe5-route', 'fe5-olwen-ilios', 'fe5-ced-saias'])
+    expect(FE5_CHOICES[0].options.map((o) => o.route)).toEqual(['A', 'A', 'B'])
   })
 })
