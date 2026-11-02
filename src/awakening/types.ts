@@ -92,6 +92,8 @@ export interface Fe13Skill {
   help: string
   /** Its place among the game's skill icons. */
   icon: number
+  /** The item that teaches it to any unit (the DLC's scrolls; 0x2d5528). */
+  item?: string
 }
 
 /** What the Avatar's asset or flaw changes. */

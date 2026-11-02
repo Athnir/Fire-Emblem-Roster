@@ -399,12 +399,14 @@ export function reachableClasses(data: Fe13Data, unit: Fe13Unit, not: string[] =
   return [...out]
 }
 
-/** Every skill a unit can have in some playthrough: the ones they join with, their reachable classes', and for a child whatever a
- * possible parent could have and pass on (0x27bc80): a skill that passes to any child, Wyrmsbane only to one who can be a Manakete,
- * Beastbane only to one who can be a Taguel; from Chrom or Lucina only Aether (a daughter) or Rightful King (a son). */
+/** Every skill a unit can have in some playthrough: the ones they join with, their reachable classes', those an item teaches anyone (the
+ * DLC's scrolls), and for a child whatever a possible parent could have and pass on (0x27bc80): a skill that passes to any child,
+ * Wyrmsbane only to one who can be a Manakete, Beastbane only to one who can be a Taguel; from Chrom or Lucina only Aether (a daughter)
+ * or Rightful King (a son). */
 export function reachableSkills(data: Fe13Data, unit: Fe13Unit, not: string[] = []): Set<string> {
   const classes = reachableClasses(data, unit, not)
   const out = new Set<string>(unit.skills ?? [])
+  for (const s of Object.values(data.skills ?? {})) if (s.item) out.add(s.name)
   for (const id of classes) for (const s of data.classes[id]?.skills ?? []) out.add(s.skill)
   const fixed = unit.parent ? data.units.find((u) => u.id === unit.parent) : undefined
   if (fixed) {

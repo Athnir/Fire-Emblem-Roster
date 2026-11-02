@@ -207,6 +207,13 @@ describe('Skills a unit can have in some playthrough', () => {
     expect(has('owain', 'Luna+')).toBe(false)
   })
 
+  it("gives everyone the DLC's skill scrolls (any unit can use one, 0x2d5528)", () => {
+    for (const id of ['chrom', 'lucina', 'walhart']) {
+      expect(has(id, 'Limit Breaker')).toBe(true)
+      expect(has(id, 'Paragon')).toBe(true)
+    }
+  })
+
   it("opens Aptitude to Donnel and to a child who can have him as a parent or grandparent, not to Lucina", () => {
     expect(has('donnel', 'Aptitude')).toBe(true)
     expect(has('chrom', 'Aptitude')).toBe(false)

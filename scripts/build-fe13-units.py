@@ -105,6 +105,12 @@ def main():
     for k, r in enumerate(skill_recs[1:], 1):
         raw = gd.d[0x20 + r:0x20 + r + 28]
         skill_table[skills[k]] = {'name': skills[k], 'pass': raw[0x14], 'help': help_text(r), 'icon': raw[0x13]}
+    # ItemData: an item whose use (+27) is 15 (IAID_予約０１) teaches the skill at +40, to any unit that hasn't learned it (0x2d5528): the
+    # DLC's All Stats +2, Paragon, Iote's Shield and Limit Breaker.
+    for r in D.table('ItemData', D.ITEM_SIZE):
+        raw = gd.d[0x20 + r:0x20 + r + D.ITEM_SIZE]
+        if raw[27] == 15 and raw[40]:
+            skill_table[skills[raw[40]]]['item'] = D.name_of(gd.str(r + 12)) or dlc_text.get(gd.str(r + 12))
     for i, c in enumerate(jobs):
         if not c['name']:
             c['name'] = dlc_text.get(gd.str(job_recs[i] + 16))

@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useMemo, useRef, useState, type ReactNode } from 'react'
 import { Portrait } from '../components/Portrait'
-import { useScreenshotContextStore } from '../state/screenshotContextStore'
 import {
   MAX_LEVEL,
   MAX_STEPS,
@@ -26,7 +25,6 @@ import {
   skillsOf,
   spousesOf,
   unitsOf,
-  withAvatar,
   type Fe13Child,
   type Fe13Data,
   type Fe13Parent,
@@ -34,24 +32,17 @@ import {
   type Fe13Rank,
   type Fe13Stage,
 } from './logic'
+import { Fe13BuildSetManager } from './builds'
 import { useFe13Store } from './store'
+import { button, names, panel, primaryButton, selectClass, useAvatarData, useScreenshotUnit } from './ui'
 import { FE13_STATS, FE13_STAT_LABELS, type Fe13Class, type Fe13Stat, type Fe13Stats, type Fe13Unit } from './types'
-
-const selectClass = 'rounded-md border border-neutral-700 bg-neutral-800 px-2 py-1 text-sm text-neutral-200'
-const panel = 'space-y-4 rounded-lg border border-neutral-800 bg-neutral-900 p-4'
 
 function artId(name: string): string {
   return `fe13/${name.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '')}`
 }
 
-function UnitPortrait({ unit, size = 64 }: { unit: Fe13Unit; size?: number }) {
+export function UnitPortrait({ unit, size = 64 }: { unit: Fe13Unit; size?: number }) {
   return <Portrait characterId={artId(unit.name)} isChild={!!unit.parent} size={size} />
-}
-
-/** The data with the Avatar's asset and flaw applied. */
-function useAvatarData(data: Fe13Data): Fe13Data {
-  const avatar = useFe13Store((s) => s.avatar)
-  return useMemo(() => withAvatar(data, avatar), [data, avatar])
 }
 
 const STAT_NAMES: Record<Fe13Stat, string> = {
@@ -66,7 +57,7 @@ const STAT_NAMES: Record<Fe13Stat, string> = {
 }
 
 /** The Avatar's asset and flaw, for both Avatars. */
-function AvatarBuild() {
+export function AvatarBuild() {
   const avatar = useFe13Store((s) => s.avatar)
   const setAvatar = useFe13Store((s) => s.setAvatar)
   const pick = (label: string, key: 'asset' | 'flaw', other: Fe13Stat | null) => (
@@ -104,14 +95,6 @@ function AvatarBuild() {
 function fmt(v: number | undefined): string {
   if (v === undefined) return '–'
   return Number.isInteger(v) ? String(v) : v.toFixed(1)
-}
-
-function useScreenshotUnit(unit: Fe13Unit | undefined) {
-  const setUnitLabel = useScreenshotContextStore((state) => state.setUnitLabel)
-  useEffect(() => {
-    setUnitLabel(unit?.name ?? '')
-    return () => setUnitLabel('')
-  }, [unit, setUnitLabel])
 }
 
 type Row = {
@@ -179,7 +162,7 @@ function joinText(data: Fe13Data, u: Fe13Unit): string {
   return `${where}: joins at the start`
 }
 
-function UnitSelect({ data, value, onChange }: { data: Fe13Data; value: string; onChange: (id: string) => void }) {
+export function UnitSelect({ data, value, onChange }: { data: Fe13Data; value: string; onChange: (id: string) => void }) {
   return (
     <select value={value} onChange={(e) => onChange(e.target.value)} className={`${selectClass} w-full max-w-xs`}>
       {data.chapters.map((ch) => {
@@ -197,10 +180,6 @@ function UnitSelect({ data, value, onChange }: { data: Fe13Data; value: string; 
       })}
     </select>
   )
-}
-
-function names(data: Fe13Data, ids: string[]): string {
-  return ids.map((id) => data.classes[id]?.name ?? id).join(', ')
 }
 
 function UnitDetail({ data, unit }: { data: Fe13Data; unit: Fe13Unit }) {
@@ -717,6 +696,20 @@ export function Fe13Planner({ data: raw }: { data: Fe13Data }) {
         </p>
         <Fe13Mechanics data={data} unit={unit} plan={plan} update={update} last={stages[stages.length - 1]} modifiers={modifiers} />
       </div>
+      <div data-export-hide>
+        <Fe13BuildSetManager
+          tab="unit"
+          unit={unit}
+          data={{ plan: stored }}
+          nameOf={(id) => data.units.find((u) => u.id === id)?.name ?? id}
+          onLoadEntry={(entry) => {
+            // A saved entry's plan becomes the unit's plan again.
+            setUnitId(entry.unitId)
+            const p = entry.data.plan as Fe13Plan | undefined
+            if (p && Array.isArray(p.steps)) setPlan(entry.unitId, p)
+          }}
+        />
+      </div>
     </div>
   )
 }
@@ -778,9 +771,6 @@ export function Fe13Supports({ data: raw }: { data: Fe13Data }) {
     </div>
   )
 }
-
-const button = 'rounded-md bg-neutral-800 px-3 py-1 text-sm text-neutral-300 hover:bg-neutral-700'
-const primaryButton = 'rounded-md bg-violet-600 px-3 py-1 text-sm font-medium text-white hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-40'
 
 const INHERITANCE_NOTE =
   "A child's growths are their own, their mother's and their father's added and divided by 3, rounded down. Their maximums take both parents' modifiers, plus 1 on every stat but HP (a Morgan whose other parent is a child gets that child's own +1, not a second). They join with their own stats plus a third of how far each parent is above them in each stat, rounded down; a parent below them adds nothing, so a child never joins below their own. A parent's stats are their Unit Planner plan's last row, or as they join, counting every point gained even past a maximum. A child takes both parents' classes for their gender (Olivia's son gets Mercenary and Barbarian for her Dancer and Pegasus Knight), but never Lord, which only Lucina has, or Dancer; Taguel and Manakete reach only Morgan. A child with the Avatar as a parent gets every regular class of their gender. Morgan starts in the other parent's first class, or as a Tactician after a Lord or Dancer. A child parent of Morgan's passes on what they inherited themselves. All from the game's program: growths 0x27d230, maximums 0x2c48f8, the join 0x3a44d0, the parents 0x27c0a8, classes 0x2cff38 and 0x214098, Morgan's class 0x27c150."
