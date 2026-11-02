@@ -22,6 +22,8 @@ ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 OUT = os.path.join(ROOT, 'src', 'data', 'fe13', 'fe13Units.ts')
 STATS = ['hp', 'str', 'mag', 'skl', 'spd', 'lck', 'def', 'res']
 PERSON = 568
+# JobData +84..+89: the weapon types a class uses (1) or not (0); the unit's experience in them is the person's plus that byte (0x2d0b60).
+WEAPONS = ['Sword', 'Lance', 'Axe', 'Bow', 'Tome', 'Staff']
 AVATARS = {'PID_プレイヤー男': 'Avatar (M)', 'PID_プレイヤー女': 'Avatar (F)'}
 TACTICIAN = {'JID_戦術師男', 'JID_戦術師女'}
 MORGAN = {'PID_マーク男': 'Morgan (M)', 'PID_マーク女': 'Morgan (F)'}
@@ -242,12 +244,24 @@ def main():
             **({'dlc': True} if c['jid'] in ('JID_予約０１男', 'JID_予約０２女') else {}),
             'bases': {**dict(zip(STATS, raw[24:32])), 'mov': c['mov']}, 'caps': dict(zip(STATS, raw[48:56])),
             'growths': g, 'skills': learn, 'promotesTo': [f'c{j}' for j in promotions(i)],
+            # +84..+89 the weapon types; a Manakete (+90 bit 0x40) and a Taguel (0x80) use stones, which have no rank (0x2c050c).
+            'weapons': [w for k, w in enumerate(WEAPONS) if raw[84 + k]] + (['Dragonstone'] if raw[90] & 0x40 else [])
+            + (['Beaststone'] if raw[90] & 0x80 else []),
+            # +56..+63 what it gives a unit it's paired with: Mov, then Str to Res (signed; 0x2b2c8c, 0x2cd408).
+            'pairUp': dict(zip(['mov'] + STATS[1:], [s8(x) for x in raw[56:64]])),
             # The top level (0x2d0ad8): 30 for a class neither promoted nor promoting (Villager, Dancer, Taguel, Manakete, Conqueror and
             # the DLC's Lodestar, Dread Fighter, Bride), else 20.
             **({'maxLevel': 30} if not promoted and not promotions(i) else {}),
         }
 
     chapters = [{'id': f'fe13-{k.lower()}', 'label': label(k)} for k in keys] + dlc_chapters
+
+    # WeaponBonusData: 12 bytes a weapon type (Sword to Staff), Hit then Atk for A, B and C (the rest 0); a staff's Atk is its recovery.
+    wb = gd.at['WeaponBonusData']
+    weapon_bonus = {}
+    for k, w in enumerate(WEAPONS):
+        row = gd.d[0x20 + wb + 12 * k:0x20 + wb + 12 * k + 12]
+        weapon_bonus[w] = {rank: {'hit': row[2 * n], 'atk': row[2 * n + 1]} for n, rank in enumerate('ABC')}
 
     # The village maiden: when Chrom marries no one, ev::HeroMarrige marks him married to her, and his spouse is then the person
     # PID_ダミー (0x2ef8f8): no class (JID_ダミー男 has no data), no sets, and every stat, growth and modifier 0.
@@ -278,6 +292,9 @@ def main():
         'export const FE13_CLASSES: Record<string, Fe13Class> = {',
         *[f'  {js(k)}: {js(v)},' for k, v in classes.items()],
         '}',
+        '',
+        "// What a weapon rank adds (GameData's WeaponBonusData): A is the top rank; there's no S (the weapon experience stops at A's 91).",
+        f'export const FE13_WEAPON_BONUS: Record<string, Record<string, {{ hit: number; atk: number }}>> = {js(weapon_bonus)}',
         '',
         "// Every skill (GameData's RemovableSkillData), by its English name.",
         'export const FE13_SKILLS: Record<string, Fe13Skill> = {',

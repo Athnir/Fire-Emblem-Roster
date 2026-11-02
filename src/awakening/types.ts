@@ -77,6 +77,10 @@ export interface Fe13Class {
   maxLevel?: number
   /** One of the DLC's two classes (the Dread Fighter, the Bride), each reached with a seal of its own. */
   dlc?: true
+  /** The weapons it uses (each up to A; Dragonstone and Beaststone have no rank). */
+  weapons: string[]
+  /** What it gives a unit it's paired with, when it's the one behind: Mov, and on Str to Res the class's part (0x2b2c8c). */
+  pairUp: Omit<Fe13Stats, 'hp'> & { mov: number }
 }
 
 export interface Fe13Skill {

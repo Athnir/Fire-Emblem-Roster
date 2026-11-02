@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { FE13_ASSETS, FE13_CHAPTERS, FE13_CLASSES, FE13_MAIDEN, FE13_SKILLS, FE13_UNITS } from '../../data/fe13/fe13Units'
-import { capsOf, childOf, classChanges, classSetOf, dlcClassesFor, fixedShare, isFamilyBlocked, legalSteps, levelGain, project, reachableSkills, spousesOf, withAvatar, type Fe13Data } from '../logic'
+import { capsOf, childOf, classChanges, classSetOf, dlcClassesFor, familyOf, fixedShare, isFamilyBlocked, legalSteps, levelGain, pairUpBonus, project, reachableSkills, spousesOf, statsIn, unitNow, withAvatar, type Fe13Data } from '../logic'
 import { FE13_STATS } from '../types'
 
 const data: Fe13Data = { chapters: FE13_CHAPTERS, units: FE13_UNITS, classes: FE13_CLASSES, maiden: FE13_MAIDEN, skills: FE13_SKILLS }
@@ -239,5 +239,41 @@ describe('Aptitude, Limit Breaker and the DLC classes', () => {
     expect(classChanges(data, id('Lord'), classSetOf(unit('chrom')), [df]).find((c) => c.to === df)?.minLevel).toBe(10)
     expect(classChanges(data, id('Great Lord'), classSetOf(unit('chrom')), [df]).find((c) => c.to === df)?.minLevel).toBe(1)
     expect(classChanges(data, id('Lord'), classSetOf(unit('chrom'))).some((c) => c.to === df)).toBe(false)
+  })
+})
+
+describe('Pair-up (0x2b2c8c, 0x2cd408)', () => {
+  const cls = (name: string) => Object.values(FE13_CLASSES).find((c) => c.name === name && !c.female)!
+  const stats = (v: Partial<Record<string, number>>) => ({ hp: 30, str: 0, mag: 0, skl: 0, spd: 0, lck: 0, def: 0, res: 0, ...v })
+
+  it("gives a tenth of the partner's stat (at most 3), and on the class's stats its part plus 1 at C or B and 2 at A or S", () => {
+    // A Lord boosts Spd and Lck by 3.
+    const lord = cls('Lord')
+    const s = stats({ str: 15, spd: 25, lck: 41 })
+    expect(pairUpBonus(lord, s, 0)).toMatchObject({ str: 1, spd: 2 + 3, lck: 3 + 3, def: 0, mov: 0 })
+    expect(pairUpBonus(lord, s, 2)).toMatchObject({ str: 1, spd: 2 + 3 + 1 })
+    expect(pairUpBonus(lord, s, 4)).toMatchObject({ str: 1, spd: 2 + 3 + 2 })
+    expect(pairUpBonus(lord, s, 0, { defender: true })).toMatchObject({ str: 2, def: 1 })
+  })
+
+  it('gives Mov only from the class, and 2 more with Deliverer', () => {
+    expect(pairUpBonus(cls('Great Knight'), stats({}), 4).mov).toBe(1)
+    expect(pairUpBonus(cls('Lord'), stats({}), 4, { deliverer: true }).mov).toBe(2)
+  })
+
+  it("reads a partner's stats from their plan, in another class held at its maximums", () => {
+    const plans = { 'fe13-frederick': { steps: [], targetLevel: 20 } }
+    const now = unitNow(data, unit('frederick'), {}, plans)
+    expect([now.planned, now.level]).toEqual([true, 20])
+    const priest = Object.values(FE13_CLASSES).find((c) => c.name === 'Priest')!
+    const asPriest = statsIn(data, now, priest.id)
+    expect(asPriest.def).toBe(Math.min(capsOf(priest, unit('frederick').modifiers).def, now.raw.def - FE13_CLASSES[now.classId].bases.def + priest.bases.def))
+  })
+
+  it('knows a family in the plan: parents, children and siblings', () => {
+    const spouses = marry(['chrom', 'sumia'])
+    expect(familyOf(data, 'fe13-lucina', spouses)).toEqual(expect.arrayContaining(['fe13-chrom', 'fe13-sumia', 'fe13-cynthia']))
+    expect(familyOf(data, 'fe13-chrom', spouses)).toEqual(expect.arrayContaining(['fe13-lucina', 'fe13-cynthia']))
+    expect(familyOf(data, 'fe13-lucina', {})).toEqual(['fe13-chrom'])
   })
 })

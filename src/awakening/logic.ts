@@ -10,6 +10,8 @@ export interface Fe13Data {
   maiden?: Fe13Unit
   /** Every skill, by name. */
   skills?: Record<string, Fe13Skill>
+  /** What each weapon rank adds: {weapon: {A|B|C: {hit, atk}}}. */
+  weaponBonus?: Record<string, Record<string, { hit: number; atk: number }>>
 }
 
 const CHROM = 'fe13-chrom'
@@ -42,6 +44,8 @@ export interface Fe13Plan {
   limitBreaker?: boolean
   /** The DLC classes unlocked for the unit, open to its class changes. */
   dlc?: string[]
+  /** Who's behind them in a pair-up, at what support rank, and in what class (their plan's last, if not given). */
+  pairUp?: { partner: string; rank: Fe13Rank; partnerClass?: string }
 }
 
 export interface Fe13Stage {
@@ -257,19 +261,64 @@ export interface Fe13Child {
 }
 
 /** A parent's stats, growths and the rest, as passed on. `depth` stops at Morgan's grandparents. */
-function parentOf(data: Fe13Data, unit: Fe13Unit, female: boolean, spouses: Record<string, string>, plans: Record<string, Fe13Plan>, depth: number): Fe13Parent {
+/** A unit as they stand now: their Unit Planner plan's last row, or as they join; a child with what they inherit when their parents are
+ * in the plan (`via`; null when they aren't). `depth` stops at Morgan's grandparents. */
+export interface Fe13Now {
+  unit: Fe13Unit
+  classId: string
+  level: number
+  /** Before the maximums. */
+  raw: Fe13Stats
+  growths: Fe13Stats
+  modifiers: Omit<Fe13Stats, 'hp'>
+  limitBreaker: boolean
+  planned: boolean
+  via?: Fe13Child | null
+}
+
+export function unitNow(data: Fe13Data, unit: Fe13Unit, spouses: Record<string, string>, plans: Record<string, Fe13Plan>, depth = 0): Fe13Now {
   const via = unit.parent && depth === 0 ? childOf(data, unit, spouses, plans, depth + 1) : unit.parent ? null : undefined
   const growths = via?.growths ?? unit.growths
   const modifiers = via?.modifiers ?? unit.modifiers
-  const classes = via?.classes ?? classSetOf(unit, female)
   const start = via ? { ...unit, classId: via.startClass } : unit
   const plan = plans[unit.id]
   const stages = plan ? project(data, start, plan, { start: via?.raw ?? unit.bases, growths, modifiers, set: via?.classes ?? classSetOf(unit) }) : null
   const last = stages?.[stages.length - 1] ?? { classId: start.classId, level: unit.level, raw: via?.raw ?? unit.bases }
+  return { unit, classId: last.classId, level: last.level, raw: last.raw, growths, modifiers, limitBreaker: !!plan?.limitBreaker, planned: !!stages && stages.length > 1, via }
+}
+
+/** A unit's stats now in another class: the points they have, with that class's bases and held at its maximums. */
+export function statsIn(data: Fe13Data, now: Fe13Now, classId: string): Fe13Stats {
+  const from = data.classes[now.classId]
+  const to = data.classes[classId] ?? from
+  const caps = capsOf(to, now.modifiers, now.limitBreaker)
+  const out = {} as Fe13Stats
+  for (const s of FE13_STATS) out[s] = Math.min(caps[s], now.raw[s] - (from?.bases[s] ?? 0) + to.bases[s])
+  return out
+}
+
+/** A support rank: 0 none, 1 C, 2 B, 3 A, 4 S. */
+export type Fe13Rank = 0 | 1 | 2 | 3 | 4
+
+/** What a partner behind the lead gives them in a pair-up (0x2b2c8c): on every stat but HP a tenth of the partner's own stat, at most 3;
+ * on the stats the partner's class boosts, that class's part plus 1 at C or B and 2 at A or S; 1 more on each with the lead's Defender.
+ * Mov gets the class's Mov part, and 2 more with the lead's Deliverer (0x2cd408). No maximum holds a stat back after it. */
+export function pairUpBonus(cls: Fe13Class, partner: Fe13Stats, rank: Fe13Rank, lead: { defender?: boolean; deliverer?: boolean } = {}): Omit<Fe13Stats, 'hp'> & { mov: number } {
+  const out = { mov: cls.pairUp.mov + (lead.deliverer ? 2 : 0) } as Omit<Fe13Stats, 'hp'> & { mov: number }
+  for (const s of FE13_STATS.slice(1) as Exclude<Fe13Stat, 'hp'>[]) {
+    const part = cls.pairUp[s]
+    out[s] = Math.min(3, Math.floor(Math.max(0, Math.round(partner[s])) / 10)) + (part ? part + ((rank + 1) >> 1) : 0) + (lead.defender ? 1 : 0)
+  }
+  return out
+}
+
+function parentOf(data: Fe13Data, unit: Fe13Unit, female: boolean, spouses: Record<string, string>, plans: Record<string, Fe13Plan>, depth: number): Fe13Parent {
+  const now = unitNow(data, unit, spouses, plans, depth)
+  const classes = now.via?.classes ?? classSetOf(unit, female)
   const personal = {} as Fe13Stats
   // The maiden has no class: her stats are her own zeros.
-  for (const s of FE13_STATS) personal[s] = last.raw[s] - (data.classes[last.classId]?.bases[s] ?? 0)
-  return { unit, growths, modifiers, classes, personal, from: { classId: last.classId, level: last.level, planned: !!stages && stages.length > 1 }, via }
+  for (const s of FE13_STATS) personal[s] = now.raw[s] - (data.classes[now.classId]?.bases[s] ?? 0)
+  return { unit, growths: now.growths, modifiers: now.modifiers, classes, personal, from: { classId: now.classId, level: now.level, planned: now.planned }, via: now.via }
 }
 
 /** A child's inheritance once their fixed parent is married in `spouses` (both ways). */
@@ -378,6 +427,19 @@ export function parentsOf(data: Fe13Data, unitId: string, spouses: Record<string
   const unit = data.units.find((u) => u.id === unitId)
   if (!unit?.parent) return []
   return [unit.parent, ...(spouses[unit.parent] ? [spouses[unit.parent]] : [])]
+}
+
+/** A unit's family in the plan: parents, children and siblings. They support each other on a scale of their own, up to A (0x2b0020,
+ * 0x2affc4). */
+export function familyOf(data: Fe13Data, unitId: string, spouses: Record<string, string>): string[] {
+  const mine = parentsOf(data, unitId, spouses).flatMap(avatarIds)
+  return data.units
+    .filter((u) => {
+      if (sameUnit(u.id, unitId)) return false
+      const theirs = parentsOf(data, u.id, spouses).flatMap(avatarIds)
+      return mine.some((id) => sameUnit(id, u.id)) || theirs.some((id) => sameUnit(id, unitId)) || theirs.some((id) => mine.includes(id))
+    })
+    .map((u) => u.id)
 }
 
 /** Whether the plan makes two units parent and child, or siblings: then they can't marry. */

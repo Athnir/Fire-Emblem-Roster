@@ -24,8 +24,10 @@ decode to 0, level 1, no sets, and the class `JID_ダミー男`, which has no re
 
 +0 flags (0x01 a woman's, 0x08 promoted), +24-+31 bases, +32-+39 the growths, enciphered, +48-+55 maximums, +64 and +66 the skills it
 teaches (indexes into `RemovableSkillData`, 28 bytes each, the name label at +8): at Lv 1 and 10, or 5 and 15 promoted (Serenes
-Forest), +81 Mov, +92 and +96 pointers to the classes it promotes to (Cavalier: Paladin, Great Knight). (The Armory's reader calls
-+64-+71 pair-up bonuses; they're these two skills.)
+Forest), +81 Mov, +92 and +96 pointers to the classes it promotes to (Cavalier: Paladin, Great Knight). +56-+63 is what it gives in a
+pair-up, Mov then Str to Res (signed; 0x2b2c8c reads it), and +84-+89 the weapons it uses (1 each for Sword, Lance, Axe, Bow, Tome,
+Staff); +90 bit 0x40 marks a Manakete and 0x80 a Taguel, who use stones, which have no rank. (The Armory's reader calls +64-+71
+pair-up bonuses; they're the two skills, and the bonuses are +56.)
 
 ## The Avatar's asset and flaw: GameData's `PersonalityData`
 
@@ -125,6 +127,14 @@ two parents), +0x84 the points gained in each stat, +0x8d the level, +0xb4 the f
   skills and 5 the DLC's never) and that the child doesn't know. Up to two known ones are passed over; a third ends the search. Chrom or
   Lucina as the parent gives a daughter Aether and a son Rightful King instead, and nothing if the child has it. Walhart gives Conquest,
   Aversa Shadowgift. The app doesn't model this: the Skill Planner's pool has every skill a child could inherit in some playthrough.
+- **Pair-up (0x2b2c8c):** the one behind gives the lead, on each stat but HP, a tenth of their own stat (before any bonus), at most 3;
+  on the stats their class boosts (JobData +57-+63), the class's part plus 1 at C or B and 2 at A or S (the support rank, 0x2de238);
+  1 more on each with the lead's Defender. Mov gets the class's +56, 2 more with the lead's Deliverer (0x2cd408). Nothing holds a stat
+  at its maximum after it. Parent and child, and siblings, support each other on their own scale, up to A (0x2b0020, 0x2affc4).
+- **Weapons:** a unit's experience in a weapon is the person's (+62-+67) plus the class's byte (0x2d0b60); GameData's WeaponLevelData
+  turns it into a rank (91 A, 61 B, 36 C, 16 D, 1 E). It stops at 91 (0x2ceed8), so every class's weapons go up to A and none to S.
+  WeaponBonusData has what each rank adds (a Sword at A Atk +3; a Lance, Bow or Tome Atk +2 and Hit +5; an Axe Atk +1 and Hit +10; a
+  Staff recovery +3). Boots add 2 Mov, and a second adds nothing (the item's +0x25, held at 2, 0x2ec438).
 - **Who can marry (0x2d9e08):** not a parent or child (0x2d9dac), nor a sibling: a shared father or mother (0x2b5b50).
 - **Chrom's wife (ev::HeroMarrige, 0x3b2700):** at the end of Chapter 11, the unmarried candidate he has the highest support with, from C
   up; a tie goes to whoever is first of the Avatar, Sully, Sumia, Maribelle and Olivia; failing that, anyone he has some support with. With

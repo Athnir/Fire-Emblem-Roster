@@ -11,12 +11,17 @@ import {
   classChanges,
   classSetOf,
   dlcClassesFor,
+  familyOf,
   fixedShare,
   isFamilyBlocked,
   isMorgan,
   legalSteps,
+  pairUpBonus,
   project,
+  reachableClasses,
   reachableSkills,
+  statsIn,
+  unitNow,
   sameUnit,
   skillsOf,
   spousesOf,
@@ -26,9 +31,11 @@ import {
   type Fe13Data,
   type Fe13Parent,
   type Fe13Plan,
+  type Fe13Rank,
+  type Fe13Stage,
 } from './logic'
 import { useFe13Store } from './store'
-import { FE13_STATS, FE13_STAT_LABELS, type Fe13Stat, type Fe13Stats, type Fe13Unit } from './types'
+import { FE13_STATS, FE13_STAT_LABELS, type Fe13Class, type Fe13Stat, type Fe13Stats, type Fe13Unit } from './types'
 
 const selectClass = 'rounded-md border border-neutral-700 bg-neutral-800 px-2 py-1 text-sm text-neutral-200'
 const panel = 'space-y-4 rounded-lg border border-neutral-800 bg-neutral-900 p-4'
@@ -312,6 +319,210 @@ export function Fe13Roster({ data: raw }: { data: Fe13Data }) {
   )
 }
 
+const RANKS: { value: Fe13Rank; label: string }[] = [
+  { value: 0, label: 'No support' },
+  { value: 1, label: 'C' },
+  { value: 2, label: 'B' },
+  { value: 3, label: 'A' },
+  { value: 4, label: 'S' },
+]
+const PAIR_STATS = FE13_STATS.slice(1) as Exclude<Fe13Stat, 'hp'>[]
+
+function chip(on: boolean): string {
+  return `rounded-md border px-2 py-1 text-xs transition-colors ${
+    on ? 'border-violet-500 bg-violet-950/50 text-violet-200' : 'border-neutral-700 bg-neutral-800 text-neutral-300 hover:border-neutral-600'
+  }`
+}
+
+/** What a weapon rank adds, as text (GameData's WeaponBonusData; a staff's Atk is its recovery). */
+function rankBonusText(bonus: Fe13Data['weaponBonus'], weapon: string, rank: string): string {
+  const b = bonus?.[weapon]?.[rank]
+  if (!b) return ''
+  return [b.atk ? `${weapon === 'Staff' ? 'Recovery' : 'Atk'} +${b.atk}` : '', b.hit ? `Hit +${b.hit}` : ''].filter(Boolean).join(', ')
+}
+
+function BonusGrid({ values, mov }: { values?: Partial<Fe13Stats>; mov?: number }) {
+  const show = (v: number | undefined) => (v === undefined ? '–' : v > 0 ? `+${v}` : String(v))
+  return (
+    <div className="grid max-w-sm grid-cols-4 gap-x-3 gap-y-1 text-sm">
+      {PAIR_STATS.map((s) => (
+        <div key={s} className="flex justify-between gap-2">
+          <span className="text-neutral-500">{FE13_STAT_LABELS[s]}</span>
+          <span className="font-mono text-neutral-100">{show(values?.[s])}</span>
+        </div>
+      ))}
+      <div className="flex justify-between gap-2">
+        <span className="text-neutral-500">Mov</span>
+        <span className="font-mono text-neutral-100">{show(mov)}</span>
+      </div>
+    </div>
+  )
+}
+
+/** As Fates' Unit Planner: the class's weapons and Movement, and the pair-up bonus the unit gives and gets (0x2b2c8c, 0x2cd408). */
+function Fe13Mechanics({
+  data,
+  unit,
+  plan,
+  update,
+  last,
+  modifiers,
+}: {
+  data: Fe13Data
+  unit: Fe13Unit
+  plan: Fe13Plan
+  update: (patch: Partial<Fe13Plan>) => void
+  last: Fe13Stage
+  modifiers: Partial<Fe13Stats>
+}) {
+  const spouses = useFe13Store((s) => s.spouses)
+  const plans = useFe13Store((s) => s.plans)
+  const [movement, setMovement] = useState(false)
+  const [boots, setBoots] = useState(false)
+  const [defender, setDefender] = useState(false)
+  const [deliverer, setDeliverer] = useState(false)
+  const [givenRank, setGivenRank] = useState<Fe13Rank>(0)
+  const cls: Fe13Class = data.classes[last.classId]
+  const pair = plan.pairUp
+  const rank = pair?.rank ?? 0
+  const family = familyOf(data, unit.id, spouses)
+  const supported = new Set(unit.supports.map((s) => s.partner))
+  // No support: anyone. C to A: their support partners and their family in the plan. S: whom they can marry, family aside.
+  const partners = data.units.filter((u) => {
+    if (u.id === unit.id || sameUnit(u.id, unit.id)) return false
+    if (rank === 0) return true
+    if (rank === 4) return spousesOf(data, unit).some((p) => p.id === u.id) && !family.includes(u.id)
+    return supported.has(u.id) || family.includes(u.id)
+  })
+  const partner = pair?.partner ? data.units.find((u) => u.id === pair.partner) : undefined
+  const now = partner ? unitNow(data, partner, spouses, plans) : undefined
+  const partnerClasses = partner && now ? [...new Set([now.classId, ...reachableClasses(data, partner)])].filter((id) => data.classes[id]) : []
+  const partnerClass = partner && now ? (pair?.partnerClass && partnerClasses.includes(pair.partnerClass) ? pair.partnerClass : now.classId) : undefined
+  const received = partner && now && partnerClass ? pairUpBonus(data.classes[partnerClass], statsIn(data, now, partnerClass), rank, { defender, deliverer }) : undefined
+  const given = pairUpBonus(cls, last.stats, givenRank)
+  const movBonus = (movement ? 1 : 0) + (boots ? 2 : 0)
+  const mov = cls.bases.mov + movBonus
+  const caps = capsOf(cls, modifiers, plan.limitBreaker)
+  const setPair = (patch: Partial<NonNullable<Fe13Plan['pairUp']>>) => {
+    const next = { partner: '', rank: 0 as Fe13Rank, ...pair, ...patch }
+    update({ pairUp: next.partner || next.rank ? next : undefined })
+  }
+  return (
+    <div className="space-y-3 border-t border-neutral-800 pt-3">
+      <div className="text-sm text-neutral-300">
+        <span className="text-neutral-500">Weapons (as a {cls.name}): </span>
+        {cls.weapons.length
+          ? cls.weapons
+              .map((w) => {
+                const bonus = rankBonusText(data.weaponBonus, w, 'A')
+                return data.weaponBonus?.[w] ? `${w} up to A${bonus ? ` (${bonus})` : ''}` : `${w} (no rank)`
+              })
+              .join(', ')
+          : 'none'}
+      </div>
+      <div className="flex flex-wrap gap-4">
+        <label className="flex items-center gap-2 text-xs text-neutral-300">
+          <input type="checkbox" checked={movement} onChange={(e) => setMovement(e.target.checked)} />
+          Movement +1 equipped
+        </label>
+        <label className="flex items-center gap-2 text-xs text-neutral-300">
+          <input type="checkbox" checked={boots} onChange={(e) => setBoots(e.target.checked)} />
+          Boots used (+2; a second adds nothing)
+        </label>
+      </div>
+      <div className="text-sm text-neutral-300">
+        <span className="text-neutral-500">Movement: </span>
+        {cls.bases.mov}
+        {movBonus > 0 ? ` + ${movBonus} = ${mov}` : ''}
+      </div>
+
+      <div>
+        <h4 className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-400">Pair-up bonus given (as the one behind)</h4>
+        <div className="mb-1.5 flex flex-wrap gap-1.5">
+          {RANKS.map((r) => (
+            <button key={r.value} type="button" onClick={() => setGivenRank(r.value)} className={chip(givenRank === r.value)}>
+              {r.label}
+            </button>
+          ))}
+        </div>
+        <BonusGrid values={given} mov={given.mov} />
+      </div>
+
+      <div className="flex flex-col gap-1 text-xs text-neutral-400">
+        Pair-up bonus received from
+        <div className="flex flex-wrap gap-1.5">
+          {RANKS.map((r) => (
+            <button key={r.value} type="button" onClick={() => setPair({ rank: r.value, partner: '', partnerClass: undefined })} className={chip(rank === r.value)}>
+              {r.label}
+            </button>
+          ))}
+        </div>
+        <select
+          value={partner?.id ?? ''}
+          onChange={(e) => setPair({ partner: e.target.value, partnerClass: undefined })}
+          className={`${selectClass} w-full max-w-sm`}
+        >
+          <option value="">(none selected)</option>
+          {partners.map((u) => (
+            <option key={u.id} value={u.id}>
+              {u.name}
+              {family.includes(u.id) ? ' (family)' : ''}
+            </option>
+          ))}
+        </select>
+      </div>
+      {partner && now && partnerClass && received && (
+        <div className="space-y-2">
+          <label className="flex flex-col gap-1 text-xs text-neutral-400">
+            {partner.name}'s class
+            <select value={partnerClass} onChange={(e) => setPair({ partnerClass: e.target.value })} className={`${selectClass} w-full max-w-sm`}>
+              {partnerClasses.map((id) => (
+                <option key={id} value={id}>
+                  {data.classes[id].name}
+                  {id === now.classId ? (now.planned ? ' (their plan)' : ' (as they join)') : ''}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="flex flex-wrap gap-4">
+            <label className="flex items-center gap-2 text-xs text-neutral-300">
+              <input type="checkbox" checked={defender} onChange={(e) => setDefender(e.target.checked)} />
+              Defender equipped (+1 to each)
+            </label>
+            <label className="flex items-center gap-2 text-xs text-neutral-300">
+              <input type="checkbox" checked={deliverer} onChange={(e) => setDeliverer(e.target.checked)} />
+              Deliverer equipped (Mov +2)
+            </label>
+          </div>
+          <BonusGrid values={received} mov={received.mov} />
+          <p className="text-xs text-neutral-500">
+            From {partner.name}'s stats {now.planned ? `in their Unit Planner plan (Lv ${now.level})` : 'as they join'}, as a {data.classes[partnerClass].name}.
+          </p>
+          <h4 className="text-xs font-semibold uppercase tracking-wide text-neutral-400">Technical max (maximums + pair-up from {partner.name})</h4>
+          <div className="grid max-w-sm grid-cols-4 gap-x-3 gap-y-1 text-sm">
+            {FE13_STATS.map((s) => (
+              <div key={s} className="flex justify-between gap-2">
+                <span className="text-neutral-500">{FE13_STAT_LABELS[s]}</span>
+                <span className="font-mono text-neutral-100">{s === 'hp' ? caps.hp : caps[s] + received[s]}</span>
+              </div>
+            ))}
+            <div className="flex justify-between gap-2">
+              <span className="text-neutral-500">Mov</span>
+              <span className="font-mono text-neutral-100">{mov + received.mov}</span>
+            </div>
+          </div>
+        </div>
+      )}
+      <p className="text-xs text-neutral-500">
+        The one behind gives the lead a tenth of their own stat, at most 3, on every stat but HP; on the stats their class boosts, the
+        class's part plus 1 at C or B and 2 at A or S. Defender adds 1 to each and Deliverer 2 Mov. The bonus can go past a maximum.
+        Family supports (parent and child, siblings) go up to A. Every class's weapons go up to A; there's no S. From the game's program
+        (0x2b2c8c, 0x2cd408) and GameData (JobData, WeaponBonusData).
+      </p>
+    </div>
+  )
+}
+
 /** One unit's average stats through Master and Second Seals. Saved per unit. */
 export function Fe13Planner({ data: raw }: { data: Fe13Data }) {
   const data = useAvatarData(raw)
@@ -504,6 +715,7 @@ export function Fe13Planner({ data: raw }: { data: Fe13Data }) {
           <span className="text-neutral-500">Skills learned: </span>
           {skillsOf(data, stages).join(', ') || 'none'}
         </p>
+        <Fe13Mechanics data={data} unit={unit} plan={plan} update={update} last={stages[stages.length - 1]} modifiers={modifiers} />
       </div>
     </div>
   )
