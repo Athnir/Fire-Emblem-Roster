@@ -15,6 +15,7 @@ import {
   weaponRankBonus,
 } from '../logic/classResolution'
 import { computeChild, fixedParentContribution } from '../logic/childCalculator'
+import { getBaseStats } from '../logic/levelProjection'
 import { getFixedParent, isFamilyBlocked } from '../logic/childLookup'
 import { withCorrinBuild } from '../logic/corrinBuild'
 import { canFriendshipSeal, canMarry, canProduceChild, isRouteCompatible } from '../logic/eligibility'
@@ -283,8 +284,8 @@ export function SkillPlanner() {
           child: character,
           father: fixedInfo.side === 'father' ? fixedChar : variableChar,
           mother: fixedInfo.side === 'father' ? variableChar : fixedChar,
-          fatherCurrentStats: (fixedInfo.side === 'father' ? fixedChar : variableChar).baseStats,
-          motherCurrentStats: (fixedInfo.side === 'father' ? variableChar : fixedChar).baseStats,
+          fatherCurrentStats: getBaseStats(fixedInfo.side === 'father' ? fixedChar : variableChar, activeRoute),
+          motherCurrentStats: getBaseStats(fixedInfo.side === 'father' ? variableChar : fixedChar, activeRoute),
         })
       : undefined
   const guaranteedChildClassNames = new Set([character?.startingClass, ...fixedParentClassNames])

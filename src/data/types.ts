@@ -50,8 +50,15 @@ export interface Character {
   joinClass?: string
   /** The level baseStats/growthRates are anchored to, for the roster level-projection tool — per route, since join level (and occasionally join class/tier) genuinely differs by route for many characters. Falls back to 1 when a route has no entry. Children only: the earliest chapter they can actually be recruited on each route (varies with their fixed parent's own recruitment/support timing, never before Ch8) — their level at that point (and any later chapter) is derived from the shared story level-curve (src/data/childLeveling.ts), not stored directly. */
   startingLevel?: Partial<Record<Route, number>>
+  /** Children and the late recruits (joinScalesFrom): the earliest chapter they can be recruited on each route. */
   unlockChapter?: Partial<Record<Route, number>>
+  /** The late recruits (Izana, Flora, Fuga, Yukimura): the story level past which each further story level adds a level when they
+   * join, as the children's does past 10 (person +0x2d in GameData.bin; 0x3d396c). Their startingLevel is the minimum. */
+  joinScalesFrom?: number
   baseStats: StatBlock
+  /** Join stats on the routes where the unit joins at another level than baseStats is for: the game keeps a separate join record
+   * for that route (Person/*_HANDOVER.bin), e.g. Silas's Lv 18 Revelation stats. Read through getBaseStats. */
+  baseStatsByRoute?: Partial<Record<Route, StatBlock>>
   growthRates: StatBlock
   statCaps: StatBlock
   /** Max-stat modifiers relative to class base caps (used in child max-stat formula). */

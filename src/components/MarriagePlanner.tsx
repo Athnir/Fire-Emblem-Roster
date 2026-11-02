@@ -4,6 +4,7 @@ import { supports } from '../data/supports'
 import { canMarry, canProduceChild, isRouteCompatible, isSameSexPairing } from '../logic/eligibility'
 import { assignParentRoles, findChildrenForPair, getFixedParent, isFamilyBlocked, resolveChildActualParents } from '../logic/childLookup'
 import { computeChild, resolveSecondGenParent } from '../logic/childCalculator'
+import { getBaseStats } from '../logic/levelProjection'
 import type { Character } from '../data/types'
 import { earliestChildLevel } from '../data/childLeveling'
 import { withCorrinBuild } from '../logic/corrinBuild'
@@ -117,7 +118,7 @@ export function MarriagePlanner() {
     const actual = resolveChildActualParents(parent, pairings)
     if (!fixed || !actual) return undefined
     const variableId = fixed.side === 'father' ? actual.motherId : actual.fatherId
-    return resolveSecondGenParent(parent, fixed, withCorrinBuild(charactersById[variableId], corrinBuild))
+    return resolveSecondGenParent(parent, fixed, withCorrinBuild(charactersById[variableId], corrinBuild), activeRoute)
   }
 
   function handleClear() {
@@ -211,8 +212,8 @@ export function MarriagePlanner() {
                       child,
                       father: father ?? roles.father,
                       mother: mother ?? roles.mother,
-                      fatherCurrentStats: (father ?? roles.father).baseStats,
-                      motherCurrentStats: (mother ?? roles.mother).baseStats,
+                      fatherCurrentStats: getBaseStats(father ?? roles.father, activeRoute),
+                      motherCurrentStats: getBaseStats(mother ?? roles.mother, activeRoute),
                       level: earliestChildLevel(child.unlockChapter, activeRoute),
                     })
                     const missing = result.hairColorFromId ? 'growths and stats are' : 'growths, stats and hair color are'

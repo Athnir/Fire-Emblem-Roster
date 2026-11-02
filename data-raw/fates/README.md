@@ -1,11 +1,14 @@
 # Fire Emblem Fates (FE14): what the unit data checks against
 
-Fates keeps its hand-entered Serenes Forest data (`src/data/characters.ts`, `classes.ts`, `supports.ts`). Two things are checked
-against the game itself:
+Fates keeps its hand-entered Serenes Forest data (`src/data/characters.ts`, `classes.ts`, `supports.ts`). What's checked against
+the game itself:
 
 - **The class sets:** read from `GameData.bin` in the romfs the Fire Emblem Armory extracted from the user's own Birthright
   cartridge (`../Fates Armory/data-raw/fates/romfs`; `FATES_ROMFS` overrides the path) by `scripts/build-fates-class-sets.py`,
   which writes the test fixture `src/data/__tests__/fatesGameClassSets.ts`.
+- **Joins:** every unit's join level, class and stats on each route, the late recruits' scaling, the story level per chapter,
+  where My Castle is skipped, and the base classes' promotions, by `scripts/build-fates-joins.py` into
+  `src/data/__tests__/fatesGameJoins.ts`. The romfs holds the Conquest and Revelation route DLC too.
 - **Class inheritance and the Partner and Friendship Seals:** read in the program, a memory dump of the running game taken with
   Azahar in an Armory session (`code_trim.bin`, loaded at 0x100000). The addresses below are in that dump. Nothing from either
   is committed but what's derived here.
@@ -41,7 +44,12 @@ The parallel classes are Serenes Forest's table exactly, Kitsune → Apothecary 
 | +0x22 | a child's fixed parent (their person number) |
 | +0x24 | the class |
 | +0x26 | the other class: the default is whichever is a base class (0x53e1b0) |
+| +0x2a | the join level |
+| +0x2d | for units who join late: the story level past which each one adds a level on joining (0x3d396c). The children 10; Izana and Flora 28, Fuga and Yukimura 33; Felicia and Jakob 5, but they join in Chapter 2, at story level 1 |
+| +0x30 | their own (personal) stats; the class's bases are added |
+| +0x38 | the growths |
 | +0x40 | the cap modifiers (HP first, always 0) |
+| +0x6c | the personal skill (three copies) |
 | +0x74, +0x76 | the class set's other two classes; children have none |
 
 Flag bits 23 `SPID_マムクート` (dragon: the Avatars and Kana) and 24 `SPID_ラグズ` (beast: Kaden, Keaton, Selkie, Velouria) are only
@@ -57,6 +65,24 @@ on these people's records, never on a class.
 | +0x1a | the price at other castles |
 
 Nine units have a third class: Gunter, Flora, Shura, Izana, Reina, Scarlet, Yukimura, Fuga and Anna.
+
+**Chapters:** 28 bytes from the CID pointer; +0x12 is the chapter's story level. The prologue is chapter 0 and the endgame 28.
+
+## Other files
+
+- **`Person/A_HANDOVER.bin`, `B_HANDOVER.bin`, `C_HANDOVER.bin`:** person records (the GameData layout, `PID_A_`, `PID_B_` and
+  `PID_C_` names) for the units who join Birthright, Conquest or Revelation at another level than their GameData record. A route
+  without one uses the GameData record: Fire Emblem Wiki's Revelation Gunter (Lv 3) is the GameData record, his Conquest one (Lv
+  10) is `PID_B_`. Revelation has the most (Silas joins it at Lv 18, Hinoka at Lv 17); the app keeps them in `baseStatsByRoute`.
+- **`castle/castle_join.bin`:** the My Castle recruits and the chapter after which each route has them: Izana after Birthright 18 and
+  Conquest 22, Fuga after Revelation 18, Yukimura after Birthright 22, Flora after Conquest 18 and Revelation 22 (and Felicia and
+  Jakob after 15 on every route, a case the app doesn't model).
+- **Anna's map (`dlc/00000074`, E032):** the Anna on the map is an NPC record of her own, `PID_E032_アンナ`, with 5 more HP and
+  Defense and a late-join level of 10, so she catches up to the story like the children (promoted Lv 18 at Ch27). The Anna who
+  joins is placed from the map's `Support` group at the end: `PID_アンナ`, her GameData record, Lv 10 with no catch-up, as Fire
+  Emblem Wiki has her.
+- **The chapter scripts:** a chapter whose script calls `ev::ChapterSetSkipChapterSaveCastle` goes on to the next without a My
+  Castle visit: Chapter 27 on every route (straight into the endgame) and Revelation's Chapter 16.
 
 ## The program
 
@@ -92,8 +118,12 @@ In the program, each record starts at its flag word, so the offsets are 8 more t
   the personal part is the child's and the variable parent's added and halved, rounding down, before the class's is added.
   The variable parent is the slot whose gender isn't the fixed parent's (0x53b6e4). A second-generation variable parent counts
   as their own and their variable parent's personal growths added and halved, rounding down too (0x53b758).
-- **Levelling a child to their join level (0x3d396c calls 0x3d7164).** Each level above their base level (10) adds their full
-  growth to a running sum per stat; at the end the sum is divided by 100, rounding half up, and added (held under the cap).
+- **The story level (0x1b72f0).** Playing a chapter raises it to the chapter's +0x12. A unit with a late-join level (person
+  +0x2d) gains a level per story level past it when they join (0x3d396c); a child stops at their class's top level and the rest go
+  through their promotion. The last chance to recruit is before Chapter 27, at story level 38: promoted Lv 18 for a child, Lv 15
+  for the late recruits.
+- **Levelling on joining (0x3d7164).** Each level adds the unit's full growth (0x5330cc, the class's included) to a running sum per
+  stat; at the end the sum is divided by 100, rounding half up, and added under the caps.
 - **Recruiting a child (0x3d44a8 calls 0x3d8718).** In this order:
   1. The base stats. C is the child's personal stat after the levelling. Each parent's personal stat less C is floored at 0;
      the two are summed and divided by 4, rounding down, and capped at C/10 (rounded down) + 2.
@@ -107,8 +137,9 @@ In the program, each record starts at its flag word, so the offsets are 8 more t
   own parents' modifiers, without their +1. Then it adds 1 to every stat but HP.
 
 The app follows this in `offeredClasses`, `parentContribution` and `getSealReclassClass` (`src/logic/classResolution.ts`),
-`inheritClasses` (`src/logic/childCalculator.ts`), and `computeGrowthRate` and `computeBaseStat` (`src/logic/statCalculator.ts`;
-the base stats keep the user's low estimate, so the levelling there uses the personal growth alone).
+`inheritClasses` (`src/logic/childCalculator.ts`), `computeGrowthRate` and `computeBaseStat` (`src/logic/statCalculator.ts`;
+the base stats keep the user's low estimate, so the levelling there uses the personal growth alone), the story level and recruit
+chapters in `src/data/childLeveling.ts`, and `lateRecruitJoin` (`src/logic/lateRecruit.ts`).
 
 ## Where the wikis differ from the program
 

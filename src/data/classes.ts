@@ -255,7 +255,7 @@ export const classes: ClassData[] = [
   },
   {
     id: 'oni_savage', name: 'Oni Savage', tier: 'base',
-    promotesTo: ['oni_chieftain', 'blacksmith', 'master_of_arms'], weaponTypes: ['Axe'],
+    promotesTo: ['oni_chieftain', 'blacksmith'], weaponTypes: ['Axe'],
     classSkills: ['seal_resistance', 'shove'], statModifiers: s(18, 6, 1, 2, 5, 0, 7, 1), maxStats: s(45, 24, 19, 16, 20, 17, 23, 18),
     growthModifiers: s(20, 20, 10, 0, 10, 0, 20, 0), movementType: 'infantry',
     movement: 5, weaponRanks: [wr('Axe', 'B')], pairUpBonus: pu(4, 0, 0, 0, 0, 2, 0, 0),
@@ -333,7 +333,7 @@ export const classes: ClassData[] = [
     movement: 6, weaponRanks: [wr('Sword', 'S')], combatBonus: { avoid: 10, crit: 10 }, pairUpBonus: pu(0, 0, 0, 5, 3, 0, 0, 0),
   },
   {
-    id: 'master_of_arms', name: 'Master of Arms', tier: 'promoted', promotesFrom: ['samurai', 'oni_savage', 'villager'],
+    id: 'master_of_arms', name: 'Master of Arms', tier: 'promoted', promotesFrom: ['samurai', 'villager'],
     weaponTypes: ['Sword', 'Lance', 'Axe'], classSkills: ['seal_strength', 'life_and_death'],
     statModifiers: s(20, 8, 0, 6, 9, 3, 7, 3), maxStats: s(65, 33, 25, 30, 30, 31, 31, 28),
     growthModifiers: s(20, 15, 0, 10, 10, 10, 10, 0), movementType: 'infantry',

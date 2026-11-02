@@ -119,7 +119,11 @@ function CharacterDetail({ character: rawCharacter, activeRoute }: { character: 
         )}
         <div>
           <span className="text-neutral-500">Recruited level: </span>
-          {character.isChild ? 'Variable, Min Lvl 10' : getStartingLevel(character.startingLevel, activeRoute)}
+          {character.isChild
+            ? 'Variable, Min Lvl 10'
+            : character.joinScalesFrom !== undefined
+              ? `Variable, Min Lvl ${getStartingLevel(character.startingLevel, activeRoute)}`
+              : getStartingLevel(character.startingLevel, activeRoute)}
         </div>
         <div>
           <div className="flex items-center gap-1.5">

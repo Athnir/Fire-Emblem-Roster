@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { characters, charactersById } from '../data/characters'
-import { earliestChapterFor, earliestChildLevel, FINAL_CHAPTER, levelForChapter } from '../data/childLeveling'
+import { earliestChapterFor, earliestChildLevel, FINAL_CHAPTER, levelForChapter, recruitChapters } from '../data/childLeveling'
 import { classes as allClasses, classesById, classesByName } from '../data/classes'
 import { STAT_KEYS, type Character, type ClassData, type PairUpBonus, type Route, type StatBlock, type WeaponRank } from '../data/types'
 import { childAvailableClasses, computeChild, fixedParentContribution, resolveSecondGenParent } from '../logic/childCalculator'
@@ -8,7 +8,8 @@ import { getFixedParent, isFamilyBlocked, resolveChildActualParents } from '../l
 import { getClassLine, getOwnClassTree, isCorrinWithoutTalent, weaponRankBonus } from '../logic/classResolution'
 import { applyCorrinBuild, withCorrinBuild } from '../logic/corrinBuild'
 import { canFriendshipSeal, canMarry, canProduceChild, canSupport, isRouteCompatible } from '../logic/eligibility'
-import { classGrowthRate, classStatCap, classStatDelta, getStartingLevel, projectStats } from '../logic/levelProjection'
+import { lateRecruitJoin } from '../logic/lateRecruit'
+import { classGrowthRate, classStatCap, classStatDelta, getBaseStats, getStartingLevel, projectStats } from '../logic/levelProjection'
 import {
   baseClassPool,
   fixedLevelClassPool,
@@ -763,7 +764,7 @@ export function UnitDetail({
     ? withCorrinBuild(charactersById[kanaSpouseVariableParentId], corrinBuild)
     : undefined
   const variableChar = rawVariableChar
-    ? resolveSecondGenParent(rawVariableChar, kanaSpouseFixedInfo, kanaSpouseVariableChar)
+    ? resolveSecondGenParent(rawVariableChar, kanaSpouseFixedInfo, kanaSpouseVariableChar, activeRoute)
     : undefined
 
   const pairings = usePlannerStore((state) => state.pairings)
@@ -818,11 +819,16 @@ export function UnitDetail({
   // Children auto-level with story progress rather than joining at one fixed level — the earliest
   // selectable chapter is their own real unlock requirement (never before Ch8, the earliest any
   // Deeprealms child can appear), and the level curve (src/data/childLeveling.ts) converts whatever
-  // chapter is picked into a level, auto-promoting them once the story passes Ch18.
-  const earliestChapter = character.isChild ? earliestChapterFor(character.unlockChapter, activeRoute) : undefined
+  // chapter is picked into a level, auto-promoting them once the story passes Ch18. The late
+  // recruits (Izana, Flora, Fuga, Yukimura) catch up to the story the same way (lateRecruitJoin).
+  const scalesWithStory = character.isChild || character.joinScalesFrom !== undefined
+  const earliestChapter = scalesWithStory ? earliestChapterFor(character.unlockChapter, activeRoute) : undefined
   const [chapter, setChapter] = useState(earliestChapter ?? FINAL_CHAPTER)
-  const effectiveChapter = earliestChapter !== undefined ? Math.max(chapter, earliestChapter) : undefined
-  const chapterInfo = effectiveChapter !== undefined ? levelForChapter(effectiveChapter) : undefined
+  const chapterOptions = earliestChapter !== undefined ? recruitChapters(earliestChapter, activeRoute) : []
+  const effectiveChapter =
+    earliestChapter !== undefined ? (chapterOptions.find((ch) => ch >= chapter) ?? chapterOptions.at(-1)) : undefined
+  const chapterInfo = character.isChild && effectiveChapter !== undefined ? levelForChapter(effectiveChapter) : undefined
+  const lateJoin = effectiveChapter !== undefined ? lateRecruitJoin(character, activeRoute, effectiveChapter) : undefined
   const childAutoPromoted = Boolean(chapterInfo?.promoted)
   // Once a child auto-promotes (Ch19+), the story gives them a free Offspring Seal — defaults to
   // used, which only affects what they promote into BY DEFAULT (own line's promotion, e.g. Hero or
@@ -851,13 +857,13 @@ export function UnitDetail({
           child: character,
           father: fixedInfo.side === 'father' ? fixedChar : variableChar,
           mother: fixedInfo.side === 'father' ? variableChar : fixedChar,
-          fatherCurrentStats: (fixedInfo.side === 'father' ? fixedChar : variableChar).baseStats,
-          motherCurrentStats: (fixedInfo.side === 'father' ? variableChar : fixedChar).baseStats,
+          fatherCurrentStats: getBaseStats(fixedInfo.side === 'father' ? fixedChar : variableChar, activeRoute),
+          motherCurrentStats: getBaseStats(fixedInfo.side === 'father' ? variableChar : fixedChar, activeRoute),
           level: childStatLevel,
         })
       : undefined
 
-  const effectiveBaseStats = childResult?.baseStats ?? character.baseStats
+  const effectiveBaseStats = childResult?.baseStats ?? lateJoin?.baseStats ?? getBaseStats(character, activeRoute)
   const effectiveGrowthRates = childResult?.growthRates ?? character.growthRates
   const effectiveMaxStatModifiers = childResult?.maxStatModifiers ?? character.maxStatModifiers
 
@@ -1016,7 +1022,7 @@ export function UnitDetail({
   const [pinnedCompareClassId, setPinnedCompareClassId] = useState<string | undefined>(undefined)
   const pinnedCompareClass = pinnedCompareClassId ? classesById[pinnedCompareClassId] : undefined
   const originalClass = pinnedCompareClass ?? classesByName[defaultClassName]
-  const startLevel = character.isChild ? childLevel : getStartingLevel(character.startingLevel, activeRoute)
+  const startLevel = character.isChild ? childLevel : lateJoin?.level ?? getStartingLevel(character.startingLevel, activeRoute)
   // Songstress and the DLC/Amiibo classes are single 40-level classes (4 skill slots, no
   // base/promoted split) rather than a normal 20-level tier — same shape skillLevelsFor() detects.
   const is40LevelClass = selectedClass?.classSkills.length === 4
@@ -1279,8 +1285,8 @@ export function UnitDetail({
           child: character,
           father: fixedInfo.side === 'father' ? fixedChar : variableChar,
           mother: fixedInfo.side === 'father' ? variableChar : fixedChar,
-          fatherCurrentStats: (fixedInfo.side === 'father' ? fixedChar : variableChar).baseStats,
-          motherCurrentStats: (fixedInfo.side === 'father' ? variableChar : fixedChar).baseStats,
+          fatherCurrentStats: getBaseStats(fixedInfo.side === 'father' ? fixedChar : variableChar, activeRoute),
+          motherCurrentStats: getBaseStats(fixedInfo.side === 'father' ? variableChar : fixedChar, activeRoute),
           level: 20,
         }).baseStats
       : undefined
@@ -1477,7 +1483,7 @@ export function UnitDetail({
 
   return (
     <div className="space-y-4 border-t border-neutral-800 pt-4">
-      {character.isChild && earliestChapter !== undefined && (
+      {scalesWithStory && earliestChapter !== undefined && effectiveChapter !== undefined && (
         <label className="flex flex-col gap-1 text-xs text-neutral-400">
           Current story chapter reached
           <select
@@ -1485,12 +1491,12 @@ export function UnitDetail({
             onChange={(e) => setChapter(Number(e.target.value))}
             className="w-full max-w-[10rem] rounded-md border border-neutral-700 bg-neutral-800 px-2 py-1 text-sm text-neutral-200"
           >
-            {Array.from({ length: FINAL_CHAPTER - earliestChapter + 1 }, (_, i) => earliestChapter + i).map((ch) => (
+            {chapterOptions.map((ch) => (
               <option key={ch} value={ch}>Ch{ch}</option>
             ))}
           </select>
           <span className="text-neutral-500">
-            At Ch{effectiveChapter}: Lv{childLevel}{childAutoPromoted ? ' (promoted)' : ''} · earliest possible is Ch{earliestChapter}
+            At Ch{effectiveChapter}: Lv{startLevel}{childAutoPromoted ? ' (promoted)' : ''} · earliest possible is Ch{earliestChapter}
           </span>
         </label>
       )}

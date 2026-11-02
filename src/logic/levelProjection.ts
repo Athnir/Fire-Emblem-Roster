@@ -1,9 +1,14 @@
-import type { ClassData, Route, StatBlock } from '../data/types'
+import type { Character, ClassData, Route, StatBlock } from '../data/types'
 import { STAT_KEYS } from '../data/types'
 
 /** The character's join level on this route, falling back to 1 (the near-universal default) when unset. */
 export function getStartingLevel(startingLevel: Partial<Record<Route, number>> | undefined, route: Route): number {
   return startingLevel?.[route] ?? 1
+}
+
+/** A unit's join stats on a route: that route's own where they join it at another level (baseStatsByRoute), else baseStats. */
+export function getBaseStats(character: Character, route: Route): StatBlock {
+  return character.baseStatsByRoute?.[route] ?? character.baseStats
 }
 
 /** Per-stat difference between two classes' statModifiers — the one-time bonus applied at promotion, or zero when the classes are the same. */

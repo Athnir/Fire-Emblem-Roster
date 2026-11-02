@@ -2,6 +2,7 @@ import { charactersById } from '../data/characters'
 import { classesByName } from '../data/classes'
 import type { Character, ClassData, Route, StatBlock } from '../data/types'
 import { getClassLine, parentContribution } from './classResolution'
+import { getBaseStats } from './levelProjection'
 import { computeBaseStats, computeGrowthRates, computeMaxStatModifiers } from './statCalculator'
 
 type ParentSide = 'father' | 'mother'
@@ -208,6 +209,7 @@ export function resolveSecondGenParent(
   rawParent: Character,
   fixedInfo: { id: string; side: ParentSide } | undefined,
   ownVariableParent: Character | undefined,
+  route?: Route,
 ): Character {
   if (!rawParent.isChild || !fixedInfo || !ownVariableParent) return rawParent
   const fixedChar = charactersById[fixedInfo.id]
@@ -218,8 +220,8 @@ export function resolveSecondGenParent(
     child: rawParent,
     father,
     mother,
-    fatherCurrentStats: father.baseStats,
-    motherCurrentStats: mother.baseStats,
+    fatherCurrentStats: route ? getBaseStats(father, route) : father.baseStats,
+    motherCurrentStats: route ? getBaseStats(mother, route) : mother.baseStats,
     level: 20,
   })
   return {
@@ -260,8 +262,8 @@ export function childAvailableClasses(
     child,
     father,
     mother,
-    fatherCurrentStats: father.baseStats,
-    motherCurrentStats: mother.baseStats,
+    fatherCurrentStats: getBaseStats(father, route),
+    motherCurrentStats: getBaseStats(mother, route),
   })
 
   const extraById = new Map<string, ClassData>()
