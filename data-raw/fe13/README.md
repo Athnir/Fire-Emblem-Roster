@@ -13,8 +13,12 @@ level, +108 / +112 / +116 the classes a Second Seal opens to them as a man and +
 parent's set for the child's own gender), +132 a child's fixed parent (the mother, Chrom for Lucina, the Avatar for Morgan), +136 on
 their supports: [partner PID][the points C, B, A and S need] (99: no S).
 
-The Avatar's record names only the Tactician: the Avatar's set is every base class of their gender but the special ones (Lord,
-Dancer, Villager, Manakete, Taguel, and the unique classes), as Serenes Forest gives it.
+A set that names the Tactician (the Avatar's record names only the Tactician, as do the DLC's templates) opens every regular class of
+the gender: the Second Seal's list adds the program's own list of them (0x2cff38, read by `fe13_code.full_class_list`: thirteen for
+each gender, from the Tactician to the Dark Mage).
+
+`PID_ダミー` is the village maiden, Chrom's wife when he marries no one (below): every byte of bases and modifiers 0, growths that
+decode to 0, level 1, no sets, and the class `JID_ダミー男`, which has no record. The app has her as `FE13_MAIDEN`.
 
 ## Classes: GameData's `JobData`, 128 bytes
 
@@ -71,8 +75,9 @@ From the user's DLC dump (`dlc/E0xx`, each episode's files; `dlc/<content id>/E0
   `プレイヤー援軍`, the Avatar's twin, for the rest: both in static.bin), +40 its class, +44 its level, +46-+53 its stats as it joins,
   +54 weapon experience, +80 its skills. 17 episodes give one; E004, E005 and E022-E027 none.
 - Growths: the template's, plus its asset's and flaw's (the level-up's growth, 0x264858, adds the unit's asset and flaw to its person's);
-  modifiers likewise. Its class set is its own class and every regular class of its gender, as the Avatar's (Serenes Forest's class sets).
-  They have no supports.
+  modifiers likewise. Its class set is its template's: the Tactician (and the old Marth's Lodestar), so every regular class of its
+  gender (0x2cff38). Its own class, if it's none of those or what they promote to, it can only take again at its top level. They have
+  no supports.
 - English: the episode's `m/E/E000.bin` (its title, MCID_E000, and the unit's name) and the global archives' `m/E/E0xxG.bin` (the DLC
   classes and skills: Dread Fighter, Bride, Resistance +10, Aggressor, Rally Heart, Bond, Limit Breaker...), read from the archives.
 - Every recruit's level, stats, Mov, skills and modifiers match Serenes Forest's DLC pages (the test); Roy's growths are its worked
