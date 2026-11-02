@@ -51,6 +51,15 @@ new rule, add it here.
   is above them, from the parents' Unit Planner stats (the program, 0x3a44d0). The parents' stats are already in the planner there.
 - **A planner keeps every class change the game allows, up to 30** (user, 2026-11-02, Awakening): the game has no limit; 30 is
   past what most playthroughs use, and can be raised.
+- **Planners estimate; they don't promise exact numbers** (user, 2026-11-02, Path of Radiance and Radiant Dawn): Fixed mode counts a
+  level as one 100-EXP award, without the weapon's and the foe's growth changes, and Radiant Dawn's +1 on a level where every roll
+  fails is left out. The screens say the numbers can run a little low or a point off.
+- **Blossom** (user, 2026-11-02): in Path of Radiance it's in Sothe's skills from the start and can be removed; in Radiant Dawn it's
+  a tickbox, assumed kept on for the whole plan, as Aptitude is in Fates. Either way it's a carried skill and takes capacity.
+- **The story's choices of who joins are picked in the Roster** (user, 2026-11-02: Path of Radiance's Nasir or Ena, and the
+  Endgame royal); the other options' units drop out of every tab.
+- **A Path of Radiance save is ticked per unit in Radiant Dawn's Unit Planner** (user, 2026-11-02): the stats that were at their
+  cap there, and the A supports, which become +5 bonds. Volug shows half-transformed for Part 1.
 - **Skill Planners don't work out which skill a child inherits** (user, 2026-11-02): the skills are picked, and the general pool
   lists every skill the unit can have in some playthrough, following the game for what can pass (as Fates' looser pool does). In
   Awakening the classes show as chips to pick, as the DLC classes do, since the lists are long.
