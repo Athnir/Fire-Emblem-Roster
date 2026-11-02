@@ -2,8 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { characters, charactersById } from '../data/characters'
 import { supports } from '../data/supports'
 import { canMarry, canProduceChild, isRouteCompatible, isSameSexPairing } from '../logic/eligibility'
-import { assignParentRoles, findChildrenForPair, getFixedParent, isFamilyBlocked } from '../logic/childLookup'
-import { computeChild } from '../logic/childCalculator'
+import { assignParentRoles, findChildrenForPair, getFixedParent, isFamilyBlocked, resolveChildActualParents } from '../logic/childLookup'
+import { computeChild, resolveSecondGenParent } from '../logic/childCalculator'
+import type { Character } from '../data/types'
 import { earliestChildLevel } from '../data/childLeveling'
 import { withCorrinBuild } from '../logic/corrinBuild'
 import { useCorrinBuildStore } from '../state/corrinBuildStore'
@@ -101,6 +102,24 @@ export function MarriagePlanner() {
   const roles = primary && spouse ? assignParentRoles(primary, spouse) : undefined
   const resultingChildren = roles ? findChildrenForPair(roles.father.id, roles.mother.id, childCandidates) : []
 
+  // A second-generation unit (Corrin can marry one) only exists once their own fixed parent marries: those of a pairing whose
+  // fixed parent isn't paired in this plan yet.
+  const fixedParentName = (unit: Character) => charactersById[getFixedParent(unit)?.id ?? '']?.name ?? 'their parent'
+  const unpairedSecondGen = (members: Character[]) =>
+    members.filter((m) => m.isChild && !resolveChildActualParents(m, pairings))
+  const newPairingUnpaired = primary && spouse ? unpairedSecondGen([primary, spouse]) : []
+
+  /** A second-generation parent with their real numbers from their own parents in this plan, or undefined when the plan
+   * doesn't pair them yet. Anyone else passes through. */
+  function resolvedParent(parent: Character): Character | undefined {
+    if (!parent.isChild) return parent
+    const fixed = getFixedParent(parent)
+    const actual = resolveChildActualParents(parent, pairings)
+    if (!fixed || !actual) return undefined
+    const variableId = fixed.side === 'father' ? actual.motherId : actual.fatherId
+    return resolveSecondGenParent(parent, fixed, withCorrinBuild(charactersById[variableId], corrinBuild))
+  }
+
   function handleClear() {
     setPrimaryId('')
     setSpouseId('')
@@ -164,6 +183,11 @@ export function MarriagePlanner() {
                 {activeRoute === 'all' ? 'selected' : activeRoute} route.
               </p>
             )}
+            {eligible && newPairingUnpaired.map((m) => (
+              <p key={m.id} className="text-sm text-amber-400">
+                {m.name} only exists once {fixedParentName(m)} marries: pair {fixedParentName(m)} in this plan too.
+              </p>
+            ))}
             {eligible && sameSex && (
               <p className="text-sm text-amber-400">
                 {primary.name} and {spouse.name} can marry, but same-sex pairings produce no child.
@@ -179,15 +203,22 @@ export function MarriagePlanner() {
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   {resultingChildren.map((child) => {
+                    // Kana's parent can be second-generation: their real numbers come from their own parents in this plan.
+                    const father = resolvedParent(roles.father)
+                    const mother = resolvedParent(roles.mother)
+                    const unresolved = [roles.father, roles.mother].find((p) => !resolvedParent(p))
                     const result = computeChild({
                       child,
-                      father: roles.father,
-                      mother: roles.mother,
-                      fatherCurrentStats: roles.father.baseStats,
-                      motherCurrentStats: roles.mother.baseStats,
+                      father: father ?? roles.father,
+                      mother: mother ?? roles.mother,
+                      fatherCurrentStats: (father ?? roles.father).baseStats,
+                      motherCurrentStats: (mother ?? roles.mother).baseStats,
                       level: earliestChildLevel(child.unlockChapter, activeRoute),
                     })
-                    return <ChildResultCard key={child.id} child={child} result={result} />
+                    const warning = unresolved
+                      ? `${child.name}'s growths and stats are incomplete until ${unresolved.name}'s parents are paired in this plan.`
+                      : undefined
+                    return <ChildResultCard key={child.id} child={child} result={result} warning={warning} />
                   })}
                 </div>
               </>
@@ -236,6 +267,7 @@ export function MarriagePlanner() {
             if (!a || !b) return null
             const roles = assignParentRoles(a, b)
             const resultChildren = roles ? findChildrenForPair(roles.father.id, roles.mother.id, childCandidates) : []
+            const unpaired = unpairedSecondGen([a, b])
             return (
               <div key={`${p.characterAId}-${p.characterBId}`} className="rounded-lg border border-neutral-800 p-3">
                 <div className="flex items-center justify-between">
@@ -255,6 +287,11 @@ export function MarriagePlanner() {
                     Remove
                   </button>
                 </div>
+                {unpaired.map((m) => (
+                  <p key={m.id} className="mt-1 text-xs text-amber-400">
+                    {m.name} only exists once {fixedParentName(m)} marries: pair {fixedParentName(m)} in this plan too.
+                  </p>
+                ))}
               </div>
             )
           })}

@@ -741,7 +741,8 @@ export function UnitDetail({
     const fixedChar2 = charactersById[kanaSpouseFixedInfo.id]
     if (!fixedChar2) return []
     return characters.filter((c) => {
-      if (c.isChild || c.id === fixedChar2.id) return false
+      // Never a Corrin: Kana's own Corrin is married to this unit, and the other Corrin doesn't exist in that game.
+      if (c.isChild || c.id === fixedChar2.id || c.id === 'corrin_m' || c.id === 'corrin_f') return false
       const father = kanaSpouseFixedInfo.side === 'father' ? fixedChar2 : c
       const mother = kanaSpouseFixedInfo.side === 'father' ? c : fixedChar2
       return canProduceChild(supports, father, mother, activeRoute)
@@ -1550,9 +1551,15 @@ export function UnitDetail({
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
-          <span className="text-neutral-500">
-            Needed to fully resolve {variableCharRaw.name}'s own Pair Up bonus contribution below.
-          </span>
+          {kanaSpouseVariableParentId ? (
+            <span className="text-neutral-500">
+              Counts toward {character.name}'s growths, stats and caps, and {variableCharRaw.name}'s Pair Up bonus below.
+            </span>
+          ) : (
+            <span className="text-amber-400">
+              Pick one: until then, {character.name}'s growths, base stats and caps are incomplete.
+            </span>
+          )}
         </label>
       )}
       {character.isChild && !fixedInfo && (

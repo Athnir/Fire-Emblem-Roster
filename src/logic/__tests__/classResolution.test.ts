@@ -8,6 +8,7 @@ import {
   getOwnClassTree,
   getSealReclassClass,
   isCorrinWithoutTalent,
+  unreachableSkillIds,
   weaponRankBonus,
 } from '../classResolution'
 
@@ -209,5 +210,41 @@ describe('classSkillsForGender', () => {
   it('leaves an ordinary class (no gendered skill pair) unaffected', () => {
     const cavalier = classesByName['Cavalier']
     expect(classSkillsForGender(cavalier, 'M')).toEqual(cavalier.classSkills)
+  })
+})
+
+// A child also inherits one equipped skill from each parent (0x3d69c0): any skill whose category byte (GameData.bin +0x19) lets it
+// pass, so almost any skill, but never Inspiring Song, personal or DLC/Amiibo skills, and Beastbane only to beast-flagged children.
+describe('unreachableSkillIds', () => {
+  it("never gives a child Inspiring Song, even Azura's son, but lets him have her other Songstress skills", () => {
+    const shigure = unreachableSkillIds(charactersById['shigure'])
+    expect(shigure).toContain('inspiring_song')
+    expect(shigure).not.toContain('voice_of_peace')
+    expect(shigure).not.toContain('foreign_princess')
+  })
+
+  it("leaves a locked class's skills to children who could have a parent holding the class", () => {
+    // Siegbert: Corrin F and Azura can be his mother, no beast parent can.
+    const siegbert = unreachableSkillIds(charactersById['siegbert'])
+    expect(siegbert).not.toContain('dragon_fang')
+    expect(siegbert).not.toContain('voice_of_peace')
+    expect(siegbert).toContain('evenhanded')
+    expect(siegbert).toContain('beastbane')
+    // Shigure can have Kaden or Keaton as his father: Beastbane through their class, since the game won't pass him the skill.
+    expect(unreachableSkillIds(charactersById['shigure'])).not.toContain('beastbane')
+    // Female Kana's mother can be Selkie or Velouria.
+    expect(unreachableSkillIds(charactersById['kana_f'])).not.toContain('odd_shaped')
+  })
+
+  it("keeps the other gender's DLC-class skills out of a child's reach, since the game never passes DLC skills on", () => {
+    expect(unreachableSkillIds(charactersById['siegbert'])).toContain('witchs_brew')
+    expect(unreachableSkillIds(charactersById['sophie'])).not.toContain('witchs_brew')
+  })
+
+  it("still prunes a first-generation unit's locked-class skills", () => {
+    const laslow = unreachableSkillIds(charactersById['laslow'])
+    expect(laslow).toContain('inspiring_song')
+    expect(laslow).toContain('dragon_fang')
+    expect(unreachableSkillIds(charactersById['azura'])).not.toContain('inspiring_song')
   })
 })

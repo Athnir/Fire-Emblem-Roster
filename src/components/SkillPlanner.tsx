@@ -6,12 +6,12 @@ import { supports } from '../data/supports'
 import type { ClassData, Gender, Skill } from '../data/types'
 import {
   classSkillsForGender,
-  gen1UnreachableSkillIds,
   getClassLine,
   getOwnClassTree,
   getSealReclassClass,
   isCorrinWithoutTalent,
   skillLevelsFor,
+  unreachableSkillIds,
   weaponRankBonus,
 } from '../logic/classResolution'
 import { computeChild, fixedParentContribution } from '../logic/childCalculator'
@@ -332,12 +332,11 @@ export function SkillPlanner() {
     return Array.from(ids)
   })()
 
-  // Skills whose only source is a class this specific unit could never actually hold — a locked
-  // class (Nohr Prince(ss), Songstress, Villager, Kitsune, Wolfskin) they don't personally own, or
-  // the wrong half of Troubadour's gendered skill pair — hidden from the general pool below since
-  // no amount of route/pairing choices could ever make them real for this unit. See
-  // gen1UnreachableSkillIds for why this only applies to Gen 1 (non-child) units.
-  const unreachableIds = character ? gen1UnreachableSkillIds(character) : []
+  // Skills this unit could never obtain on any route with any pairing (unreachableSkillIds): a locked
+  // class's skills (Nohr Prince(ss), Songstress, Villager, Kitsune, Wolfskin) when neither they nor any
+  // parent they could have holds the class, the other gender's DLC/Amiibo skills, and for children
+  // Inspiring Song, which the game never passes on.
+  const unreachableIds = character ? unreachableSkillIds(character) : []
 
   function toggleLoadout(skillId: string) {
     setLoadout((prev) => {

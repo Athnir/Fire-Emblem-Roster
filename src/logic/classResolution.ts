@@ -1,6 +1,10 @@
+import { characters, charactersById } from '../data/characters'
 import { classes, classesById, classesByName } from '../data/classes'
 import { skillsById } from '../data/skills'
+import { supports } from '../data/supports'
 import { PARALLEL_CLASS_TABLE, type Character, type ClassData, type Gender, type Route } from '../data/types'
+import { getFixedParent } from './childLookup'
+import { canProduceChild } from './eligibility'
 
 /**
  * Classes no Partner or Friendship Seal can lend: in GameData.bin, Songstress's class record carries SPID_継承禁止 (never passed
@@ -52,23 +56,34 @@ export function parentContribution(parent: Character, child: Character, taken: s
  * equally unreachable by anyone but its holder) — per classes.ts: Nohr Noble/Hoshido Noble only
  * promote from Nohr Prince(ss); Nine-Tails only from Kitsune; Wolfssegner only from Wolfskin.
  * Villager's own promotions (Merchant, Master of Arms) are excluded here since both are also
- * reachable via Apothecary/Samurai/Oni Savage, so they're not actually locked. Keyed by the Gen 1
- * (non-child) character id(s) who still legitimately have these as their own Class Set — everyone
- * else in Gen 1 can never reach them: not via their own class, not via Partner/Friendship Seal (see
- * LOCKED_STARTING_CLASSES), and not via inheritance, since Gen 1 units have no parent to inherit
- * from. Children are untouched by this — a child's fixed parent can still contribute one of these
- * (e.g. Mozu's Villager to her own child) even though a Seal never can, and separately, the
- * recruit-time "inherit one skill from a parent" mechanic can hand a child any equipped skill of
- * theirs regardless of class (e.g. Shigure can still end up with a Songstress skill from Azura).
+ * reachable via Apothecary/Samurai/Oni Savage, so they're not actually locked. Keyed by the
+ * character ids who have the class in their own set, second-generation ones included (Kana, Selkie,
+ * Velouria). No seal ever lends these classes (LOCKED_STARTING_CLASSES), so a first-generation unit
+ * outside the holders can never reach them; a child can, through a parent who holds the class (see
+ * unreachableSkillIds).
  */
-const GEN1_LOCKED_CLASS_SKILLS: { holderIds: string[]; skillIds: string[] }[] = [
-  { holderIds: ['corrin_m', 'corrin_f'], skillIds: ['nobility', 'dragon_fang', 'draconic_hex', 'nohrian_trust', 'dragon_ward', 'hoshidan_unity'] },
+const LOCKED_CLASS_SKILLS: { holderIds: string[]; skillIds: string[] }[] = [
+  { holderIds: ['corrin_m', 'corrin_f', 'kana_m', 'kana_f'], skillIds: ['nobility', 'dragon_fang', 'draconic_hex', 'nohrian_trust', 'dragon_ward', 'hoshidan_unity'] },
   { holderIds: ['azura'], skillIds: ['luck_4', 'inspiring_song', 'voice_of_peace', 'foreign_princess'] },
   { holderIds: ['mozu'], skillIds: ['aptitude', 'underdog'] },
-  { holderIds: ['kaden', 'keaton'], skillIds: ['beastbane', 'grisly_wound'] },
-  { holderIds: ['kaden'], skillIds: ['evenhanded', 'even_better'] },
-  { holderIds: ['keaton'], skillIds: ['odd_shaped', 'better_odds'] },
+  { holderIds: ['kaden', 'keaton', 'selkie', 'velouria'], skillIds: ['beastbane', 'grisly_wound'] },
+  { holderIds: ['kaden', 'selkie'], skillIds: ['evenhanded', 'even_better'] },
+  { holderIds: ['keaton', 'velouria'], skillIds: ['odd_shaped', 'better_odds'] },
 ]
+
+/** Everyone who could be `child`'s parent: their fixed parent and anyone that parent can have a child with, on any route. */
+function possibleParentIds(child: Character): string[] {
+  const fixed = getFixedParent(child)
+  const fixedChar = fixed ? charactersById[fixed.id] : undefined
+  if (!fixed || !fixedChar) return []
+  const spouses = characters.filter((c) => {
+    if (c.id === fixedChar.id) return false
+    const father = fixed.side === 'father' ? fixedChar : c
+    const mother = fixed.side === 'father' ? c : fixedChar
+    return canProduceChild(supports, father, mother, 'all')
+  })
+  return [fixedChar.id, ...spouses.map((c) => c.id)]
+}
 
 /**
  * DLC/Amiibo skill id -> every gender that can actually reach it via a real class — the only
@@ -103,29 +118,46 @@ function isReachableForGender(skillId: string, gender: Gender): boolean {
 }
 
 /**
- * Skill ids a Gen 1 (non-child) character can never actually obtain, for pruning out of the Skill
- * Planner's General Skill Pool. Three sources: locked-class skills nobody outside their holder(s)
- * can reach (see GEN1_LOCKED_CLASS_SKILLS); whichever half of Troubadour's gendered
- * Gentilhomme/Demoiselle skill pair doesn't match their own gender; and any DLC/Amiibo skill whose
- * every real-class source is gender-locked to the opposite gender AND has no gender-agnostic item
- * route either (e.g. Witch's Brew — Witch-only, F-locked, no Scroll-item route — stays unreachable
- * for a male unit, unlike Aether, which does have one). A child could still end up with any of
- * these via the recruit-time "inherit one skill from a parent" mechanic or an opposite-gender
- * Troubadour-access parent (see classSkillsForGender), but a Gen 1 unit has no parent to inherit
- * from, so their own Class Set and Partner/Friendship Seal (which always corrects to the
- * RECIPIENT's own gender, never the giver's) are the only paths — always landing on their own
- * gender. Corrin is exempt from BOTH gendered rules: this app models Corrin as two separate
- * character entries (corrin_m/corrin_f) sharing one build even though only one is ever real in a
- * given playthrough (same reasoning as CORRIN_TALENT_CLASSES offering both Monk and Shrine Maiden
- * regardless of which Corrin is active), so nothing gender-based gets pruned based on which entry
- * you happen to be viewing. Kana is NOT given this same exemption despite being a similar
- * split-by-gender pair — the in-game Logbook treats kana_m/kana_f as two distinct slots that can't
- * trade with each other the way Corrin's single shared slot can — but this needs no special
- * handling here anyway, since Kana is a child and already exempt via the isChild check above.
+ * Skill ids a character can never actually obtain, for pruning out of the Skill Planner's General
+ * Skill Pool.
+ *
+ * A first-generation unit gets skills only through their own class set and the seals, so three
+ * sources: locked-class skills nobody outside their holder(s) can reach (see LOCKED_CLASS_SKILLS);
+ * whichever half of Troubadour's gendered Gentilhomme/Demoiselle pair doesn't match their gender;
+ * and any DLC/Amiibo skill whose every real-class source is gender-locked to the opposite gender
+ * AND has no gender-agnostic item route either (e.g. Witch's Brew — Witch-only, F-locked, no
+ * Scroll-item route — stays unreachable for a male unit, unlike Aether, which does have one).
+ * Corrin is exempt from both gendered rules: this app models Corrin as two entries (corrin_m/corrin_f)
+ * sharing one build, so nothing gender-based gets pruned based on which entry you happen to view.
+ *
+ * A child also inherits one equipped skill from each parent when recruited (0x3d8718 calls 0x3d69c0
+ * for the father's skills, then the mother's: the lowest one that can pass). Whether a skill can pass
+ * is its record's category byte in GameData.bin (+0x19): almost any skill can, useful to the child or
+ * not, but never Inspiring Song (its own category), personal skills or DLC/Amiibo skills, and
+ * Beastbane only to a child flagged as a beast. Only Selkie's and Velouria's own records carry that
+ * flag at that point: the set-up copies the parents' dragon, beast and Dragon Vein flags to the child
+ * just after picking the skills, so Shigure or Kana with a beast father can't inherit Beastbane, though
+ * the Kitsune or Wolfskin class they can inherit teaches it. So for a child: a locked-class
+ * skill is reachable when they hold the class or one of their possible parents does (they inherit
+ * the skill, or the class itself, since only Songstress can't be inherited); Inspiring Song never is;
+ * and DLC/Amiibo skills keep the same gender rule as for anyone, since only their classes teach them.
+ * The other Troubadour skill stays reachable: a parent can pass it on.
  */
-export function gen1UnreachableSkillIds(character: Character): string[] {
-  if (character.isChild) return []
-  const lockedClassSkills = GEN1_LOCKED_CLASS_SKILLS.filter(
+export function unreachableSkillIds(character: Character): string[] {
+  const wrongGenderDlcAmiiboSkills =
+    character.gender === 'M' || character.gender === 'F'
+      ? Object.keys(DLC_AMIIBO_SKILL_GENDERS).filter((id) => !isReachableForGender(id, character.gender))
+      : []
+
+  if (character.isChild) {
+    const parentIds = possibleParentIds(character)
+    const lockedClassSkills = LOCKED_CLASS_SKILLS.filter(
+      (entry) => !entry.holderIds.includes(character.id) && !entry.holderIds.some((id) => parentIds.includes(id)),
+    ).flatMap((entry) => entry.skillIds)
+    return Array.from(new Set([...lockedClassSkills, 'inspiring_song', ...wrongGenderDlcAmiiboSkills]))
+  }
+
+  const lockedClassSkills = LOCKED_CLASS_SKILLS.filter(
     (entry) => !entry.holderIds.includes(character.id),
   ).flatMap((entry) => entry.skillIds)
   const isCorrin = character.id === 'corrin_m' || character.id === 'corrin_f'
@@ -133,10 +165,6 @@ export function gen1UnreachableSkillIds(character: Character): string[] {
 
   const wrongGenderTroubadourSkill =
     character.gender === 'M' ? 'demoiselle' : character.gender === 'F' ? 'gentilhomme' : undefined
-  const wrongGenderDlcAmiiboSkills =
-    character.gender === 'M' || character.gender === 'F'
-      ? Object.keys(DLC_AMIIBO_SKILL_GENDERS).filter((id) => !isReachableForGender(id, character.gender))
-      : []
 
   return [
     ...lockedClassSkills,

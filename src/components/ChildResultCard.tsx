@@ -15,12 +15,14 @@ const STAT_LABELS: Record<string, string> = {
 interface Props {
   child: Character
   result: ComputedChild
+  /** Shown under the child's name when their numbers are incomplete (e.g. a second-generation parent not resolved yet). */
+  warning?: string
 }
 
 /** A quick growth/base-stat estimate for planning pairings, not a full multi-class breakdown (that
  * lives in Unit Planner) — just the child's own primary class with the variable parent's growth
  * contribution already folded in via `result.growthRates`. */
-export function ChildResultCard({ child, result }: Props) {
+export function ChildResultCard({ child, result, warning }: Props) {
   const hairSourceName = charactersById[result.hairSourceParentId]?.name ?? result.hairSourceParentId
   const isHairSourceCorrin = result.hairSourceParentId === 'corrin_m' || result.hairSourceParentId === 'corrin_f'
   const corrinAppearances = useCorrinAppearanceStore((state) => state.appearances)
@@ -38,6 +40,7 @@ export function ChildResultCard({ child, result }: Props) {
     <div className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
       <div>
         <h4 className="text-base font-semibold text-neutral-100">{child.name}</h4>
+        {warning && <p className="text-xs text-amber-400">{warning}</p>}
         <p className="text-xs text-neutral-500">Variable parent: {result.variableParent}</p>
         <p className="text-xs text-neutral-500">Hair from {hairSourceName}</p>
         {isHairSourceCorrin && (

@@ -97,8 +97,10 @@ export function computeBaseStats(
 }
 
 /**
- * child_max_stat_modifiers = father + mother + bonus.
- * bonus = 1, except bonus = 0 when the child is Kana AND one of Kana's own parents is itself a child character.
+ * child_max_stat_modifiers = father + mother + bonus, the bonus 1 on every stat but HP (HP has no cap modifier: the game's
+ * child-cap code, 0x53bddc, skips the +1 for it). The bonus is 0 when the child is Kana AND one of Kana's own parents is a child
+ * character: a second-generation parent's modifiers here already carry their own +1. The game counts it the other way round
+ * (it adds that parent's own parents' modifiers without their +1, then Kana's +1) and comes to the same total: one +1 per stat.
  */
 export function computeMaxStatModifiers(
   fatherMaxStatModifiers: StatBlock,
@@ -108,7 +110,7 @@ export function computeMaxStatModifiers(
   const bonus = isKanaWithChildParent ? 0 : 1
   const result = {} as StatBlock
   for (const stat of STAT_KEYS) {
-    result[stat] = fatherMaxStatModifiers[stat] + motherMaxStatModifiers[stat] + bonus
+    result[stat] = fatherMaxStatModifiers[stat] + motherMaxStatModifiers[stat] + (stat === 'hp' ? 0 : bonus)
   }
   return result
 }

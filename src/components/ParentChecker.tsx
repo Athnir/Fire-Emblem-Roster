@@ -17,13 +17,10 @@ const childCandidates = characters.filter((c) => c.isChild)
 
 interface CandidateResult {
   growthRates: StatBlock
-  /** The candidate's own max-stat-modifier contribution (Corrin-corrected if applicable, and
-   * recursively resolved from THEIR OWN parents if the candidate is itself a second-gen child — see
-   * resolveSecondGenParent) — not blended with the fixed parent or converted into any class's actual
-   * cap. Blending is just addition (father's modifiers + mother's modifiers + 1 — see
-   * computeMaxStatModifiers), so this alone already shows exactly how switching candidates shifts
-   * the child's real cap either way, without needing to fix a baseline or drag a specific class into
-   * the comparison. */
+  /** The child's own max stat modifiers with this candidate as the variable parent: father's + mother's + 1 (computeChild /
+   * computeMaxStatModifiers), the candidate recursively resolved from THEIR OWN parents if they're a second-gen child. The
+   * child's total rather than the candidate's own modifiers, since a second-gen candidate's modifiers already carry their +1
+   * and Kana then gets none: compared on their own, such a candidate would look a point better than an adult one. */
   maxStatMods: StatBlock
 }
 
@@ -94,6 +91,7 @@ function CandidateHeader({
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
+          {!nestedValue && <span className="text-amber-400">Pick one: until then this row is incomplete.</span>}
         </label>
       )}
     </>
@@ -168,7 +166,8 @@ export function ParentChecker() {
     const nestedFixedChar = charactersById[nestedFixedInfo.id]
     if (!nestedFixedChar) return []
     return characters.filter((c) => {
-      if (c.isChild || c.id === nestedFixedChar.id) return false
+      // Never a Corrin: Kana's own Corrin is married to this candidate, and the other Corrin doesn't exist in that game.
+      if (c.isChild || c.id === nestedFixedChar.id || c.id === 'corrin_m' || c.id === 'corrin_f') return false
       if (!isRouteCompatible(c.route, activeRoute)) return false
       const father = nestedFixedInfo.side === 'father' ? nestedFixedChar : c
       const mother = nestedFixedInfo.side === 'father' ? c : nestedFixedChar
@@ -200,7 +199,7 @@ export function ParentChecker() {
       motherCurrentStats: mother.baseStats,
       level: 20,
     })
-    return { growthRates: result.growthRates, maxStatMods: variableChar.maxStatModifiers }
+    return { growthRates: result.growthRates, maxStatMods: result.maxStatModifiers }
   }
 
   return (

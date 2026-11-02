@@ -86,19 +86,18 @@ describe('computeBaseStat', () => {
 })
 
 describe('computeMaxStatModifiers', () => {
-  it('sums father + mother + 1 bonus by default', () => {
-    const stat = {
-      hp: 1, str: 1, mag: 1, skl: 1, spd: 1, lck: 1, def: 1, res: 1,
-    }
+  const stat = { hp: 1, str: 1, mag: 1, skl: 1, spd: 1, lck: 1, def: 1, res: 1 }
+
+  it("sums father + mother + 1 on every stat but HP, which gets no +1 (the game's child-cap code, 0x53bddc)", () => {
     const result = computeMaxStatModifiers(stat, stat, false)
-    expect(result.hp).toBe(3)
+    expect(result.str).toBe(3)
+    expect(result.res).toBe(3)
+    expect(result.hp).toBe(2)
   })
 
-  it('drops the bonus to 0 for Kana with a child parent (second-gen marriage)', () => {
-    const stat = {
-      hp: 1, str: 1, mag: 1, skl: 1, spd: 1, lck: 1, def: 1, res: 1,
-    }
+  it("drops the bonus to 0 for Kana with a child parent: that parent's modifiers already carry their +1", () => {
     const result = computeMaxStatModifiers(stat, stat, true)
+    expect(result.str).toBe(2)
     expect(result.hp).toBe(2)
   })
 })
