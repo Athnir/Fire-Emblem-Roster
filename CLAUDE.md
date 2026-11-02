@@ -8,6 +8,8 @@ new rule, add it here.
 
 - **Unit data only.** Who joins and when, bases, growths, caps, class sets and promotions, skills, affinities, who supports whom,
   marriages and children, and unit builds. Weapon, shop, map and battle-formula data belongs in the Armory.
+- **Pair-up is the one thing in both apps** (user, 2026-11-02): the Armory shows what a class gives on its own; the Roster puts it in
+  full builds, with the partner and their stats, as the Fates tab does.
 - **The Armory is a separate repo, worked on in its own session. Never edit it from here.** Reading it for reference is fine. If
   one of its readers (`scripts/*_rom.py`, `fe13_*.py` and the rest) is needed, copy it into this repo's `scripts/`.
 - **One game picker; every tool for that game sits in the same tabs.** No extra menus or tool-picker steps. A game with nothing

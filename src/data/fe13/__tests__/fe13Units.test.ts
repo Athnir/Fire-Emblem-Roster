@@ -83,9 +83,17 @@ describe('Awakening units', () => {
       { skill: 'Dual Strike+', level: 1 },
       { skill: 'Charm', level: 10 },
     ])
+    // A class neither promoted nor promoting teaches its second skill at Lv 15 (0x2d0f14); Serenes Forest agrees.
+    const villager = Object.values(FE13_CLASSES).find((c) => c.name === 'Villager')!
+    expect(villager.skills).toEqual([
+      { skill: 'Aptitude', level: 1 },
+      { skill: 'Underdog', level: 15 },
+    ])
     expect(unit('Chrom').classSets.male.map(cls)).toEqual(['Lord', 'Cavalier', 'Archer'])
     expect(unit('Avatar (F)').classSets.female.map(cls)).not.toContain('Lord')
     expect(unit('Avatar (F)').classSets.female.map(cls)).toContain('Pegasus Knight')
+    // The program's full list (0x2cff38): thirteen classes for each gender.
+    expect(unit('Avatar (M)').classSets.male).toHaveLength(13)
   })
 
   it('gives each child their fixed parent, and S supports only where the game has an S level', () => {

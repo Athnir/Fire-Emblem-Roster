@@ -235,7 +235,8 @@ def main():
         c = jobs[i]
         raw = c['raw']
         promoted = bool(raw[0] & 8)
-        levels = (5, 15) if promoted else (1, 10)
+        # The levels its two skills come at (0x2d0f14): 5 and 15 promoted, 1 and 10 for a class that promotes, 1 and 15 for the rest.
+        levels = (5, 15) if promoted else (1, 10) if promotions(i) else (1, 15)
         learn = [{'skill': skills[raw[64 + 2 * n]], 'level': levels[n]} for n in range(2) if raw[64 + 2 * n]]
         g = dict(zip(STATS, G.class_growths(raw, i)))
         classes[f'c{i}'] = {

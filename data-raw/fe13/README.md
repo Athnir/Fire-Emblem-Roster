@@ -23,8 +23,8 @@ decode to 0, level 1, no sets, and the class `JID_ダミー男`, which has no re
 ## Classes: GameData's `JobData`, 128 bytes
 
 +0 flags (0x01 a woman's, 0x08 promoted), +24-+31 bases, +32-+39 the growths, enciphered, +48-+55 maximums, +64 and +66 the skills it
-teaches (indexes into `RemovableSkillData`, 28 bytes each, the name label at +8): at Lv 1 and 10, or 5 and 15 promoted (Serenes
-Forest), +81 Mov, +92 and +96 pointers to the classes it promotes to (Cavalier: Paladin, Great Knight). +56-+63 is what it gives in a
+teaches (indexes into `RemovableSkillData`, 28 bytes each, the name label at +8): at Lv 1 and 10 for a class that promotes, 5 and
+15 promoted, and 1 and 15 for a class that's neither (0x2d0f14), +81 Mov, +92 and +96 pointers to the classes it promotes to (Cavalier: Paladin, Great Knight). +56-+63 is what it gives in a
 pair-up, Mov then Str to Res (signed; 0x2b2c8c reads it), and +84-+89 the weapons it uses (1 each for Sword, Lance, Axe, Bow, Tome,
 Staff); +90 bit 0x40 marks a Manakete and 0x80 a Taguel, who use stones, which have no rank. (The Armory's reader calls +64-+71
 pair-up bonuses; they're the two skills, and the bonuses are +56.)
