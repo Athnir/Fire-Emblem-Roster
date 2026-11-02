@@ -152,3 +152,36 @@ def full_class_list():
                 out[gender].append(s)
         flagged = False
     return out
+
+
+AVATAR_HAIR = 0x2c8128
+
+
+def avatar_hair_palette():
+    """The Avatar's 20 hair colours ('#rrggbb'), as 0x2c8128 builds them: byte by byte, each an immediate moved into a register and
+    stored at an offset from the palette's base (r5, or r0 copied from it). Followed until the routine's first return."""
+    regs, mem, base = {}, {}, {'r5'}
+    a = AVATAR_HAIR
+    while a < AVATAR_HAIR + 0x400:
+        got = dis(a, 1)
+        a += 4
+        if not got:
+            continue
+        _, m, o = got[0]
+        if m.startswith('pop') or (m == 'bx' and o == 'lr'):
+            break
+        ops = [x.strip() for x in o.split(',')]
+        if m == 'mov' and ops[1].startswith('#'):
+            regs[ops[0]] = int(ops[1][1:], 0)
+        elif m == 'mov' and ops[1] in base:
+            base.add(ops[0])
+        elif m == 'add' and len(ops) == 3 and ops[1] in base and ops[2] == '#0':
+            base.add(ops[0])
+        elif m == 'strb' and ops[0] in regs:
+            mm = re.match(r'\[(r\d+|ip|lr)(?:, #(0x[0-9a-f]+|\d+))?\]', ', '.join(ops[1:]))
+            if mm and mm.group(1) in base:
+                mem[int(mm.group(2) or '0', 0)] = regs[ops[0]]
+    out = []
+    for k in range(0, max(mem) + 1, 4):
+        out.append('#%02x%02x%02x' % (mem.get(k, 0), mem.get(k + 1, 0), mem.get(k + 2, 0)))
+    return out

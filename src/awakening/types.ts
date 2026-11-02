@@ -60,6 +60,8 @@ export interface Fe13Unit {
   supports: Fe13Support[]
   /** The village maiden Chrom marries when he has no one: not a unit, a person record of zeros with no class (PID_ダミー). */
   maiden?: true
+  /** Their portrait's hair colour (face/FaceData). A child's in the game comes from a parent (logic.ts, hairOf). */
+  hair?: string
 }
 
 export interface Fe13Class {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { FE13_ASSETS, FE13_CHAPTERS, FE13_CLASSES, FE13_MAIDEN, FE13_SKILLS, FE13_UNITS } from '../../data/fe13/fe13Units'
-import { capsOf, childOf, classChanges, classSetOf, dlcClassesFor, familyOf, fixedShare, isFamilyBlocked, legalSteps, levelGain, pairUpBonus, project, reachableSkills, spousesOf, statsIn, unitNow, withAvatar, type Fe13Data } from '../logic'
+import { capsOf, childOf, classChanges, classSetOf, dlcClassesFor, familyOf, fixedShare, hairOf, isFamilyBlocked, legalSteps, levelGain, pairUpBonus, project, reachableSkills, spousesOf, statsIn, unitNow, withAvatar, type Fe13Data } from '../logic'
 import { FE13_STATS } from '../types'
 
 const data: Fe13Data = { chapters: FE13_CHAPTERS, units: FE13_UNITS, classes: FE13_CLASSES, maiden: FE13_MAIDEN, skills: FE13_SKILLS }
@@ -282,5 +282,28 @@ describe('Pair-up (0x2b2c8c, 0x2cd408)', () => {
     expect(familyOf(data, 'fe13-lucina', spouses)).toEqual(expect.arrayContaining(['fe13-chrom', 'fe13-sumia', 'fe13-cynthia']))
     expect(familyOf(data, 'fe13-chrom', spouses)).toEqual(expect.arrayContaining(['fe13-lucina', 'fe13-cynthia']))
     expect(familyOf(data, 'fe13-lucina', {})).toEqual(['fe13-chrom'])
+  })
+})
+
+describe("A child's hair (0x2cdfd8)", () => {
+  const hair = (child: string, spouses: Record<string, string>, avatar?: string) => {
+    const h = hairOf(data, unit(child), spouses, avatar)
+    return [h.hex, h.from?.name]
+  }
+
+  it("takes the fixed parent's spouse's: the father's, or for Morgan (F) the mother's", () => {
+    expect(hair('owain', marry(['lissa', 'vaike']))).toEqual([unit('vaike').hair, 'Vaike'])
+    expect(hair('morgan-f', marry(['avatar-m', 'sumia']))).toEqual([unit('sumia').hair, 'Sumia'])
+  })
+
+  it("keeps Lucina's own, and the portrait's own with no spouse or the maiden", () => {
+    expect(hair('lucina', marry(['chrom', 'sumia']))).toEqual([unit('lucina').hair, undefined])
+    expect(hair('owain', {})).toEqual([unit('owain').hair, undefined])
+  })
+
+  it("takes the Avatar's chosen colour, and a child spouse's own", () => {
+    expect(hair('kjelle', marry(['sully', 'avatar-m']), '#4c5f78')).toEqual(['#4c5f78', 'Avatar (M)'])
+    // Morgan (M)'s father Owain has Vaike's hair.
+    expect(hair('morgan-m', marry(['avatar-f', 'owain'], ['lissa', 'vaike']))).toEqual([unit('vaike').hair, 'Owain'])
   })
 })

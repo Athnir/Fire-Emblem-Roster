@@ -81,8 +81,24 @@ def read_assets():
     return out
 
 
+def hair_colours():
+    """Each portrait's hair colour, by face: face/FaceData.bin.lz, 40-byte records (+0 the FSID, +12 the colour as RGBA). A person's is
+    the record FSID_BU_<their FID less "FID_">_通常, or FSID_FC_... (0x2bacb0)."""
+    fd = Bin(decompress(open(os.path.join(ROMFS, 'face', 'FaceData.bin.lz'), 'rb').read()))
+    by = {name: o for o, name in fd.labels}
+
+    def of(fid):
+        for kind in ('BU', 'FC'):
+            o = by.get(f'FSID_{kind}_{fid[4:]}_通常')
+            if o is not None:
+                return '#' + fd.d[0x20 + o + 12:0x20 + o + 15].hex()
+        return None
+    return of
+
+
 def main():
     b = Bin(decompress(open(os.path.join(ROMFS, 'data', 'person', 'static.bin.lz'), 'rb').read()))
+    hair_of = hair_colours()
     ptrs = set(b.ptrs)
     rec = {name: o for o, name in b.labels}
     jobs = D.classes()
@@ -181,6 +197,8 @@ def main():
             **({'parent': b.str(o + 132)} if (o + 132) in ptrs else {}),
             # +72: the five skills they join with (indexes into RemovableSkillData; 0 none).
             **({'skills': own} if (own := [skills[x] for x in struct.unpack_from('<5H', raw, 72) if x]) else {}),
+            # +12 their face (FID): their portrait's hair colour. The Avatar's is chosen in the game.
+            **({'hair': h} if pid not in AVATARS and (o + 12) in ptrs and (h := hair_of(b.str(o + 12))) else {}),
             'supports': supports,
         })
     # The DLC: the unit each episode gives, made from a template person (the Avatar's twin, or Marth's) with its own asset and flaw.
@@ -307,6 +325,9 @@ def main():
         'export const FE13_SKILLS: Record<string, Fe13Skill> = {',
         *[f'  {js(k)}: {js(v)},' for k, v in skill_table.items()],
         '}',
+        '',
+        "// The Avatar's hair colours, as the program builds them for the hair menu (0x2c8128).",
+        f'export const FE13_AVATAR_HAIR: string[] = {js(C.avatar_hair_palette())}',
         '',
         "// Chrom's wife when he marries no one: the program's PID_ダミー (0x2ef8f8), all zeros.",
         f'export const FE13_MAIDEN: Fe13Unit = {js(maiden)}',

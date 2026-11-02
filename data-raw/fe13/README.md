@@ -37,6 +37,17 @@ changes nothing; the rest are HP to Res in order (HP asset: HP +5, growths HP +3
 and Res +2). It matches Serenes Forest's tables. The app adds the chosen asset's and flaw's rows to both Avatars' bases (and own
 bases), growths and modifiers; none leaves the person record's own numbers.
 
+## Hair: `face/FaceData.bin.lz`
+
+792 records of 40 bytes: +0 the FSID label, +4 the MPID, +8 the face archive, +12 the hair colour as RGBA. A person's (by their FID,
+static.bin +12) is `FSID_BU_<FID less "FID_">_通常`, or `FSID_FC_..._通常` (0x2bacb0). The Avatar has none: the hair menu picks from 20
+colours the program builds at 0x2c8128 (`fe13_code.avatar_hair_palette`, the app's `FE13_AVATAR_HAIR`).
+
+A unit's hair is kept in the unit (+0x104) and set at its creation, at a child's join and on refresh (0x2cdfd8): Lucina keeps her own;
+any other child takes the hair of their fixed parent's spouse (the father, but Morgan (F)'s mother), the Avatar's chosen colour from
+the Avatar, a child spouse's own; with no spouse found, the child's own. The village maiden never decides one (Lucina skips the step).
+The app follows this in `hairOf`. Children's portraits are flat uploads, so the app shows the colour beside them rather than tinting.
+
 ## Growths: enciphered, decoded as the program does (`scripts/fe13_growths.py`)
 
 A person's growths are 8 bytes at +36, a class's at JobData +32. The program (code.bin) decodes each byte with a key from the record's

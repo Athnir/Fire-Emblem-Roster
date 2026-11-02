@@ -1,8 +1,8 @@
 """Copy the files the Armory reads out of the user's own Awakening dumps into data-raw/fe13/romfs (git-ignored, never committed).
 
 The cartridge image (`00040000000A0500_v00.trim.3ds`, decrypted) and the DLC (`Fire_Emblem_-_Awakening_NA_DLC.cia`, decrypted) sit
-in Documents\\FE Games. From the game: data/, scripts/, map/data/ and the English text (m/E), plus the program (.code, decompressed)
-for checking mechanics. Each DLC content goes to dlc/<content id>/ with its own romfs.
+in Documents\\FE Games. From the game: data/, scripts/, map/data/, the hair colours (face/FaceData.bin.lz) and the English text (m/E),
+plus the program (.code, decompressed) for checking mechanics. Each DLC content goes to dlc/<content id>/ with its own romfs.
 
     python scripts/fe13_extract.py
 """
@@ -17,7 +17,8 @@ GAMES = os.path.join(os.path.expanduser('~'), 'Documents', 'FE Games')
 CART = os.path.join(GAMES, '00040000000A0500_v00.trim.3ds')
 DLC = os.path.join(GAMES, 'Fire_Emblem_-_Awakening_NA_DLC.cia')
 OUT = os.path.join(os.path.dirname(__file__), '..', 'data-raw', 'fe13', 'romfs')
-KEEP = ('/data/', '/scripts/', '/map/data/', '/m/E/', '/m/E.', '/params.bin.lz')
+# face/FaceData.bin.lz: each portrait's hair colour (the children's come from a parent; README).
+KEEP = ('/data/', '/scripts/', '/map/data/', '/m/E/', '/m/E.', '/params.bin.lz', '/face/FaceData.bin.lz')
 
 
 def blz_decompress(buf):

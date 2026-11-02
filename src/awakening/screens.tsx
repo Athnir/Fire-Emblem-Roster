@@ -12,6 +12,7 @@ import {
   dlcClassesFor,
   familyOf,
   fixedShare,
+  hairOf,
   isFamilyBlocked,
   isMorgan,
   legalSteps,
@@ -41,8 +42,31 @@ function artId(name: string): string {
   return `fe13/${name.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '')}`
 }
 
+/** A unit's portrait, as uploaded (one flat image each, children too: the layered child art that lets Fates recolour hair is Fates'). */
 export function UnitPortrait({ unit, size = 64 }: { unit: Fe13Unit; size?: number }) {
-  return <Portrait characterId={artId(unit.name)} isChild={!!unit.parent} size={size} />
+  return <Portrait characterId={artId(unit.name)} isChild={false} size={size} />
+}
+
+/** A hair colour as a swatch. */
+function Swatch({ hex }: { hex?: string }) {
+  if (!hex) return null
+  return <span className="inline-block h-3 w-3 rounded-sm border border-neutral-600 align-middle" style={{ backgroundColor: hex }} title={hex} />
+}
+
+/** Where a child's hair comes from, with the colour. */
+function HairLine({ data, child, spouses }: { data: Fe13Data; child: Fe13Unit; spouses: Record<string, string> }) {
+  const avatar = useFe13Store((s) => s.avatar)
+  const hair = hairOf(data, child, spouses, avatar.hair)
+  const fromAvatar = hair.from?.id.startsWith('fe13-avatar')
+  return (
+    <div className="flex items-center gap-1.5 text-xs text-neutral-500">
+      <span>
+        {hair.from ? `Hair from ${hair.from.name}` : child.id === 'fe13-lucina' ? 'Hair: always her own' : 'Hair: their own'}
+        {fromAvatar && !hair.hex ? " (pick the Avatar's hair colour above)" : ''}
+      </span>
+      <Swatch hex={hair.hex} />
+    </div>
+  )
 }
 
 const STAT_NAMES: Record<Fe13Stat, string> = {
@@ -56,8 +80,8 @@ const STAT_NAMES: Record<Fe13Stat, string> = {
   res: 'Resistance',
 }
 
-/** The Avatar's asset and flaw, for both Avatars. */
-export function AvatarBuild() {
+/** The Avatar's asset and flaw, for both Avatars, and their hair colour from the game's own palette. */
+export function AvatarBuild({ palette }: { palette?: string[] }) {
   const avatar = useFe13Store((s) => s.avatar)
   const setAvatar = useFe13Store((s) => s.setAvatar)
   const pick = (label: string, key: 'asset' | 'flaw', other: Fe13Stat | null) => (
@@ -88,6 +112,23 @@ export function AvatarBuild() {
         Changes both Avatars' bases, growths and modifiers, and so what Morgan and the Avatar's other children inherit (the game's
         PersonalityData table). None is the person record's own numbers.
       </p>
+      {palette && palette.length > 0 && (
+        <div className="space-y-1">
+          <span className="block text-xs text-neutral-500">Hair colour (a child whose other parent is the Avatar takes it)</span>
+          <div className="grid w-fit grid-cols-10 gap-1">
+            {palette.map((hex) => (
+              <button
+                key={hex}
+                type="button"
+                onClick={() => setAvatar({ ...avatar, hair: avatar.hair === hex ? undefined : hex })}
+                title={hex}
+                className={`h-5 w-5 rounded border ${avatar.hair === hex ? 'border-2 border-violet-400' : 'border-neutral-700'}`}
+                style={{ backgroundColor: hex }}
+              />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -231,7 +272,7 @@ function UnitDetail({ data, unit }: { data: Fe13Data; unit: Fe13Unit }) {
           )}
         </div>
       </div>
-      {unit.id.startsWith('fe13-avatar') && <AvatarBuild />}
+      {unit.id.startsWith('fe13-avatar') && <AvatarBuild palette={data.avatarHair} />}
       <StatTable
         mov
         rows={[
@@ -246,7 +287,8 @@ function UnitDetail({ data, unit }: { data: Fe13Data; unit: Fe13Unit }) {
         <p className="text-xs text-neutral-500">
           A child joins with at least these bases, the class's plus their own: each parent above them in a stat adds a third of the
           difference. Their growths are their own and both parents' averaged, and their modifiers and maximums also take the other
-          parent's modifiers. The Marriage Planner shows them with both parents.
+          parent's modifiers. Their hair is their other parent's (Lucina's is always her own). The Marriage Planner shows them with
+          both parents.
         </p>
       )}
     </div>
@@ -560,7 +602,7 @@ export function Fe13Planner({ data: raw }: { data: Fe13Data }) {
     <div className="space-y-4">
       <UnitSelect data={data} value={unit.id} onChange={setUnitId} />
       <div className={panel}>
-        {(unit.id.startsWith('fe13-avatar') || isMorgan(unit)) && <AvatarBuild />}
+        {(unit.id.startsWith('fe13-avatar') || isMorgan(unit)) && <AvatarBuild palette={data.avatarHair} />}
         <div className="space-y-2 text-sm text-neutral-300">
           {rows.map(({ i, step, from, fromLevel: lv, options }) => (
             <div key={i} className="flex flex-wrap items-end gap-2">
@@ -782,7 +824,7 @@ function sourceText(data: Fe13Data, p: Fe13Parent): string {
 }
 
 /** A child's inheritance: what they join with, their growths, modifiers and classes, and where their parents' numbers come from. */
-function ChildCard({ data, result }: { data: Fe13Data; result: Fe13Child }) {
+function ChildCard({ data, result, spouses }: { data: Fe13Data; result: Fe13Child; spouses: Record<string, string> }) {
   const { child, fixed, other } = result
   const cls = data.classes[result.startClass]
   const total = {} as Fe13Stats
@@ -796,6 +838,7 @@ function ChildCard({ data, result }: { data: Fe13Data; result: Fe13Child }) {
           <div className="text-xs text-neutral-500">
             {fixed.unit.name} and {other.unit.name} · joins as a {cls.name}
           </div>
+          <HairLine data={data} child={child} spouses={spouses} />
         </div>
       </div>
       {other.via && (
@@ -982,7 +1025,7 @@ export function Fe13MarriagePlanner({ data: raw }: { data: Fe13Data }) {
   return (
     <div className="space-y-6">
       <div className={panel}>
-        <AvatarBuild />
+        <AvatarBuild palette={data.avatarHair} />
         <h3 className="text-base font-semibold text-neutral-100">New Marriage</h3>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <select
@@ -1019,7 +1062,7 @@ export function Fe13MarriagePlanner({ data: raw }: { data: Fe13Data }) {
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               {[...direct, ...indirect].map((c) => {
                 const r = childOf(data, c, preview, plans)
-                return r ? <ChildCard key={c.id} data={data} result={r} /> : null
+                return r ? <ChildCard key={c.id} data={data} result={r} spouses={preview} /> : null
               })}
             </div>
             <div className="flex gap-2">
@@ -1065,7 +1108,7 @@ export function Fe13MarriagePlanner({ data: raw }: { data: Fe13Data }) {
         {planned.length === 0 && <p className="text-sm text-neutral-500">Add a marriage to see the children it gives.</p>}
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {planned.map((r) => (
-            <ChildCard key={r.child.id} data={data} result={r} />
+            <ChildCard key={r.child.id} data={data} result={r} spouses={spouses} />
           ))}
         </div>
         {waiting.length > 0 && (
@@ -1120,13 +1163,12 @@ export function Fe13ParentChecker({ data: raw }: { data: Fe13Data }) {
     // The Avatar is marrying this candidate, so isn't their parent's spouse.
     return f ? spousesOf(data, f).filter((p) => !p.parent && !p.id.startsWith('fe13-avatar')) : []
   }
-  const resultFor = (id: string) => {
-    if (!child || !fixed) return null
+  const spousesFor = (id: string): Record<string, string> => {
     const cand = byId.get(id)!
     const n = nested[id]
-    const spouses: Record<string, string> = { [fixed.id]: id, [id]: fixed.id, ...(n && cand.parent ? { [cand.parent]: n, [n]: cand.parent } : {}) }
-    return childOf(data, child, spouses, plans)
+    return fixed ? { [fixed.id]: id, [id]: fixed.id, ...(n && cand.parent ? { [cand.parent]: n, [n]: cand.parent } : {}) } : {}
   }
+  const resultFor = (id: string) => (child && fixed ? childOf(data, child, spousesFor(id), plans) : null)
   return (
     <div className="space-y-4">
       <div className={panel}>
@@ -1156,7 +1198,7 @@ export function Fe13ParentChecker({ data: raw }: { data: Fe13Data }) {
               ))}
           </select>
         </label>
-        {child && isMorgan(child) && <AvatarBuild />}
+        {child && isMorgan(child) && <AvatarBuild palette={data.avatarHair} />}
         {child && (
           <label className="flex flex-col gap-1 text-xs text-neutral-400">
             Add a candidate other parent
@@ -1238,6 +1280,7 @@ export function Fe13ParentChecker({ data: raw }: { data: Fe13Data }) {
                     <span className="text-neutral-500">Classes: </span>
                     {names(data, r.classes)}
                   </p>
+                  {child && <HairLine data={data} child={child} spouses={spousesFor(id)} />}
                 </>
               )}
             </div>

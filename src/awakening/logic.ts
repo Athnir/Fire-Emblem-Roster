@@ -12,6 +12,8 @@ export interface Fe13Data {
   skills?: Record<string, Fe13Skill>
   /** What each weapon rank adds: {weapon: {A|B|C: {hit, atk}}}. */
   weaponBonus?: Record<string, Record<string, { hit: number; atk: number }>>
+  /** The Avatar's hair colours to choose from. */
+  avatarHair?: string[]
 }
 
 const CHROM = 'fe13-chrom'
@@ -460,6 +462,19 @@ export function childrenOf(data: Fe13Data, a: string, b: string): Fe13Unit[] {
 export interface Fe13Build {
   asset: Fe13Stat | null
   flaw: Fe13Stat | null
+  /** Their hair colour (one of the game's 20), which their children can take. */
+  hair?: string
+}
+
+/** A child's hair colour (0x2cdfd8): Lucina always has her own. Any other child takes the hair of their fixed parent's spouse: the
+ * father, but for Morgan (F) the mother; the Avatar's chosen colour from the Avatar, and a child spouse's own (from their own father,
+ * or Lucina's). With no spouse in the plan, or the village maiden, the colour their portrait is drawn in. */
+export function hairOf(data: Fe13Data, unit: Fe13Unit, spouses: Record<string, string>, avatarHair?: string, depth = 0): { hex?: string; from?: Fe13Unit } {
+  if (unit.id.startsWith('fe13-avatar')) return { hex: avatarHair }
+  const spouseId = unit.parent ? spouses[unit.parent] : undefined
+  const spouse = spouseId ? unitsOf(data).find((u) => u.id === spouseId) : undefined
+  if (unit.id === LUCINA || !spouse || spouse.maiden || depth > 1) return { hex: unit.hair }
+  return { hex: hairOf(data, spouse, spouses, avatarHair, depth + 1).hex, from: spouse }
 }
 
 /** The data with both Avatars' bases, growths and modifiers changed by an asset and flaw (GameData's PersonalityData). */
