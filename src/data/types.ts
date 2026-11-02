@@ -65,6 +65,8 @@ export interface Character {
   isRoyal?: boolean
   /** Manual per-character toggle for First Blood item use (grants dragon vein access even if non-royal). */
   hasFirstBlood?: boolean
+  /** A second-generation unit worked out from their own parents (resolveSecondGenParent): the adult whose hair color they have. */
+  hairFromId?: string
 }
 
 export type WeaponRankLetter = 'E' | 'D' | 'C' | 'B' | 'A' | 'S'

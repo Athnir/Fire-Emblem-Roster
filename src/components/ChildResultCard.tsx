@@ -23,13 +23,18 @@ interface Props {
  * lives in Unit Planner) — just the child's own primary class with the variable parent's growth
  * contribution already folded in via `result.growthRates`. */
 export function ChildResultCard({ child, result, warning }: Props) {
-  const hairSourceName = charactersById[result.hairSourceParentId]?.name ?? result.hairSourceParentId
-  const isHairSourceCorrin = result.hairSourceParentId === 'corrin_m' || result.hairSourceParentId === 'corrin_f'
+  const nameOf = (id: string) => charactersById[id]?.name ?? id
+  const hairSourceName = nameOf(result.hairSourceParentId)
+  // A second-generation parent passes on the color they have themselves; undefined until their own parents are known.
+  const hairColorFromId = result.hairColorFromId
+  const isHairColorCorrin = hairColorFromId === 'corrin_m' || hairColorFromId === 'corrin_f'
   const corrinAppearances = useCorrinAppearanceStore((state) => state.appearances)
   const setCorrinHairHex = useCorrinAppearanceStore((state) => state.setHairHex)
-  const hairHex = isHairSourceCorrin
-    ? getCorrinAppearance(corrinAppearances, result.hairSourceParentId).hairHex
-    : adultHairHex[result.hairSourceParentId]
+  const hairHex = !hairColorFromId
+    ? undefined
+    : isHairColorCorrin
+      ? getCorrinAppearance(corrinAppearances, hairColorFromId).hairHex
+      : adultHairHex[hairColorFromId]
 
   const primaryClassData = classesByName[child.startingClass]
   const displayedGrowthRates = primaryClassData
@@ -42,16 +47,19 @@ export function ChildResultCard({ child, result, warning }: Props) {
         <h4 className="text-base font-semibold text-neutral-100">{child.name}</h4>
         {warning && <p className="text-xs text-amber-400">{warning}</p>}
         <p className="text-xs text-neutral-500">Variable parent: {result.variableParent}</p>
-        <p className="text-xs text-neutral-500">Hair from {hairSourceName}</p>
-        {isHairSourceCorrin && (
+        <p className="text-xs text-neutral-500">
+          Hair from {hairSourceName}
+          {hairColorFromId && hairColorFromId !== result.hairSourceParentId && ` (${nameOf(hairColorFromId)}'s color)`}
+        </p>
+        {hairColorFromId && isHairColorCorrin && (
           <div className="mt-1.5 space-y-1">
-            <span className="text-xs text-neutral-400">{hairSourceName}'s hair color</span>
+            <span className="text-xs text-neutral-400">{nameOf(hairColorFromId)}'s hair color</span>
             <div className="grid w-fit grid-cols-10 gap-1">
               {CORRIN_HAIR_PALETTE.map((hex) => (
                 <button
                   key={hex}
                   type="button"
-                  onClick={() => setCorrinHairHex(result.hairSourceParentId, hex)}
+                  onClick={() => setCorrinHairHex(hairColorFromId, hex)}
                   title={hex}
                   className={`h-5 w-5 rounded border ${
                     hairHex === hex ? 'border-2 border-violet-400' : 'border-neutral-700'

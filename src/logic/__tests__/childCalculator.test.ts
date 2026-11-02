@@ -330,6 +330,34 @@ describe('computeChild', () => {
     expect(result.hairSourceParentId).toBe('niles')
     expect(result.variableParent).toBe('father')
   })
+
+  describe("Kana's hair from a second-generation parent: the color that parent got from their own (user, 2026-11-01)", () => {
+    const kanaWith = (parent: Character) => {
+      const corrin = parent.gender === 'M' ? charactersById['corrin_f'] : charactersById['corrin_m']
+      const [father, mother] = parent.gender === 'M' ? [parent, corrin] : [corrin, parent]
+      return computeChild({
+        child: charactersById[parent.gender === 'M' ? 'kana_m' : 'kana_f'], father, mother,
+        fatherCurrentStats: father.baseStats, motherCurrentStats: mother.baseStats,
+      })
+    }
+
+    it("male Kana with Siegbert (Xander x Felicia) has Felicia's color, through his father", () => {
+      const result = kanaWith(resolveSecondGenParent(charactersById['siegbert'], { id: 'xander', side: 'father' }, charactersById['felicia']))
+      expect(result.hairSourceParentId).toBe('siegbert')
+      expect(result.hairColorFromId).toBe('felicia')
+    })
+
+    it("female Kana with Selkie (Kaden x Hana) has Hana's color, through her mother", () => {
+      const result = kanaWith(resolveSecondGenParent(charactersById['selkie'], { id: 'kaden', side: 'father' }, charactersById['hana']))
+      expect(result.hairSourceParentId).toBe('selkie')
+      expect(result.hairColorFromId).toBe('hana')
+    })
+
+    it("is unknown until that parent's own parents are, except Shigure's, which is always Azura's", () => {
+      expect(kanaWith(charactersById['siegbert']).hairColorFromId).toBeUndefined()
+      expect(kanaWith(charactersById['shigure']).hairColorFromId).toBe('azura')
+    })
+  })
 })
 
 // Serenes Forest's Class Sets pages: each child's default class plus the one their fixed parent gives (Kana's is the Talent).

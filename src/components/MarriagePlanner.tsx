@@ -215,8 +215,9 @@ export function MarriagePlanner() {
                       motherCurrentStats: (mother ?? roles.mother).baseStats,
                       level: earliestChildLevel(child.unlockChapter, activeRoute),
                     })
+                    const missing = result.hairColorFromId ? 'growths and stats are' : 'growths, stats and hair color are'
                     const warning = unresolved
-                      ? `${child.name}'s growths and stats are incomplete until ${unresolved.name}'s parents are paired in this plan.`
+                      ? `${child.name}'s ${missing} incomplete until ${unresolved.name}'s parents are paired in this plan.`
                       : undefined
                     return <ChildResultCard key={child.id} child={child} result={result} warning={warning} />
                   })}

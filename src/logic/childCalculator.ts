@@ -121,7 +121,17 @@ export interface ComputedChild {
   maxStatModifiers: StatBlock
   inheritedClasses: string[]
   hasDragonVeinAccess: boolean
+  /** The parent the hair comes from. */
   hairSourceParentId: string
+  /** The adult whose hair color that is: the parent themself, or for a second-generation parent the adult they got theirs from.
+   * Undefined while that parent's own parents aren't known. */
+  hairColorFromId?: string
+}
+
+/** The adult a child's hair color always comes from, whoever their parents are: Azura for Shigure; nobody for the rest. */
+function fixedHairColorFromId(child: Character): string | undefined {
+  const info = getHairSourceInfo(child)
+  return info?.isHairSourceFixed ? info.fixedParentId : undefined
 }
 
 export function computeChild(input: ComputeChildInput): ComputedChild {
@@ -161,12 +171,13 @@ export function computeChild(input: ComputeChildInput): ComputedChild {
     father.isRoyal || father.hasFirstBlood || mother.isRoyal || mother.hasFirstBlood,
   )
 
-  // Hair follows the same mother-default/father-exception rule as the variable parent for
-  // most children (e.g. male Kana -> father/Corrin's hair, per formulas doc section 8) — but
-  // Shigure is a further FIXED exception: always Azura's hair regardless of the variable-parent
-  // rule (which is the father, for his growth/class computations).
+  // Hair comes from the variable parent (male Kana's from his father), except Shigure's, which is always Azura's even though
+  // his variable parent is his father (user, 2026-11-01). A second-generation parent passes on the color they got the same
+  // way, which is known once their own parents are (hairFromId, from resolveSecondGenParent), or always for Shigure.
   const hairSourceParent: ParentSide = child.id === 'shigure' ? 'mother' : variableParent
-  const hairSourceParentId = hairSourceParent === 'father' ? father.id : mother.id
+  const hairParent = hairSourceParent === 'father' ? father : mother
+  const hairSourceParentId = hairParent.id
+  const hairColorFromId = hairParent.isChild ? (hairParent.hairFromId ?? fixedHairColorFromId(hairParent)) : hairParent.id
 
   return {
     childId: child.id,
@@ -177,6 +188,7 @@ export function computeChild(input: ComputeChildInput): ComputedChild {
     inheritedClasses,
     hasDragonVeinAccess,
     hairSourceParentId,
+    hairColorFromId,
   }
 }
 
@@ -189,7 +201,8 @@ export function computeChild(input: ComputeChildInput): ComputedChild {
  * unchanged if they're not a child, or if that selection hasn't been made yet (same "can't resolve
  * without both sides" fallback as everywhere else). Level 20 is an approximation — there's no real
  * "recruitment level" for a hypothetical grandparent pairing to anchor to, same as every other
- * "current stats" proxy already used for parent slots throughout this app.
+ * "current stats" proxy already used for parent slots throughout this app. The resolved parent also
+ * records whose hair color they have (hairFromId), which they pass on to Kana.
  */
 export function resolveSecondGenParent(
   rawParent: Character,
@@ -214,6 +227,7 @@ export function resolveSecondGenParent(
     baseStats: resolved.baseStats,
     growthRates: resolved.growthRates,
     maxStatModifiers: resolved.maxStatModifiers,
+    hairFromId: resolved.hairColorFromId,
   }
 }
 
