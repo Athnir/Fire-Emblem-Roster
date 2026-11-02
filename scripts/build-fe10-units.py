@@ -457,6 +457,11 @@ def main():
         por = por_unit(table, pid)
         if por and por in fe9_people:
             unit['porUnit'] = por
+            # Another entry naming them that the lookup never reaches (Largo's, for Calill).
+            shadowed = [fe9_people['PID_' + p]['name'] for p, rd in table
+                        if p and rd == pid[4:] and 'PID_' + p != por and 'PID_' + p in fe9_people]
+            if shadowed:
+                unit['porShadowed'] = shadowed
             partners = sorted({por_to_rd(table, q) for q in por_partners.get(por, ())} & playable - {pid})
             if partners:
                 unit['porSupports'] = partners

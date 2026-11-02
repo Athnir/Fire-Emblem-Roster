@@ -115,6 +115,13 @@ function TransferEditor({ data, unit, plan, update }: { data: TelliusData; unit:
       <p className="text-xs text-neutral-500">
         Their weapon ranks there add weapon EXP here too (C 40, B 80, A 120, S 160, up to the class's top rank); that isn't counted.
       </p>
+      {unit.porShadowed && (
+        <p className="text-xs text-amber-400">
+          {unit.porShadowed.join(' and ')}'s Path of Radiance data also names {unit.name} in the game's table, but the game takes{' '}
+          {unit.name}'s own first (0x8026d02c), so {unit.porShadowed.length > 1 ? 'theirs' : 'it'} never counts, nor does a support with{' '}
+          {unit.porShadowed.join(' or ')}. Serenes Forest says {unit.name} gets both; the Fire Emblem Wiki and the program say not.
+        </p>
+      )}
     </div>
   )
 }

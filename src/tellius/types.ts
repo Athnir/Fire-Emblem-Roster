@@ -102,6 +102,9 @@ export interface TelliusUnit {
   porNotes?: string[]
   /** Radiant Dawn: the Path of Radiance unit whose save data they take (its id in Path of Radiance's data). */
   porUnit?: string
+  /** Radiant Dawn: Path of Radiance units whose entry in the program's table also names them, but which the lookup never
+   * reaches, as it takes the first (Largo, for Calill). */
+  porShadowed?: string[]
   /** Radiant Dawn: units (Radiant Dawn ids) whose A support with them in Path of Radiance becomes a bond here. */
   porSupports?: string[]
   /** Radiant Dawn: chapters the maps keep them half-transformed for (Volug in Part 1). */

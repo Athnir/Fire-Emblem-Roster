@@ -142,6 +142,8 @@ describe('Radiant Dawn rules', () => {
     expect(fe10('Danved').porUnit).toBe('PID_DALAHOWE')
     // Largo's entry names Calill too, but hers comes first; the Black Knight's names DARKKNIGHT, not DARKKNIGHT_0.
     expect(fe10('Calill').porUnit).toBe('PID_CALILL')
+    expect(fe10('Calill').porShadowed).toEqual(['Largo'])
+    expect(FE10_DATA.units.filter((u) => u.porShadowed).map((u) => u.name)).toEqual(['Calill'])
     expect(fe10('Black Knight').porUnit).toBeUndefined()
   })
 
