@@ -132,3 +132,18 @@ python scripts/import_corrin_asset.py <m|f> <short|tall> <hairstyleId> <face-tmp
 
 Add each hairstyle's id/display name to `CORRIN_HAIRSTYLES` in `src/data/corrinHairstyles.ts` as
 it's extracted — the Roster dropdown reads straight from that list.
+
+## Awakening
+
+Awakening's portraits come straight from your own cartridge image (the path in `scripts/fe13_extract.py`), no extraction tools
+needed:
+
+```bash
+python scripts/fe13_portraits.py
+```
+
+It writes `data-raw/fe13/art/` (git-ignored): `<name>.png` for every unit, and `children/<name>/base.png` and `raw.png` for each
+child whose hair the game tints (all but Lucina). In the app, Edit Mode -> Bulk Upload -> "Select an entire folder" and pick that
+folder; the children's hair then recolours with the parent it comes from. `--public` writes the same into `public/art/` instead, for
+running the app from this folder. The Avatars and the DLC recruits aren't made by it.
+

@@ -46,7 +46,22 @@ colours the program builds at 0x2c8128 (`fe13_code.avatar_hair_palette`, the app
 A unit's hair is kept in the unit (+0x104) and set at its creation, at a child's join and on refresh (0x2cdfd8): Lucina keeps her own;
 any other child takes the hair of their fixed parent's spouse (the father, but Morgan (F)'s mother), the Avatar's chosen colour from
 the Avatar, a child spouse's own; with no spouse found, the child's own. The village maiden never decides one (Lucina skips the step).
-The app follows this in `hairOf`. Children's portraits are flat uploads, so the app shows the colour beside them rather than tinting.
+The app follows this in `hairOf`.
+
+## Portraits: `face/` (`scripts/fe13_portraits.py`)
+
+A face's archive is named at FaceData +8: `face/<name>_bu_通常.arc` for the bust-up (also `_fc_` close-ups and `_ct_pose0.ctpk.lz`
+conversation portraits). The archive is the binary format, each label a texture package: the expressions (`通常` normal, `笑`, `怒`...)
+and `髪0`, the hair. Each is a CTPK of one 256x256 ETC1A4 texture (`scripts/ctr_texture.py` decodes them: 8x8 tiles of four 4x4
+blocks, eight bytes of alpha before each). A child's hair layer is drawn over the face and tinted with their hair colour; an adult's
+(and Lucina's) is a 16x16 blank, their hair being part of the face.
+
+`python scripts/fe13_portraits.py` writes every unit's portrait (`<name>.png`, the hair in their own colour) and each child's two
+layers (`children/<name>/base.png` and `raw.png`) to `data-raw/fe13/art/` for the app's Bulk Upload, or with `--public` into
+`public/art/` (both git-ignored). The app tints a child's hair as it does Fates' (`colorizeRawHairTexture`: the hair's highlights
+stretched, then multiplied by the colour). The game's own blend is set up in the graphics library's texture combiner (the program sets
+`dmp_TexEnv[n].constRgba`) and wasn't traced; the hair textures are built the same way as Fates' (a muted grey with white
+highlights, the fill at about half brightness).
 
 ## Growths: enciphered, decoded as the program does (`scripts/fe13_growths.py`)
 

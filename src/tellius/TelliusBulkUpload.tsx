@@ -1,6 +1,6 @@
 import { UploadSection } from '../components/BulkAssetUpload'
 import { assetKeys } from '../data/assetStorage'
-import { matchByStem, type MatchResult } from '../logic/bulkAssetImport'
+import { matchByStem, type MatchedFile, type MatchResult } from '../logic/bulkAssetImport'
 import { artId } from './logic'
 import type { TelliusData } from './types'
 
@@ -25,13 +25,37 @@ function matchSkills(data: TelliusData, files: File[]): MatchResult {
   return matchByStem(files, skillEntries(data), (stem) => assetKeys.skillIcon(`${data.gameId}/${stem}`))
 }
 
-/** A whole folder: files under a "skills" folder are skill icons, the rest are portraits. */
+const pathOf = (f: File) => ((f as File & { webkitRelativePath?: string }).webkitRelativePath || f.name).replace(/\\/g, '/').toLowerCase().split('/')
+
+/** A child's portrait in layers, for a game that tints children's hair (Awakening): children/<name>/base.png, the portrait without
+ * hair, and children/<name>/raw.png, the hair as the game has it. */
+function matchChildLayers(data: TelliusData, files: File[]): MatchResult {
+  const names = new Set(portraitEntries(data).map((e) => e.id))
+  const matched: MatchedFile[] = []
+  const unmatched: File[] = []
+  for (const file of files) {
+    const parts = pathOf(file)
+    const name = parts[parts.indexOf('children') + 1]
+    const layer = parts[parts.length - 1].replace(/\.[^.]+$/, '')
+    const id = `${data.gameId}/${name}`
+    if (names.has(name) && layer === 'base') matched.push({ file, key: assetKeys.childPortraitBase(id), label: `${name} (base)` })
+    else if (names.has(name) && layer === 'raw') matched.push({ file, key: assetKeys.childPortraitRaw(id), label: `${name} (hair)` })
+    else unmatched.push(file)
+  }
+  return { matched, unmatched }
+}
+
+/** A whole folder: files under a "skills" folder are skill icons, under a "children" folder a child's layers, the rest portraits. */
 function matchFolder(data: TelliusData, files: File[]): MatchResult {
-  const isSkill = (f: File) =>
-    ((f as File & { webkitRelativePath?: string }).webkitRelativePath || '').replace(/\\/g, '/').toLowerCase().split('/').includes('skills')
+  const isSkill = (f: File) => pathOf(f).includes('skills')
+  const isLayer = (f: File) => pathOf(f).includes('children')
   const skills = matchSkills(data, files.filter(isSkill))
-  const portraits = matchPortraits(data, files.filter((f) => !isSkill(f)))
-  return { matched: [...portraits.matched, ...skills.matched], unmatched: [...portraits.unmatched, ...skills.unmatched] }
+  const layers = matchChildLayers(data, files.filter((f) => !isSkill(f) && isLayer(f)))
+  const portraits = matchPortraits(data, files.filter((f) => !isSkill(f) && !isLayer(f)))
+  return {
+    matched: [...portraits.matched, ...layers.matched, ...skills.matched],
+    unmatched: [...portraits.unmatched, ...layers.unmatched, ...skills.unmatched],
+  }
 }
 
 export function TelliusBulkUpload({ data, title, onClose }: { data: TelliusData; title: string; onClose: () => void }) {
@@ -49,7 +73,7 @@ export function TelliusBulkUpload({ data, title, onClose }: { data: TelliusData;
         </p>
         <UploadSection
           title="Select an entire folder"
-          hint='Portraits named like "ike.png"; skill icons in a "skills" folder, named like "sol.png".'
+          hint={`Portraits named like "ike.png"; skill icons in a "skills" folder, named like "sol.png"; children's hair layers as children/<name>/base.png and raw.png.`}
           match={(files) => matchFolder(data, files)}
           directory
         />

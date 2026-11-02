@@ -42,9 +42,11 @@ function artId(name: string): string {
   return `fe13/${name.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '')}`
 }
 
-/** A unit's portrait, as uploaded (one flat image each, children too: the layered child art that lets Fates recolour hair is Fates'). */
-export function UnitPortrait({ unit, size = 64 }: { unit: Fe13Unit; size?: number }) {
-  return <Portrait characterId={artId(unit.name)} isChild={false} size={size} />
+/** A unit's portrait. A child whose hair the game tints (all but Lucina) is drawn from their uploaded layers, the hair in `hairHex` (by
+ * default their own colour), as Fates draws its children; without the layers, their flat portrait. */
+export function UnitPortrait({ unit, size = 64, hairHex }: { unit: Fe13Unit; size?: number; hairHex?: string }) {
+  const layered = !!unit.parent && unit.id !== 'fe13-lucina'
+  return <Portrait characterId={artId(unit.name)} isChild={layered} hairHex={layered ? (hairHex ?? unit.hair) : undefined} flatFallback size={size} />
 }
 
 /** A hair colour as a swatch. */
@@ -232,10 +234,22 @@ function UnitDetail({ data, unit }: { data: Fe13Data; unit: Fe13Unit }) {
   // A child always has their fixed parent's classes and modifiers, and the +1; the other parent adds theirs.
   const share = fixedShare(data, unit)
   const modifiers = share?.modifiers ?? unit.modifiers
+  // The hair: from the parent picked below, else the plan's, else their own (0x2cdfd8).
+  const planSpouses = useFe13Store((s) => s.spouses)
+  const avatar = useFe13Store((s) => s.avatar)
+  const picked = useFe13Store((s) => s.hairParents[unit.id])
+  const setHairParent = useFe13Store((s) => s.setHairParent)
+  const setAvatar = useFe13Store((s) => s.setAvatar)
+  const setAvatarHair = (hex: string) => setAvatar({ ...avatar, hair: hex })
+  const fixedParent = share?.parent
+  const sources = fixedParent ? spousesOf(data, fixedParent).filter((u) => !u.maiden) : []
+  const source = picked && sources.some((u) => u.id === picked) ? picked : undefined
+  const hairSpouses = source && fixedParent ? { ...planSpouses, [fixedParent.id]: source, [source]: fixedParent.id } : planSpouses
+  const hair = hairOf(data, unit, hairSpouses, avatar.hair)
   return (
     <div className={panel}>
       <div className="flex flex-col items-start gap-4 sm:flex-row">
-        <UnitPortrait unit={unit} size={128} />
+        <UnitPortrait unit={unit} size={unit.parent ? 256 : 128} hairHex={hair.hex}/>
         <div className="space-y-1 text-sm text-neutral-300">
           <h3 className="text-lg font-semibold text-neutral-100">{unit.name}</h3>
           <div>
@@ -273,6 +287,46 @@ function UnitDetail({ data, unit }: { data: Fe13Data; unit: Fe13Unit }) {
         </div>
       </div>
       {unit.id.startsWith('fe13-avatar') && <AvatarBuild palette={data.avatarHair} />}
+      {unit.parent && unit.id === 'fe13-lucina' && (
+        <p className="border-t border-neutral-800 pt-3 text-xs text-neutral-500">Hair: always her own (fixed, whoever her mother is).</p>
+      )}
+      {unit.parent && unit.id !== 'fe13-lucina' && fixedParent && (
+        <div className="space-y-2 border-t border-neutral-800 pt-3">
+          <span className="text-xs font-semibold uppercase tracking-wide text-neutral-400">Hair source ({fixedParent.female ? 'Dad' : 'Mom'})</span>
+          <div className="flex flex-wrap items-center gap-2">
+            <select value={source ?? ''} onChange={(e) => setHairParent(unit.id, e.target.value || null)} className={`${selectClass} w-full max-w-xs`}>
+              <option value="">{planSpouses[fixedParent.id] ? `(the Marriage Planner's: ${data.units.find((u) => u.id === planSpouses[fixedParent.id])?.name ?? 'their spouse'})` : '(none: their own colour)'}</option>
+              {sources.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name}
+                </option>
+              ))}
+            </select>
+            <Swatch hex={hair.hex} />
+          </div>
+          {hair.from?.id.startsWith('fe13-avatar') && data.avatarHair && (
+            <div className="space-y-1">
+              <span className="text-xs text-neutral-400">The Avatar's hair colour (whatever this playthrough's Avatar picked)</span>
+              <div className="grid w-fit grid-cols-10 gap-1">
+                {data.avatarHair.map((hex) => (
+                  <button
+                    key={hex}
+                    type="button"
+                    onClick={() => setAvatarHair(hex)}
+                    title={hex}
+                    className={`h-6 w-6 rounded border ${avatar.hair === hex ? 'border-2 border-violet-400' : 'border-neutral-700'}`}
+                    style={{ backgroundColor: hex }}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+          <p className="text-xs text-neutral-500">
+            A quick look at their hair with another parent, separate from the Marriage Planner's plan. In the game a child takes the hair of
+            their {fixedParent.female ? 'father' : 'mother'}, as the portrait shows: the program's 0x2cdfd8.
+          </p>
+        </div>
+      )}
       <StatTable
         mov
         rows={[
@@ -827,12 +881,13 @@ function sourceText(data: Fe13Data, p: Fe13Parent): string {
 function ChildCard({ data, result, spouses }: { data: Fe13Data; result: Fe13Child; spouses: Record<string, string> }) {
   const { child, fixed, other } = result
   const cls = data.classes[result.startClass]
+  const avatarHair = useFe13Store((s) => s.avatar.hair)
   const total = {} as Fe13Stats
   for (const s of FE13_STATS) total[s] = result.growths[s] + (cls.growths?.[s] ?? 0)
   return (
     <div className={panel}>
       <div className="flex flex-wrap items-center gap-3 text-sm text-neutral-300">
-        <UnitPortrait unit={child} size={48} />
+        <UnitPortrait unit={child} size={96} hairHex={hairOf(data, child, spouses, avatarHair).hex} />
         <div>
           <div className="font-semibold text-neutral-100">{child.name}</div>
           <div className="text-xs text-neutral-500">

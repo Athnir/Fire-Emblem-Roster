@@ -33,6 +33,9 @@ interface Props {
   /** Set only for Corrin: renders their bald body model + selected hairstyle recolored to hairHex,
    * the same base+template composite technique as children, instead of the flat adult portrait. */
   corrin?: CorrinAppearanceProps
+  /** A child with no layered art (no base.png) shows their flat portrait instead, as an adult's: for games whose upload gives every
+   * unit one (Awakening), so a child still shows before their hair layers are supplied. */
+  flatFallback?: boolean
 }
 
 type Status = 'loading' | 'ok' | 'missing'
@@ -52,8 +55,10 @@ function Placeholder({ size }: { size: number }) {
  * ART_ASSETS.md and portraitColorize.ts. Any missing art (the common case — public/art/ is
  * optional and git-ignored) renders a placeholder instead of a broken image.
  */
-export function Portrait({ characterId, isChild, hairHex, size = 96, corrin }: Props) {
+export function Portrait({ characterId, isChild, hairHex, size = 96, corrin, flatFallback }: Props) {
   const [status, setStatus] = useState<Status>('loading')
+  // Set when a child's layered art is missing and the flat portrait is shown instead (flatFallback).
+  const [flat, setFlat] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [adultUrl] = useState(() => adultPortraitUrl(characterId))
   // The actual <img src> to render — separate from adultUrl (the static fallback) because the real
@@ -69,6 +74,7 @@ export function Portrait({ characterId, isChild, hairHex, size = 96, corrin }: P
   useEffect(() => {
     let cancelled = false
     setStatus('loading')
+    setFlat(false)
 
     if (!isComposite) {
       resolveUrl(assetKeys.portrait(characterId), adultUrl)
@@ -138,12 +144,24 @@ export function Portrait({ characterId, isChild, hairHex, size = 96, corrin }: P
 
     renderComposite()
       .then(() => !cancelled && setStatus('ok'))
-      .catch(() => !cancelled && setStatus('missing'))
+      .catch(() => {
+        if (cancelled) return
+        if (!flatFallback) return setStatus('missing')
+        resolveUrl(assetKeys.portrait(characterId), adultUrl)
+          .then((url) => loadImage(url).then(() => url))
+          .then((url) => {
+            if (cancelled) return
+            setResolvedAdultUrl(url)
+            setFlat(true)
+            setStatus('ok')
+          })
+          .catch(() => !cancelled && setStatus('missing'))
+      })
 
     return () => {
       cancelled = true
     }
-  }, [characterId, isChild, adultUrl, hairHex, isComposite, corrin?.gender, corrin?.height, corrin?.hairstyle, assetEpoch])
+  }, [characterId, isChild, adultUrl, hairHex, isComposite, corrin?.gender, corrin?.height, corrin?.hairstyle, assetEpoch, flatFallback])
 
   return (
     <div
@@ -151,7 +169,7 @@ export function Portrait({ characterId, isChild, hairHex, size = 96, corrin }: P
       style={{ width: size, height: size }}
     >
       {status === 'missing' && <Placeholder size={size} />}
-      {!isComposite ? (
+      {!isComposite || flat ? (
         <img
           src={resolvedAdultUrl}
           alt=""

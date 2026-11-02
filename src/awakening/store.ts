@@ -20,6 +20,9 @@ interface Fe13State {
   /** The Avatar's asset and flaw (both Avatars: one per playthrough). */
   avatar: Fe13Build
   setAvatar: (build: Fe13Build) => void
+  /** {child id: the parent the Roster shows their hair from}, a quick look independent of the plan (as Fates' Roster has it). */
+  hairParents: Record<string, string>
+  setHairParent: (childId: string, parentId: string | null) => void
   marry: (a: string, b: string | null) => void
   setPlan: (unitId: string, plan: Fe13Plan | null) => void
   clearSpouses: () => void
@@ -40,6 +43,14 @@ export const useFe13Store = create<Fe13State>()(
       activePlanId: null,
       avatar: { asset: null, flaw: null },
       setAvatar: (avatar) => set({ avatar }),
+      hairParents: {},
+      setHairParent: (childId, parentId) =>
+        set((state) => {
+          const hairParents = { ...state.hairParents }
+          if (parentId) hairParents[childId] = parentId
+          else delete hairParents[childId]
+          return { hairParents }
+        }),
       marry: (a, b) =>
         set((state) => {
           const spouses = { ...state.spouses }
