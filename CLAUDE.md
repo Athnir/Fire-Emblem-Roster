@@ -57,7 +57,11 @@ new rule, add it here.
 - **Blossom** (user, 2026-11-02): in Path of Radiance it's in Sothe's skills from the start and can be removed; in Radiant Dawn it's
   a tickbox, assumed kept on for the whole plan, as Aptitude is in Fates. Either way it's a carried skill and takes capacity.
 - **The story's choices of who joins are picked in the Roster** (user, 2026-11-02: Path of Radiance's Nasir or Ena, and the
-  Endgame royal); the other options' units drop out of every tab.
+  Endgame royal; Genealogy's Iuchar or Iucharba); the other options' units drop out of every tab. Genealogy's children and their
+  substitutes follow the pairings the same way (a mother not picked yet keeps both).
+- **Genealogy's children join as the game makes them** (user, 2026-11-02): the code's formulas ($87:A869, $87:A6E6), from the
+  parents' Unit Planner plans. A child's Luck shows its average and range (the game adds a random 1 to 10), and a stat stored
+  at 16 or more shows a warning (the save keeps 4 bits, so a reload wraps it).
 - **A Path of Radiance save is ticked per unit in Radiant Dawn's Unit Planner** (user, 2026-11-02): the stats that were at their
   cap there, and the A supports, which become +5 bonds. Volug shows half-transformed for Part 1.
 - **Skill Planners don't work out which skill a child inherits** (user, 2026-11-02): the skills are picked, and the general pool
