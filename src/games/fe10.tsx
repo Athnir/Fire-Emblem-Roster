@@ -1,7 +1,9 @@
 import { FE10_BONDS, FE10_CHAPTERS, FE10_CLASSES, FE10_SKILLS, FE10_SUPPORTS, FE10_UNITS } from '../data/fe10/fe10Units'
 import { TelliusBulkUpload } from '../tellius/TelliusBulkUpload'
+import { TelliusBulkViewer } from '../tellius/TelliusBulkViewer'
 import { TelliusPlanner } from '../tellius/TelliusPlanner'
 import { TelliusRoster } from '../tellius/TelliusRoster'
+import { TelliusSkillPlanner } from '../tellius/TelliusSkillPlanner'
 import { TelliusSupports } from '../tellius/TelliusSupports'
 import type { TelliusData } from '../tellius/types'
 import type { GameParts } from './index'
@@ -36,6 +38,8 @@ const fe10: GameParts = {
     { id: 'roster', label: 'Roster', component: () => <TelliusRoster data={FE10_DATA} /> },
     { id: 'unit', label: 'Unit Planner', component: () => <TelliusPlanner data={FE10_DATA} /> },
     { id: 'supports', label: 'Supports', component: () => <TelliusSupports data={FE10_DATA} /> },
+    { id: 'skills', label: 'Skill Planner', component: () => <TelliusSkillPlanner data={FE10_DATA} /> },
+    { id: 'viewer', label: 'Bulk Viewer', component: () => <TelliusBulkViewer data={FE10_DATA} /> },
   ],
   bulkUpload: ({ onClose }) => <TelliusBulkUpload data={FE10_DATA} title="Radiant Dawn" onClose={onClose} />,
 }

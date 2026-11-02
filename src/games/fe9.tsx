@@ -1,7 +1,9 @@
 import { FE9_BANDS, FE9_CHAPTERS, FE9_CHOICES, FE9_CLASSES, FE9_SKILLS, FE9_SUPPORTS, FE9_UNITS } from '../data/fe9/fe9Units'
 import { TelliusBulkUpload } from '../tellius/TelliusBulkUpload'
+import { TelliusBulkViewer } from '../tellius/TelliusBulkViewer'
 import { TelliusPlanner } from '../tellius/TelliusPlanner'
 import { TelliusRoster } from '../tellius/TelliusRoster'
+import { TelliusSkillPlanner } from '../tellius/TelliusSkillPlanner'
 import { TelliusSupports } from '../tellius/TelliusSupports'
 import type { TelliusData } from '../tellius/types'
 import type { GameParts } from './index'
@@ -31,6 +33,8 @@ const fe9: GameParts = {
     { id: 'roster', label: 'Roster', component: () => <TelliusRoster data={FE9_DATA} /> },
     { id: 'unit', label: 'Unit Planner', component: () => <TelliusPlanner data={FE9_DATA} /> },
     { id: 'supports', label: 'Supports', component: () => <TelliusSupports data={FE9_DATA} /> },
+    { id: 'skills', label: 'Skill Planner', component: () => <TelliusSkillPlanner data={FE9_DATA} /> },
+    { id: 'viewer', label: 'Bulk Viewer', component: () => <TelliusBulkViewer data={FE9_DATA} /> },
   ],
   bulkUpload: ({ onClose }) => <TelliusBulkUpload data={FE9_DATA} title="Path of Radiance" onClose={onClose} />,
 }
