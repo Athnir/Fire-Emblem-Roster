@@ -14,6 +14,10 @@ new rule, add it here.
   one of its readers (`scripts/*_rom.py`, `fe13_*.py` and the rest) is needed, copy it into this repo's `scripts/`.
 - **One game picker; every tool for that game sits in the same tabs.** No extra menus or tool-picker steps. A game with nothing
   like a tool (no marriages, no skills) has no tab for it.
+- **Every game gets a Bulk Viewer** (user, 2026-11-02): at least the Team Viewer, with saved sets of plans; a game with a second
+  generation adds the Parent Checker. The games still without one get theirs in their review.
+- **Rules too long for the tabs go in an Info tab** (user, 2026-11-02, Thracia's rescue, capture and fatigue): the user checks them by
+  hand, rather than the tabs working them out and getting busy.
 - **Finish one game across every tab before starting the next.** Order: Fates, Path of Radiance, Radiant Dawn, Genealogy of the
   Holy War, Thracia 776, The Binding Blade, The Blazing Blade, The Sacred Stones, Mystery of the Emblem, Awakening, then Shadows of
   Valentia (the user added its files, 2026-10-30), then Shadow Dragon (added 2026-10-30). The Switch games (the FE1 re-release,
@@ -57,13 +61,23 @@ new rule, add it here.
 - **Blossom** (user, 2026-11-02): in Path of Radiance it's in Sothe's skills from the start and can be removed; in Radiant Dawn it's
   a tickbox, assumed kept on for the whole plan, as Aptitude is in Fates. Either way it's a carried skill and takes capacity.
 - **The story's choices of who joins are picked in the Roster** (user, 2026-11-02: Path of Radiance's Nasir or Ena, and the
-  Endgame royal; Genealogy's Iuchar or Iucharba); the other options' units drop out of every tab. Genealogy's children and their
+  Endgame royal; Genealogy's Iuchar or Iucharba; Thracia's route by Ch.15's exit, Olwen or Ilios, and Ced or Saias); the other
+  options' units drop out of every tab. Genealogy's children and their
   substitutes follow the pairings the same way (a mother not picked yet keeps both).
 - **Genealogy's children join as the game makes them** (user, 2026-11-02): the code's formulas ($87:A869, $87:A6E6), from the
   parents' Unit Planner plans. A child's Luck shows its average and range (the game adds a random 1 to 10), and a stat stored
   at 16 or more shows a warning (the save keeps 4 bits, so a reload wraps it).
 - **A Path of Radiance save is ticked per unit in Radiant Dawn's Unit Planner** (user, 2026-11-02): the stats that were at their
   cap there, and the A supports, which become +5 bonds. Volug shows half-transformed for Part 1.
+- **Thracia keeps each unit's own stats apart from the class, as the game does** (user, 2026-11-02): what's shown is the class's base
+  plus their own, held at 20 (HP is kept whole), so a promotion moves the shown stats by the classes' bases and leaves HP. The
+  Unit Planner toggles a mounted unit on foot (its dismounted class), adds up every holy scroll carried (a growth below 0 counts as
+  0), and counts the rings used.
+- **Story class changes are planner steps** (user, 2026-11-02, Thracia: Leif's Prince at the end of Ch.18, Linoan's Sage, Lara's Dancer
+  before her Master Seal), as Path of Radiance's story promotions are.
+- **What the game has one copy of is flagged, not blocked** (user, 2026-11-02, Thracia's skill manuals): two plans can use it, and a
+  note says the game doesn't allow it and names the other unit, as Fates' warning for a spouse picked twice.
+- **When units leave and come back shows in the Roster** (user, 2026-11-02, Thracia), and stays blank under the spoiler block.
 - **Skill Planners don't work out which skill a child inherits** (user, 2026-11-02): the skills are picked, and the general pool
   lists every skill the unit can have in some playthrough, following the game for what can pass (as Fates' looser pool does). In
   Awakening the classes show as chips to pick, as the DLC classes do, since the lists are long.
