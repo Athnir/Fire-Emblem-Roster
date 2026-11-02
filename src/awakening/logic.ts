@@ -9,10 +9,12 @@ export interface Fe13Data {
 }
 
 export const MAX_LEVEL = 20
-/** A class's last level: 30 for a special class (Villager, Dancer, the DLC's Dread Fighter...), else 20. */
+/** A class's top level (0x2d0ad8): 20 if it's promoted or promotes, else 30 (Villager, Dancer, the DLC's Dread Fighter...). */
 export const maxLevelOf = (cls: Fe13Class) => cls.maxLevel ?? MAX_LEVEL
-/** A Master Seal promotes, and a Second Seal changes class, from Lv 10 (Serenes Forest). */
+/** A Master Seal needs Lv 10, and so does an unpromoted unit's Second Seal (0x2d4d3c). */
 export const SEAL_LEVEL = 10
+/** How many class changes a plan can hold. The game has no limit; this is past what most playthroughs use. */
+export const MAX_STEPS = 30
 
 /** A step of a plan: change into `to` at level `at` of the class the unit is in. */
 export interface Fe13Step {
@@ -28,19 +30,52 @@ export interface Fe13Plan {
 export interface Fe13Stage {
   classId: string
   level: number
+  /** As the game shows them: held at the class's maximums (0x2f3ac0). */
   stats: Fe13Stats
+  /** Before the maximums: the unit keeps every point it gained (0x2d0fb8), and a class with higher maximums shows them again. */
+  raw: Fe13Stats
 }
 
-/** The classes a unit can change into from a class: its promotions, and with a Second Seal any class of the unit's set (the base
- * classes and what they promote to). */
-export function classOptions(data: Fe13Data, unit: Fe13Unit, from: string, set = classSetOf(unit)): string[] {
+/** A class the unit can change into, and the lowest level of its current class it can do it at. */
+export interface Fe13Change {
+  to: string
+  minLevel: number
+  seal: 'master' | 'second'
+}
+
+/** What a unit in a class can change into (the seal checks at 0x2d4d3c, the Second Seal's list at 0x2cff38):
+ * - a Master Seal promotes from Lv 10;
+ * - a Second Seal works once promoted, or from Lv 10 unpromoted. It lists the unit's classes (`set`), what they promote to only for a
+ *   promoted unit from Lv 10 or an unpromoted one at Lv 30, and the unit's own class only at its top level. */
+export function classChanges(data: Fe13Data, from: string, set: string[]): Fe13Change[] {
   const cls = data.classes[from]
-  const reachable = new Set<string>()
-  for (const id of set) {
-    reachable.add(id)
-    for (const p of data.classes[id]?.promotesTo ?? []) reachable.add(p)
+  const top = maxLevelOf(cls)
+  const out = new Map<string, Fe13Change>()
+  const add = (to: string, minLevel: number, seal: Fe13Change['seal']) => {
+    if (!data.classes[to] || minLevel > top || (to === from && minLevel < top)) return
+    const had = out.get(to)
+    if (!had || minLevel < had.minLevel) out.set(to, { to, minLevel, seal })
   }
-  return [...new Set([...cls.promotesTo, ...reachable])].filter((id) => id !== from && data.classes[id])
+  for (const p of cls.promotesTo) add(p, SEAL_LEVEL, 'master')
+  for (const id of set) add(id, cls.promoted ? 1 : SEAL_LEVEL, 'second')
+  for (const id of set) for (const p of data.classes[id]?.promotesTo ?? []) add(p, cls.promoted ? SEAL_LEVEL : 30, 'second')
+  add(from, top, 'second')
+  return [...out.values()]
+}
+
+/** A plan's steps the game allows, up to the first it doesn't (a plan saved before the seal rules were traced can have one). */
+export function legalSteps(data: Fe13Data, startClass: string, startLevel: number, plan: Fe13Plan, set: string[]): { steps: Fe13Step[]; dropped: Fe13Step | null } {
+  let from = startClass
+  let level = startLevel
+  const steps: Fe13Step[] = []
+  for (const step of plan.steps) {
+    const change = classChanges(data, from, set).find((c) => c.to === step.to)
+    if (!change || Math.max(level, change.minLevel) > maxLevelOf(data.classes[from])) return { steps, dropped: step }
+    steps.push(step)
+    from = step.to
+    level = 1
+  }
+  return { steps, dropped: null }
 }
 
 export function classSetOf(unit: Fe13Unit, female = unit.female): string[] {
@@ -54,43 +89,70 @@ export function capsOf(cls: Fe13Class, modifiers: Partial<Fe13Stats>): Fe13Stats
   return out
 }
 
-/** Average stats: each level adds the personal growth and the class's, held at the class's maximums plus the modifiers. Changing class
- * adds the difference between the two classes' bases and starts the new class at Lv 1 (Serenes Forest; not traced in the code). */
-export function project(
-  data: Fe13Data,
-  unit: Fe13Unit,
-  plan: Fe13Plan,
-  start: Fe13Stats = unit.bases,
-  growths: Fe13Stats = unit.growths,
-  modifiers: Partial<Fe13Stats> = unit.modifiers,
-): Fe13Stage[] {
+/** A level's average gain in each stat from the total growths (personal and class; the level-up, 0x2cef88): every 100 is a sure point and
+ * the rest a chance. A level that rolls nothing is rolled once more, unless a growth is 100 or more, so a chance counts 1 + (the odds of
+ * every roll failing) times. */
+export function levelGain(total: Fe13Stats): Fe13Stats {
+  const sure = FE13_STATS.some((s) => total[s] >= 100)
+  let none = 1
+  for (const s of FE13_STATS) if (total[s] > 0 && total[s] < 100) none *= 1 - total[s] / 100
+  const again = sure ? 0 : none
+  const out = {} as Fe13Stats
+  for (const s of FE13_STATS) out[s] = total[s] <= 0 ? 0 : Math.floor(total[s] / 100) + ((total[s] % 100) / 100) * (1 + again)
+  return out
+}
+
+export interface Fe13Projection {
+  /** As they join, before the maximums (a child's inheritance included). */
+  start?: Fe13Stats
+  growths?: Fe13Stats
+  modifiers?: Partial<Fe13Stats>
+  /** The classes a Second Seal opens (a child's include their parents'). */
+  set?: string[]
+}
+
+/** Average stats along a plan. Each level adds the average gain (levelGain); a stat stops growing at the class's maximums plus the
+ * modifiers. Changing class (0x2d0fb8) swaps the class's bases, starts at Lv 1 and keeps every point gained, so a stat over the new
+ * class's maximum shows held there and comes back in a class with higher ones. */
+export function project(data: Fe13Data, unit: Fe13Unit, plan: Fe13Plan, opts: Fe13Projection = {}): Fe13Stage[] {
+  const growths = opts.growths ?? unit.growths
+  const modifiers = opts.modifiers ?? unit.modifiers
+  const { steps } = legalSteps(data, unit.classId, unit.level, plan, opts.set ?? classSetOf(unit))
   let cls = data.classes[unit.classId]
   let level = unit.level
-  let stats: Fe13Stats = { ...start }
-  const stages: Fe13Stage[] = [{ classId: cls.id, level, stats }]
+  let raw: Fe13Stats = { ...(opts.start ?? unit.bases) }
+  const stage = (c: Fe13Class, lv: number, r: Fe13Stats): Fe13Stage => {
+    const caps = capsOf(c, modifiers)
+    const stats = { ...r }
+    for (const s of FE13_STATS) stats[s] = Math.min(caps[s], r[s])
+    return { classId: c.id, level: lv, stats, raw: r }
+  }
   const grow = (from: Fe13Stats, levels: number, c: Fe13Class) => {
     const caps = capsOf(c, modifiers)
+    const total = {} as Fe13Stats
+    for (const s of FE13_STATS) total[s] = (growths[s] ?? 0) + (c.growths?.[s] ?? 0)
+    const gain = levelGain(total)
     const out = { ...from }
-    for (const s of FE13_STATS) out[s] = Math.min(caps[s], out[s] + (((growths[s] ?? 0) + (c.growths?.[s] ?? 0)) / 100) * Math.max(0, levels))
+    for (const s of FE13_STATS) if (out[s] < caps[s]) out[s] = Math.min(caps[s], out[s] + gain[s] * Math.max(0, levels))
     return out
   }
-  for (const step of plan.steps) {
+  const stages: Fe13Stage[] = [stage(cls, level, raw)]
+  for (const step of steps) {
     const next = data.classes[step.to]
-    if (!next) break
-    const at = Math.max(level, Math.min(maxLevelOf(cls), step.at))
+    const change = classChanges(data, cls.id, opts.set ?? classSetOf(unit)).find((c) => c.to === step.to)!
+    const at = Math.max(level, change.minLevel, Math.min(maxLevelOf(cls), step.at))
     if (at > level) {
-      stats = grow(stats, at - level, cls)
-      stages.push({ classId: cls.id, level: at, stats })
+      raw = grow(raw, at - level, cls)
+      stages.push(stage(cls, at, raw))
     }
-    const caps = capsOf(next, modifiers)
-    stats = { ...stats }
-    for (const s of FE13_STATS) stats[s] = Math.min(caps[s], stats[s] + next.bases[s] - cls.bases[s])
+    raw = { ...raw }
+    for (const s of FE13_STATS) raw[s] += next.bases[s] - cls.bases[s]
     cls = next
     level = 1
-    stages.push({ classId: cls.id, level, stats })
+    stages.push(stage(cls, level, raw))
   }
   const target = Math.max(level, Math.min(maxLevelOf(cls), plan.targetLevel))
-  if (target > level) stages.push({ classId: cls.id, level: target, stats: grow(stats, target - level, cls) })
+  if (target > level) stages.push(stage(cls, target, grow(raw, target - level, cls)))
   return stages
 }
 
@@ -110,14 +172,15 @@ export function spousesOf(data: Fe13Data, unit: Fe13Unit): Fe13Unit[] {
 }
 
 
-// Inheritance (Serenes Forest's children, base-stat, growth and modifier pages, and the Fire Emblem Wiki's inheritance page; not
-// traced in the game's code). The gender swaps (Olivia's son gets Mercenary and Barbarian) are the game's own class sets.
+// Inheritance, as the program does it (code.bin; the routines are in data-raw/fe13/README.md). The gender swaps (Olivia's son gets
+// Mercenary and Barbarian) are the game's own class sets.
 
 const LUCINA = 'fe13-lucina'
-/** Classes a parent never passes on, and those only Morgan takes. Lord goes only to Lucina, who has it already. */
+/** Classes a parent never passes on (0x2cff38 leaves out Lord, Great Lord and Dancer from anyone but the unit; Conqueror is Walhart's,
+ * who has no children), and those only Morgan can take: no other child has a parent with them. */
 const NEVER_PASSED = ['Lord', 'Dancer', 'Conqueror']
 const MORGAN_ONLY = ['Taguel', 'Manakete']
-/** Morgan starts in Tactician when the other parent's first class is one of these (Serenes Forest). */
+/** Morgan starts as a Tactician when the other parent's first class is one of these (0x27c150). */
 const NO_START = ['Lord', 'Dancer', 'Conqueror']
 
 export const isMorgan = (u: Fe13Unit) => u.id.startsWith('fe13-morgan')
@@ -135,13 +198,14 @@ function passedOn(data: Fe13Data, set: string[], child: Fe13Unit): string[] {
 }
 
 /** A parent as the child sees them: a child parent (Morgan's other parent can be one) with what they inherited themselves when their
- * own parents are in the plan; their current stats from their Unit Planner plan, else as they join. */
+ * own parents are in the plan (0x27c0a8); their current stats from their Unit Planner plan, else as they join. */
 export interface Fe13Parent {
   unit: Fe13Unit
   growths: Fe13Stats
   modifiers: Omit<Fe13Stats, 'hp'>
+  /** Their class set for the child's gender, or for a child parent every class they have. */
   classes: string[]
-  /** Their current stats less their class's bases. */
+  /** Their current stats less their class's bases, before the maximums: the game counts every point gained. */
   personal: Fe13Stats
   /** Where the stats come from: their plan's last row, or as they join. */
   from: { classId: string; level: number; planned: boolean }
@@ -153,17 +217,19 @@ export interface Fe13Child {
   child: Fe13Unit
   fixed: Fe13Parent
   other: Fe13Parent
-  /** The class they join in: their own, except Morgan, who takes the other parent's first class. */
+  /** The class they join in: their own, except Morgan, who takes the other parent's first class (0x27c150). */
   startClass: string
-  /** Their own growths and both parents' added, a third, rounded down. */
+  /** Their own growths and both parents' added, a third, rounded down (0x27d230). */
   growths: Fe13Stats
-  /** Both parents' summed, plus 1 (no +1 for a Morgan whose other parent is a child). */
+  /** Both parents' summed, plus 1 (no +1 for a Morgan whose other parent is a child, whose own +1 is counted instead; 0x2c48f8). */
   modifiers: Omit<Fe13Stats, 'hp'>
-  /** Their own class set, then what each parent passes on. */
+  /** Their own class set, then what each parent passes on (0x2cff38). */
   classes: string[]
-  /** As they join: both parents' current stats less their class's bases, plus the child's own, a third (rounded down), plus the start
-   * class's bases. */
+  /** As they join, held at their maximums (`raw` before them). */
   bases: Fe13Stats & { mov: number }
+  /** As they join (0x3a44d0): their own stats, plus a third of how far each parent's are above them (a parent below adds nothing),
+   * rounded down, plus the start class's bases. */
+  raw: Fe13Stats & { mov: number }
 }
 
 /** A parent's stats, growths and the rest, as passed on. `depth` stops at Morgan's grandparents. */
@@ -174,10 +240,10 @@ function parentOf(data: Fe13Data, unit: Fe13Unit, female: boolean, spouses: Reco
   const classes = via?.classes ?? classSetOf(unit, female)
   const start = via ? { ...unit, classId: via.startClass } : unit
   const plan = plans[unit.id]
-  const stages = plan ? project(data, start, plan, via?.bases ?? unit.bases, growths, modifiers) : null
-  const last = stages?.[stages.length - 1] ?? { classId: start.classId, level: unit.level, stats: via?.bases ?? unit.bases }
+  const stages = plan ? project(data, start, plan, { start: via?.raw ?? unit.bases, growths, modifiers, set: via?.classes ?? classSetOf(unit) }) : null
+  const last = stages?.[stages.length - 1] ?? { classId: start.classId, level: unit.level, raw: via?.raw ?? unit.bases }
   const personal = {} as Fe13Stats
-  for (const s of FE13_STATS) personal[s] = last.stats[s] - data.classes[last.classId].bases[s]
+  for (const s of FE13_STATS) personal[s] = last.raw[s] - data.classes[last.classId].bases[s]
   return { unit, growths, modifiers, classes, personal, from: { classId: last.classId, level: last.level, planned: !!stages && stages.length > 1 }, via }
 }
 
@@ -199,9 +265,15 @@ export function childOf(data: Fe13Data, child: Fe13Unit, spouses: Record<string,
   const first = classSetOf(otherUnit, child.female)[0]
   const startClass = isMorgan(child) && first && !NO_START.includes(data.classes[first]?.name ?? '') ? first : child.classId
   const cls = data.classes[startClass]
+  const caps = capsOf(cls, modifiers)
+  const raw = { mov: cls.bases.mov } as Fe13Stats & { mov: number }
   const bases = { mov: cls.bases.mov } as Fe13Stats & { mov: number }
-  for (const s of FE13_STATS) bases[s] = Math.floor((fixed.personal[s] + other.personal[s] + child.personal[s]) / 3) + cls.bases[s]
-  return { child, fixed, other, startClass, growths, modifiers, classes, bases }
+  for (const s of FE13_STATS) {
+    const own = child.personal[s]
+    raw[s] = own + Math.floor((Math.max(0, fixed.personal[s] - own) + Math.max(0, other.personal[s] - own)) / 3) + cls.bases[s]
+    bases[s] = Math.min(caps[s], raw[s])
+  }
+  return { child, fixed, other, startClass, growths, modifiers, classes, bases, raw }
 }
 
 /** A child's parents in the plan: the fixed one, and their spouse if married. */

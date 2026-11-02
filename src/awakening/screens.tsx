@@ -3,15 +3,16 @@ import { Portrait } from '../components/Portrait'
 import { useScreenshotContextStore } from '../state/screenshotContextStore'
 import {
   MAX_LEVEL,
+  MAX_STEPS,
   maxLevelOf,
-  SEAL_LEVEL,
   capsOf,
   childOf,
   childrenOf,
-  classOptions,
+  classChanges,
   classSetOf,
   isFamilyBlocked,
   isMorgan,
+  legalSteps,
   project,
   sameUnit,
   skillsOf,
@@ -102,7 +103,15 @@ function useScreenshotUnit(unit: Fe13Unit | undefined) {
   }, [unit, setUnitLabel])
 }
 
-type Row = { label: string; values: Partial<Fe13Stats & { mov: number }>; caps?: Partial<Fe13Stats>; suffix?: string; signed?: boolean }
+type Row = {
+  label: string
+  values: Partial<Fe13Stats & { mov: number }>
+  caps?: Partial<Fe13Stats>
+  /** Before the maximums: a stat held at one shows the points it keeps beyond it. */
+  raw?: Partial<Fe13Stats>
+  suffix?: string
+  signed?: boolean
+}
 
 function StatTable({ rows, mov = false }: { rows: Row[]; mov?: boolean }) {
   const cols = [...FE13_STATS, ...(mov ? (['mov'] as const) : [])]
@@ -120,17 +129,20 @@ function StatTable({ rows, mov = false }: { rows: Row[]; mov?: boolean }) {
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
-            <tr key={row.label} className="border-t border-neutral-800">
+          {rows.map((row, i) => (
+            // A plan can pass through the same class and level more than once.
+            <tr key={`${i}-${row.label}`} className="border-t border-neutral-800">
               <td className="whitespace-nowrap py-1 pr-2 text-xs text-neutral-400">{row.label}</td>
               {cols.map((s) => {
                 const v = row.values[s]
                 const cap = s === 'mov' ? undefined : row.caps?.[s]
+                const kept = s === 'mov' || v === undefined ? 0 : (row.raw?.[s] ?? v) - v
                 return (
                   <td key={s} className={`px-1 py-1 text-right tabular-nums ${v !== undefined && cap !== undefined && v >= cap ? 'text-emerald-400' : 'text-neutral-200'}`}>
                     {row.signed && v !== undefined && v > 0 ? '+' : ''}
                     {fmt(v)}
                     {v !== undefined ? (row.suffix ?? '') : ''}
+                    {kept > 0.05 && <sup className="ml-0.5 text-[10px] text-neutral-500">+{fmt(kept)}</sup>}
                   </td>
                 )
               })}
@@ -238,8 +250,8 @@ function UnitDetail({ data, unit }: { data: Fe13Data; unit: Fe13Unit }) {
       />
       {unit.parent && (
         <p className="text-xs text-neutral-500">
-          A child's real bases also take after their parents' stats when they join; these are the class's plus the child's own. The
-          Marriage Planner shows what they join with.
+          A child joins with at least these, the class's bases plus their own: each parent above them in a stat adds a third of the
+          difference. The Marriage Planner shows what they join with.
         </p>
       )}
     </div>
@@ -291,8 +303,6 @@ export function Fe13Roster({ data: raw }: { data: Fe13Data }) {
   )
 }
 
-const MAX_STEPS = 4
-
 /** One unit's average stats through Master and Second Seals. Saved per unit. */
 export function Fe13Planner({ data: raw }: { data: Fe13Data }) {
   const data = useAvatarData(raw)
@@ -311,11 +321,13 @@ export function Fe13Planner({ data: raw }: { data: Fe13Data }) {
   const set = child ? child.classes : classSetOf(unit)
   const growths = child ? child.growths : unit.growths
   const modifiers = child ? child.modifiers : unit.modifiers
-  const stages = project(data, start, plan, child ? child.bases : unit.bases, growths, modifiers)
+  const stages = project(data, start, plan, { start: child ? child.raw : unit.bases, growths, modifiers, set })
+  // A step the game doesn't allow (from a plan saved before the seal rules were traced) and those after it are left out.
+  const { steps, dropped } = legalSteps(data, start.classId, unit.level, plan, set)
   let current = start.classId
   let fromLevel = unit.level
-  const rows = plan.steps.map((step, i) => {
-    const options = classOptions(data, unit, current, set)
+  const rows = steps.map((step, i) => {
+    const options = classChanges(data, current, set)
     const row = { i, step, from: current, fromLevel, options }
     current = step.to
     fromLevel = 1
@@ -324,11 +336,16 @@ export function Fe13Planner({ data: raw }: { data: Fe13Data }) {
   const finalClass = data.classes[current]
   const levels = (from: number, to = MAX_LEVEL) => Array.from({ length: Math.max(0, to - from + 1) }, (_, i) => from + i)
   const setStep = (i: number, patch: Partial<{ at: number; to: string }>) => {
-    const steps = plan.steps.slice(0, i + 1).map((s, k) => (k === i ? { ...s, ...patch } : s))
+    const row = rows[i]
+    const next = { ...row.step, ...patch }
+    // A change has its own lowest level (a Second Seal into a promoted class needs Lv 10, the unit's own class its top level).
+    const min = Math.max(row.fromLevel, row.options.find((c) => c.to === next.to)?.minLevel ?? 1)
+    next.at = Math.min(maxLevelOf(data.classes[row.from]), Math.max(min, next.at))
+    const kept = steps.slice(0, i + 1).map((s, k) => (k === i ? next : s))
     // Changing a step's class drops the steps after it: their choices may not be open any more.
-    update({ steps: patch.to ? steps : [...steps, ...plan.steps.slice(i + 1)] })
+    update({ steps: patch.to ? kept : [...kept, ...steps.slice(i + 1)] })
   }
-  const nextOptions = classOptions(data, unit, current, set)
+  const nextOptions = classChanges(data, current, set)
   return (
     <div className="space-y-4">
       <UnitSelect data={data} value={unit.id} onChange={setUnitId} />
@@ -340,10 +357,10 @@ export function Fe13Planner({ data: raw }: { data: Fe13Data }) {
               <label className="space-y-1">
                 <span className="block text-xs text-neutral-500">{data.classes[from].name} changes to</span>
                 <select value={step.to} onChange={(e) => setStep(i, { to: e.target.value })} className={selectClass}>
-                  {options.map((id) => (
-                    <option key={id} value={id}>
-                      {data.classes[id].name}
-                      {data.classes[from].promotesTo.includes(id) ? ' (Master Seal)' : ''}
+                  {options.map((c) => (
+                    <option key={c.to} value={c.to}>
+                      {data.classes[c.to].name}
+                      {c.seal === 'master' ? ' (Master Seal)' : c.to === from ? ' (again, from Lv 1)' : ''}
                     </option>
                   ))}
                 </select>
@@ -351,23 +368,34 @@ export function Fe13Planner({ data: raw }: { data: Fe13Data }) {
               <label className="space-y-1">
                 <span className="block text-xs text-neutral-500">At Lv</span>
                 <select value={step.at} onChange={(e) => setStep(i, { at: Number(e.target.value) })} className={selectClass}>
-                  {levels(Math.max(SEAL_LEVEL, lv), maxLevelOf(data.classes[from])).map((l) => (
+                  {levels(Math.max(lv, options.find((c) => c.to === step.to)?.minLevel ?? 1), maxLevelOf(data.classes[from])).map((l) => (
                     <option key={l} value={l}>
                       {l}
                     </option>
                   ))}
                 </select>
               </label>
-              <button type="button" onClick={() => update({ steps: plan.steps.slice(0, i) })} className="rounded-md bg-neutral-800 px-2 py-1 text-xs text-neutral-300 hover:bg-neutral-700">
+              <button type="button" onClick={() => update({ steps: steps.slice(0, i) })} className="rounded-md bg-neutral-800 px-2 py-1 text-xs text-neutral-300 hover:bg-neutral-700">
                 Remove
               </button>
             </div>
           ))}
+          {dropped && (
+            <p className="text-xs text-amber-400">
+              This plan had {data.classes[current]?.name ?? 'a class'} changing to {data.classes[dropped.to]?.name ?? dropped.to}, which the game's seals
+              don't allow; it and anything after it are left out.{' '}
+              <button type="button" onClick={() => update({ steps })} className="underline hover:text-amber-300">
+                Remove them
+              </button>
+            </p>
+          )}
           <div className="flex flex-wrap items-end gap-3">
-            {plan.steps.length < MAX_STEPS && nextOptions.length > 0 && (
+            {steps.length < MAX_STEPS && nextOptions.length > 0 && (
               <button
                 type="button"
-                onClick={() => update({ steps: [...plan.steps, { at: maxLevelOf(finalClass), to: (finalClass.promotesTo[0] ?? nextOptions[0]) as string }] })}
+                onClick={() =>
+                  update({ steps: [...steps, { at: maxLevelOf(finalClass), to: (nextOptions.find((c) => c.seal === 'master') ?? nextOptions[0]).to }] })
+                }
                 className="rounded-md bg-neutral-800 px-3 py-1 text-sm text-neutral-300 hover:bg-neutral-700"
               >
                 Add a class change
@@ -395,9 +423,13 @@ export function Fe13Planner({ data: raw }: { data: Fe13Data }) {
           </div>
         </div>
         <p className="text-xs text-neutral-500">
-          Average stats: each level adds the personal growth and the class's. Stats stop at the class's maximums plus the unit's modifiers
-          (green). A Master Seal promotes and a Second Seal changes to any class of the unit's set, from Lv {SEAL_LEVEL}; the new class
-          starts at Lv 1 and its bases replace the old one's (Serenes Forest; not traced in the game's code).
+          Average stats: each level adds the personal growth and the class's, and a level that gains nothing is rolled once more, so the
+          averages run a little above the growths. A stat stops growing at the class's maximum plus the unit's modifiers (green). A
+          Master Seal promotes from Lv 10. A Second Seal changes to a class of the unit's set once promoted, or from Lv 10; into what
+          those classes promote to only once promoted and at Lv 10, or at Lv 30 in a special class; and into the unit's own class at its
+          top level. The new class starts at Lv 1 with its own bases, and every point gained is kept: a stat over the new class's maximum
+          shows held there (the small number is what's kept) and comes back in a class with higher ones. From the game's program
+          (level-ups 0x2cef88, seals 0x2d4d3c and 0x2cff38, the class change 0x2d0fb8).
           {child
             ? ` As ${child.fixed.unit.name} and ${child.other.unit.name}'s child, with what they inherit (the Marriage Planner).`
             : unit.parent
@@ -408,6 +440,7 @@ export function Fe13Planner({ data: raw }: { data: Fe13Data }) {
           rows={stages.map((st, i) => ({
             label: `${data.classes[st.classId].name} Lv ${st.level}${i === 0 ? ' (joins)' : ''}`,
             values: st.stats,
+            raw: st.raw,
             caps: capsOf(data.classes[st.classId], modifiers),
           }))}
         />
@@ -482,7 +515,7 @@ const button = 'rounded-md bg-neutral-800 px-3 py-1 text-sm text-neutral-300 hov
 const primaryButton = 'rounded-md bg-violet-600 px-3 py-1 text-sm font-medium text-white hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-40'
 
 const INHERITANCE_NOTE =
-  "A child's growths are their own, their mother's and their father's added and divided by 3 (rounded down); their modifiers both parents' added, plus 1 (no +1 for a Morgan whose other parent is a child); their bases as they join both parents' current stats less their class's bases, plus the child's own, divided by 3, plus their class's bases. A child takes both parents' classes for their gender, but never Lord (only Lucina has it), Dancer or Conqueror; Taguel and Manakete pass only to Morgan. Morgan starts in the other parent's first class (Tactician if that's Lord, Dancer or Conqueror). From Serenes Forest and the Fire Emblem Wiki, not traced in the game's code; the gender swaps (Olivia's son gets Mercenary and Barbarian) are the game's own class sets. A parent's current stats are their Unit Planner plan's last row, or as they join."
+  "A child's growths are their own, their mother's and their father's added and divided by 3, rounded down. Their maximums take both parents' modifiers, plus 1 on every stat but HP (a Morgan whose other parent is a child gets that child's own +1, not a second). They join with their own stats plus a third of how far each parent is above them in each stat, rounded down; a parent below them adds nothing, so a child never joins below their own. A parent's stats are their Unit Planner plan's last row, or as they join, counting every point gained even past a maximum. A child takes both parents' classes for their gender (Olivia's son gets Mercenary and Barbarian for her Dancer and Pegasus Knight), but never Lord, which only Lucina has, or Dancer; Taguel and Manakete reach only Morgan. A child with the Avatar as a parent gets every regular class of their gender. Morgan starts in the other parent's first class, or as a Tactician after a Lord or Dancer. A child parent of Morgan's passes on what they inherited themselves. All from the game's program: growths 0x27d230, maximums 0x2c48f8, the join 0x3a44d0, the parents 0x27c0a8, classes 0x2cff38 and 0x214098, Morgan's class 0x27c150."
 
 function sourceText(data: Fe13Data, p: Fe13Parent): string {
   const at = `${data.classes[p.from.classId].name} Lv ${p.from.level}`
@@ -508,8 +541,7 @@ function ChildCard({ data, result }: { data: Fe13Data; result: Fe13Child }) {
       </div>
       {other.via && (
         <p className="text-xs text-neutral-400">
-          {other.unit.name} passes on what they inherited from {other.via.fixed.unit.name} and {other.via.other.unit.name} (assumed: the
-          sources only say Morgan gets no +1).
+          {other.unit.name} passes on what they inherited from {other.via.fixed.unit.name} and {other.via.other.unit.name}.
         </p>
       )}
       {other.via === null && (

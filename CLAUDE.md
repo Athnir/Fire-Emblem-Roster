@@ -45,6 +45,10 @@ new rule, add it here.
 - **Fates' child base stats stay a low estimate** (user, 2026-11-01): the parents count at their join stats and the levels
   above 10 grow at the child's personal growth alone. There's no field for the parents' real stats (it's complex enough); the
   screens say a child usually comes out a point or two higher.
+- **Awakening's children join as the game works it out** (user, 2026-11-02): their own stats plus a third of how far each parent
+  is above them, from the parents' Unit Planner stats (the program, 0x3a44d0). The parents' stats are already in the planner there.
+- **A planner keeps every class change the game allows, up to 30** (user, 2026-11-02, Awakening): the game has no limit; 30 is
+  past what most playthroughs use, and can be raised.
 
 ## Saved data
 

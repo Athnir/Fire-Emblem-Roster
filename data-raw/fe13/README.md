@@ -79,20 +79,57 @@ From the user's DLC dump (`dlc/E0xx`, each episode's files; `dlc/<content id>/E0
   example. Lodestar's record teaches no skills. When an episode opens (after Chapter 4) and the Path of a Grandmaster episodes'
   conditions are Serenes Forest's.
 
-## Not traced in the code (taken from Serenes Forest or the Fire Emblem Wiki)
+## The program (`code.bin`)
 
-- Changing class adds the difference between the two classes' bases and starts at Lv 1; seals work from Lv 10.
-- Inheritance (`childOf` in `src/awakening/logic.ts`; Serenes Forest's children, base-stat, growth and modifier pages and the Fire
-  Emblem Wiki's inheritance page; tested against Serenes Forest's worked examples, Nah with Donnel and Severa with Henry):
-  - growths: the child's own, the mother's and the father's added, a third, rounded down;
-  - modifiers: both parents' added, plus 1 (no +1 for a Morgan whose other parent is a child);
-  - bases as they join: both parents' current stats less their class's bases, plus the child's own (+28), a third, plus the start
-    class's bases (the rounding is assumed). A parent's current stats are their Unit Planner plan's last row, or as they join;
-  - classes: the child's own set and each parent's set for the child's gender (the game's swaps), but never Lord (only Lucina has it),
-    Dancer or Conqueror; Taguel and Manakete pass only to Morgan;
-  - Morgan starts in the other parent's first class (Tactician after a Lord, Dancer or Conqueror).
-- Assumed, not in the sources: a child married to the Avatar passes Morgan what they inherited themselves (growths, modifiers,
-  classes) when their own parents are in the plan.
-- A special class (neither promoted nor promoting: Villager, Dancer, Taguel, Manakete, Conqueror, Lodestar, Dread Fighter, Bride) goes
-  to Lv 30, the rest to 20 (no field for it was found in JobData).
+The rules the planners follow are read in the game's program: `data-raw/fe13/romfs/code.bin`, decompressed, loaded at 0x100000 (`scripts/fe13_code.py`
+has the disassembly helpers). Nothing from it is committed but what's derived here. In a unit: +0x64 the person, +0x68 the class, +0x74 the
+Avatar's asset and flaw, +0x78 the parents (the father's record at +0, the mother's at +0x1c: person, asset, flaw, and that parent's own
+two parents), +0x84 the points gained in each stat, +0x8d the level, +0xb4 the five equipped skills, +0xfc Boots.
+
+- **Stats (0x2f3ac0):** the person's base, plus the asset and flaw, plus the class's base, plus the points gained, held at the maximum.
+- **Maximums (0x2c48f8):** the class's, plus the person's modifier, plus the asset and flaw (0x419d28), plus for a child both parents'
+  modifiers (0x264768: each parent's own, with their asset and flaw, and a child parent's own parents', without their +1), plus 1 on every
+  stat but HP; plus 10 on every stat but HP with Limit Breaker.
+- **Growths (0x27d230):** the person's, with the asset and flaw (0x264858); a child's is their own and both parents' added and divided by 3,
+  rounded down (a child parent counts with what they inherited). Then the class's, then 20 more with Aptitude.
+- **Level-ups (0x2cef88):** each stat's growth gives a point per 100 and a chance at the rest, while the stat is under its maximum. A level
+  that rolls nothing is rolled once more, unless a growth is 100 or more.
+- **Top levels (0x2d0ad8):** 20 for a class that's promoted or promotes, else 30 (Villager, Dancer, Taguel, Manakete, Conqueror, Lodestar,
+  Dread Fighter, Bride).
+- **Seals (0x2d4d3c):** a Master Seal needs Lv 10 and a class that promotes; a Second Seal works once promoted, or from Lv 10.
+- **The Second Seal's list (0x2cff38):**
+  - Every regular class of the unit's gender (0x214098) when the unit's, a parent's or a grandparent's set holds the Tactician, plus
+    Manakete or Taguel for a unit flagged as one.
+  - The class sets for the unit's gender of seven people: the unit, both parents and the four grandparents. Lord, Great Lord and Dancer
+    come only from the unit's own.
+  - What those classes promote to, only for a promoted unit at Lv 10 or more, or an unpromoted one at Lv 30.
+  - The unit's own class at its top level. The add step (0x2bbde4) skips a class already listed, and the current one below its top level.
+- **Changing class (0x2d0fb8):** the new class at Lv 1 with no EXP; the points gained are kept, and HP is held to the new maximum. A stat
+  over the new class's maximum shows held there and comes back in a class with higher ones.
+- **The Dread Fighter's seal (0x214278):** its own list of one class, for men only, once promoted or from Lv 10.
+- **Movement (0x2cd408):** the class's, plus Boots (up to 2), plus 1 for Movement +1, plus what a pair-up gives. No person has Movement of
+  their own: Chrom's is 5, Cynthia's and Gerome's 7 (Serenes Forest gives 6, 8 and 8).
+- **A child joining (0x3a44d0):** after their parents' records are filled in (0x27c0a8), each stat gains a third, rounded down, of how far
+  each parent is above the child (a parent below adds nothing). A parent's stat and the child's are the person's base plus the asset and
+  flaw plus the points gained, before the maximums; the class's base isn't counted. So a child never joins below their own stats. Then
+  Morgan takes a class, then the skills.
+- **Morgan's class (0x27c150):** the other parent's first class for Morgan's gender (person +108 for a son, +120 for a daughter); after a
+  Lord, Great Lord or Dancer, the Tactician. A Manakete or Taguel sets Morgan's flag for it.
+- **Skills a child inherits (0x27bc80):** one from the father, then one from the mother: the parent's equipped skills from the last slot up,
+  the first that can pass (RemovableSkillData +0x14: 0 any child, 2 a manakete child, 3 a taguel child; 1 Special Dance, 4 the enemies'
+  skills and 5 the DLC's never) and that the child doesn't know. Up to two known ones are passed over; a third ends the search. Chrom or
+  Lucina as the parent gives a daughter Aether and a son Rightful King instead, and nothing if the child has it. Walhart gives Conquest,
+  Aversa Shadowgift. The app doesn't model this: the Skill Planner's pool has every skill a child could inherit in some playthrough.
+- **Who can marry (0x2d9e08):** not a parent or child (0x2d9dac), nor a sibling: a shared father or mother (0x2b5b50).
+- **Chrom's wife (ev::HeroMarrige, 0x3b2700):** at the end of Chapter 11, the unmarried candidate he has the highest support with, from C
+  up; a tie goes to whoever is first of the Avatar, Sully, Sumia, Maribelle and Olivia; failing that, anyone he has some support with. With
+  no one, he's marked married to the maiden (0x2afefc), and his spouse is then the person record `PID_ダミー` (0x2ef8f8): all zeros, no
+  classes, no skills.
+
+The app follows this in `src/awakening/logic.ts`: `childOf` and `parentOf` (inheritance), `classChanges` and `legalSteps` (the seals),
+`project` and `levelGain` (average stats).
+
+Taken from Serenes Forest, not the program:
+
+- What a script leaves to the player (Donnel's level, Gangrel's three talks, Walhart, Emmeryn and Aversa surviving), as above.
 - The SpotPass characters aren't listed (by choice).
