@@ -131,6 +131,20 @@ describe('data integrity', () => {
     expect(missing).toEqual([])
   })
 
+  it('every support runs only on routes both units are in', () => {
+    const REAL_ROUTES = ['Birthright', 'Conquest', 'Revelation'] as const
+    const routesOf = (route: readonly string[]) => (route.includes('all') ? REAL_ROUTES : route)
+    const outside: string[] = []
+    for (const p of supports) {
+      for (const route of routesOf(p.route)) {
+        for (const id of [p.characterA, p.characterB]) {
+          if (!routesOf(charactersById[id].route).includes(route)) outside.push(`${p.characterA} x ${p.characterB}: ${id} not in ${route}`)
+        }
+      }
+    }
+    expect(outside).toEqual([])
+  })
+
   it('every child possibleParents.father/mother id references a real character', () => {
     const missing: string[] = []
     for (const c of characters.filter((c) => c.isChild)) {

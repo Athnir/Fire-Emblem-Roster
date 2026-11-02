@@ -323,7 +323,9 @@ export const characters: Character[] = [
     personalSkill: 'Reciprocity', supportOptions: [], canMarry: [], isChild: false,
   },
   {
-    id: 'scarlet', name: 'Scarlet', gender: 'F', route: ['Birthright'], startingLevel: {Birthright: 1},
+    // Revelation: joins at the start of Chapter 16 (Lv 3) and leaves in Chapter 18 (Fire Emblem Wiki). Her supports can still be
+    // built in that window, on scouting and DLC maps, so she can marry Corrin M there (user, 2026-11-01). The bases are Birthright's.
+    id: 'scarlet', name: 'Scarlet', gender: 'F', route: ['Birthright', 'Revelation'], startingLevel: {Birthright: 1, Revelation: 3},
     startingClass: 'Wyvern Rider', secondaryClass: 'Outlaw', tertiaryClass: 'Knight', joinClass: 'Wyvern Lord',
     baseStats: s(30, 23, 4, 17, 19, 14, 22, 6), growthRates: s(30, 45, 20, 40, 50, 40, 25, 20),
     statCaps: s(60, 33, 25, 33, 29, 28, 35, 26), maxStatModifiers: s(0, 2, 0, 0, 1, -1, 1, -2),
