@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { FE13_ASSETS, FE13_CHAPTERS, FE13_CLASSES, FE13_UNITS } from '../../data/fe13/fe13Units'
-import { capsOf, childOf, classChanges, classSetOf, isFamilyBlocked, legalSteps, levelGain, project, withAvatar, type Fe13Data } from '../logic'
+import { FE13_ASSETS, FE13_CHAPTERS, FE13_CLASSES, FE13_MAIDEN, FE13_UNITS } from '../../data/fe13/fe13Units'
+import { capsOf, childOf, classChanges, classSetOf, fixedShare, isFamilyBlocked, legalSteps, levelGain, project, spousesOf, withAvatar, type Fe13Data } from '../logic'
 import { FE13_STATS } from '../types'
 
-const data: Fe13Data = { chapters: FE13_CHAPTERS, units: FE13_UNITS, classes: FE13_CLASSES }
+const data: Fe13Data = { chapters: FE13_CHAPTERS, units: FE13_UNITS, classes: FE13_CLASSES, maiden: FE13_MAIDEN }
 const marry = (...pairs: [string, string][]) => Object.fromEntries(pairs.flatMap(([a, b]) => [[`fe13-${a}`, `fe13-${b}`], [`fe13-${b}`, `fe13-${a}`]]))
 const unit = (id: string) => FE13_UNITS.find((u) => u.id === `fe13-${id}`)!
 const classNames = (ids: string[]) => ids.map((id) => FE13_CLASSES[id].name)
@@ -79,6 +79,27 @@ describe('Awakening inheritance', () => {
     const alone = childOf(data, unit('morgan-f'), marry(['avatar-m', 'lucina']))!
     expect(alone.other.via).toBeNull()
     expect(alone.modifiers.str).toBe(avatar.modifiers.str + unit('lucina').modifiers.str)
+  })
+
+  it("gives Lucina only Chrom's side when he marries the village maiden (PID_ダミー, all zeros)", () => {
+    expect(spousesOf(data, unit('chrom')).map((u) => u.id)).toContain('fe13-maiden')
+    expect(FE13_STATS.every((s) => FE13_MAIDEN.personal[s] === 0 && FE13_MAIDEN.growths[s] === 0)).toBe(true)
+    const r = childOf(data, unit('lucina'), marry(['chrom', 'maiden']))!
+    expect(FE13_STATS.map((s) => r.growths[s])).toEqual([30, 25, 10, 28, 28, 50, 20, 15])
+    expect(r.modifiers.str).toBe(unit('chrom').modifiers.str + 1)
+    expect(classNames(r.classes)).toEqual(['Lord', 'Cavalier', 'Archer'])
+    // She adds nothing to the join: Lucina's own stats plus a third of how far Chrom is above her.
+    const lucina = unit('lucina')
+    for (const s of FE13_STATS) {
+      const own = lucina.personal[s]
+      expect(r.raw[s]).toBe(own + Math.floor(Math.max(0, unit('chrom').personal[s] - own) / 3) + FE13_CLASSES[lucina.classId].bases[s])
+    }
+  })
+
+  it("shows what a child always gets: their fixed parent's classes and modifiers, and the +1", () => {
+    const share = fixedShare(data, unit('lucina'))!
+    expect(classNames(share.classes)).toEqual(['Lord', 'Cavalier', 'Archer'])
+    expect(share.modifiers.spd).toBe(unit('chrom').modifiers.spd + 1)
   })
 
   it('blocks marrying a sibling or a parent in the plan', () => {

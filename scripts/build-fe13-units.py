@@ -8,6 +8,7 @@ Run: python scripts/build-fe13-units.py
 import json
 import os
 
+import fe13_code as C
 import fe13_data as D
 from fe13_bin import Bin, ROMFS
 from fates_lz import decompress
@@ -20,8 +21,7 @@ OUT = os.path.join(ROOT, 'src', 'data', 'fe13', 'fe13Units.ts')
 STATS = ['hp', 'str', 'mag', 'skl', 'spd', 'lck', 'def', 'res']
 PERSON = 568
 AVATARS = {'PID_プレイヤー男': 'Avatar (M)', 'PID_プレイヤー女': 'Avatar (F)'}
-# Classes the Avatar can't take (Serenes Forest): the special classes.
-AVATAR_EXCLUDED = {'Lord', 'Dancer', 'Villager', 'Manakete', 'Taguel', 'Conqueror', 'Lodestar', 'Dread Fighter', 'Bride'}
+TACTICIAN = {'JID_戦術師男', 'JID_戦術師女'}
 MORGAN = {'PID_マーク男': 'Morgan (M)', 'PID_マーク女': 'Morgan (F)'}
 # What the scripts leave to the player, in Serenes Forest's words (its recruitment page).
 NOTES = {
@@ -94,12 +94,15 @@ def main():
         if not c['name']:
             c['name'] = dlc_text.get(gd.str(job_recs[i] + 16))
     found = joins()
+    full_list = C.full_class_list()
 
-    def avatar_classes(female):
-        # The base classes a playable unit can be (one some person's set names), of the gender, but the special ones.
-        named = {b.str(o + k) for o, _ in b.labels for k in (108, 112, 116, 120, 124, 128) if (o + k) in ptrs}
-        return [i for i, c in enumerate(jobs) if c['jid'] in named and c['female'] == female and not c['promoted']
-                and c['name'] not in AVATAR_EXCLUDED]
+    def class_set(o, gender):
+        # A person's set for a gender. One that names the Tactician (the Avatar's, and the DLC templates') opens every regular class
+        # of that gender: the Second Seal's list adds them (0x2cff38).
+        jids = [b.str(o + k) for k in ((108, 112, 116) if gender == 'male' else (120, 124, 128)) if (o + k) in ptrs and b.str(o + k) in jid_index]
+        if TACTICIAN & set(jids):
+            jids = [j for j in jids if j not in TACTICIAN] + full_list[gender]
+        return [f'c{jid_index[j]}' for j in dict.fromkeys(jids)]
 
     def name_of(pid):
         return AVATARS.get(pid) or MORGAN.get(pid) or D.name_of(b.str(rec[pid] + 20))
@@ -124,12 +127,8 @@ def main():
         bases = {s: cbase[i] + personal[i] for i, s in enumerate(STATS)}
         bases['mov'] = c['mov']
         sets = {}
-        for g, offs in (('male', (108, 112, 116)), ('female', (120, 124, 128))):
-            sets[g] = [f'c{jid_index[b.str(o + k)]}' for k in offs if (o + k) in ptrs and b.str(o + k) in jid_index]
-            if pid in AVATARS:
-                # The Avatar's record names only the Tactician: a Second Seal opens every base class of their gender but the special
-                # ones (Serenes Forest).
-                sets[g] = [f'c{i}' for i in avatar_classes(g == 'female')]
+        for g in ('male', 'female'):
+            sets[g] = class_set(o, g)
             used.update(int(x[1:]) for x in sets[g])
         supports = []
         k = 136
@@ -176,9 +175,8 @@ def main():
         cbase = c['raw'][24:32]
         sets = {}
         for g in ('male', 'female'):
-            # Their own class and every regular class of their gender, as the Avatar (Serenes Forest's class sets).
-            own = [cls] if r['female'] == (g == 'female') else []
-            sets[g] = [f'c{i}' for i in dict.fromkeys(own + avatar_classes(g == 'female'))]
+            # The template's set: the Tactician (and Marth's Lodestar), so every regular class of their gender.
+            sets[g] = class_set(t, g)
             used.update(int(x[1:]) for x in sets[g])
         chapter = f'fe13-{r["episode"].lower()}'
         dlc_chapters.append({'id': chapter, 'label': f'DLC: {r["title"]}'})
@@ -227,12 +225,25 @@ def main():
             'id': f'c{i}', 'name': c['name'], 'female': c['female'], 'promoted': promoted,
             'bases': {**dict(zip(STATS, raw[24:32])), 'mov': c['mov']}, 'caps': dict(zip(STATS, raw[48:56])),
             'growths': g, 'skills': learn, 'promotesTo': [f'c{j}' for j in promotions(i)],
-            # A special class (neither promoted nor promoting: Villager, Dancer, Taguel, Manakete, Conqueror and the DLC's Lodestar,
-            # Dread Fighter, Bride) goes to Lv 30 (Serenes Forest's class sets).
+            # The top level (0x2d0ad8): 30 for a class neither promoted nor promoting (Villager, Dancer, Taguel, Manakete, Conqueror and
+            # the DLC's Lodestar, Dread Fighter, Bride), else 20.
             **({'maxLevel': 30} if not promoted and not promotions(i) else {}),
         }
 
     chapters = [{'id': f'fe13-{k.lower()}', 'label': label(k)} for k in keys] + dlc_chapters
+
+    # The village maiden: when Chrom marries no one, ev::HeroMarrige marks him married to her, and his spouse is then the person
+    # PID_ダミー (0x2ef8f8): no class (JID_ダミー男 has no data), no sets, and every stat, growth and modifier 0.
+    o = rec['PID_ダミー']
+    raw = b.d[0x20 + o:0x20 + o + PERSON]
+    personal = dict(zip(STATS, [s8(x) for x in raw[28:36]]))
+    maiden = {
+        'id': 'fe13-maiden', 'name': 'Village maiden', 'female': True, 'classId': '', 'level': raw[69], 'joinChapter': '',
+        'join': {'how': 'event', 'note': 'Chrom marries her at the end of Chapter 11 if he has no one (ev::HeroMarrige).'},
+        'bases': {**personal, 'mov': 0}, 'personal': personal, 'growths': dict(zip(STATS, G.person_growths(raw, o))),
+        'modifiers': dict(zip(STATS[1:], [s8(x) for x in raw[53:60]])),
+        'classSets': {g: class_set(o, g) for g in ('male', 'female')}, 'supports': [], 'maiden': True,
+    }
 
     def js(v):
         return json.dumps(v, ensure_ascii=False)
@@ -250,6 +261,9 @@ def main():
         'export const FE13_CLASSES: Record<string, Fe13Class> = {',
         *[f'  {js(k)}: {js(v)},' for k, v in classes.items()],
         '}',
+        '',
+        "// Chrom's wife when he marries no one: the program's PID_ダミー (0x2ef8f8), all zeros.",
+        f'export const FE13_MAIDEN: Fe13Unit = {js(maiden)}',
         '',
         "// The Avatar's asset and flaw (GameData's PersonalityData): what each changes in the bases, growths and modifiers.",
         'export const FE13_ASSETS: Fe13Asset[] = [',

@@ -58,6 +58,8 @@ export interface Fe13Unit {
   /** The skills they join with (the DLC recruits). */
   skills?: string[]
   supports: Fe13Support[]
+  /** The village maiden Chrom marries when he has no one: not a unit, a person record of zeros with no class (PID_ダミー). */
+  maiden?: true
 }
 
 export interface Fe13Class {

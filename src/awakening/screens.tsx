@@ -10,6 +10,7 @@ import {
   childrenOf,
   classChanges,
   classSetOf,
+  fixedShare,
   isFamilyBlocked,
   isMorgan,
   legalSteps,
@@ -17,6 +18,7 @@ import {
   sameUnit,
   skillsOf,
   spousesOf,
+  unitsOf,
   withAvatar,
   type Fe13Child,
   type Fe13Data,
@@ -198,6 +200,9 @@ function UnitDetail({ data, unit }: { data: Fe13Data; unit: Fe13Unit }) {
   const total = {} as Fe13Stats
   for (const s of FE13_STATS) total[s] = unit.growths[s] + (cls.growths?.[s] ?? 0)
   const spouses = spousesOf(data, unit)
+  // A child always has their fixed parent's classes and modifiers, and the +1; the other parent adds theirs.
+  const share = fixedShare(data, unit)
+  const modifiers = share?.modifiers ?? unit.modifiers
   return (
     <div className={panel}>
       <div className="flex flex-col items-start gap-4 sm:flex-row">
@@ -227,7 +232,8 @@ function UnitDetail({ data, unit }: { data: Fe13Data; unit: Fe13Unit }) {
           )}
           <div>
             <span className="text-neutral-500">Classes (Second Seal): </span>
-            {names(data, classSetOf(unit))}
+            {names(data, share?.classes ?? classSetOf(unit))}
+            {share && <span className="text-neutral-500"> (theirs and {share.parent.name}'s; the other parent adds theirs)</span>}
           </div>
           {spouses.length > 0 && (
             <div>
@@ -244,14 +250,15 @@ function UnitDetail({ data, unit }: { data: Fe13Data; unit: Fe13Unit }) {
           { label: unit.parent ? 'Bases (own part)' : 'Bases', values: unit.bases },
           { label: 'Personal growths', values: unit.growths, suffix: '%' },
           { label: `Growths as a ${cls.name}`, values: total, suffix: '%' },
-          { label: 'Modifiers', values: unit.modifiers, signed: true },
-          { label: `Maximums (${cls.name})`, values: capsOf(cls, unit.modifiers) },
+          { label: share ? `Modifiers (${share.parent.name}'s, +1)` : 'Modifiers', values: modifiers, signed: true },
+          { label: `Maximums (${cls.name})`, values: capsOf(cls, modifiers) },
         ]}
       />
-      {unit.parent && (
+      {share && (
         <p className="text-xs text-neutral-500">
-          A child joins with at least these, the class's bases plus their own: each parent above them in a stat adds a third of the
-          difference. The Marriage Planner shows what they join with.
+          A child joins with at least these bases, the class's plus their own: each parent above them in a stat adds a third of the
+          difference. Their growths are their own and both parents' averaged, and their modifiers and maximums also take the other
+          parent's modifiers. The Marriage Planner shows them with both parents.
         </p>
       )}
     </div>
@@ -518,6 +525,7 @@ const INHERITANCE_NOTE =
   "A child's growths are their own, their mother's and their father's added and divided by 3, rounded down. Their maximums take both parents' modifiers, plus 1 on every stat but HP (a Morgan whose other parent is a child gets that child's own +1, not a second). They join with their own stats plus a third of how far each parent is above them in each stat, rounded down; a parent below them adds nothing, so a child never joins below their own. A parent's stats are their Unit Planner plan's last row, or as they join, counting every point gained even past a maximum. A child takes both parents' classes for their gender (Olivia's son gets Mercenary and Barbarian for her Dancer and Pegasus Knight), but never Lord, which only Lucina has, or Dancer; Taguel and Manakete reach only Morgan. A child with the Avatar as a parent gets every regular class of their gender. Morgan starts in the other parent's first class, or as a Tactician after a Lord or Dancer. A child parent of Morgan's passes on what they inherited themselves. All from the game's program: growths 0x27d230, maximums 0x2c48f8, the join 0x3a44d0, the parents 0x27c0a8, classes 0x2cff38 and 0x214098, Morgan's class 0x27c150."
 
 function sourceText(data: Fe13Data, p: Fe13Parent): string {
+  if (p.unit.maiden) return "the village maiden, all zeros (the game's PID_ダミー)"
   const at = `${data.classes[p.from.classId].name} Lv ${p.from.level}`
   return `${p.unit.name} ${p.from.planned ? `from their Unit Planner plan (${at})` : `as they join (${at})`}`
 }
@@ -573,8 +581,8 @@ function ChildCard({ data, result }: { data: Fe13Data; result: Fe13Child }) {
 /** The plan's marriages as a tree: each marriage, its children, and under a married child their own marriage (Morgan's other parent
  * can be a child). */
 function PlanTree({ data, spouses, onRemove }: { data: Fe13Data; spouses: Record<string, string>; onRemove: (id: string) => void }) {
-  const byId = new Map(data.units.map((u) => [u.id, u]))
-  const order = new Map(data.units.map((u, i) => [u.id, i]))
+  const byId = new Map(unitsOf(data).map((u) => [u.id, u]))
+  const order = new Map(unitsOf(data).map((u, i) => [u.id, i]))
   const pairs = Object.entries(spouses).filter(([a, b]) => (order.get(a) ?? 0) < (order.get(b) ?? 0))
   // A marriage hangs under the marriage that gave one of the two as a child.
   const fromPair = (id: string) => {
@@ -694,7 +702,7 @@ export function Fe13MarriagePlanner({ data: raw }: { data: Fe13Data }) {
   const clearSpouses = useFe13Store((s) => s.clearSpouses)
   const [primaryId, setPrimaryId] = useState('')
   const [spouseId, setSpouseId] = useState('')
-  const byId = new Map(data.units.map((u) => [u.id, u]))
+  const byId = new Map(unitsOf(data).map((u) => [u.id, u]))
   const primary = byId.get(primaryId)
   const spouse = byId.get(spouseId)
   useScreenshotUnit(primary)
@@ -794,8 +802,9 @@ export function Fe13MarriagePlanner({ data: raw }: { data: Fe13Data }) {
         <PlanTree data={data} spouses={spouses} onRemove={(id) => marry(id, null)} />
         {!spouses['fe13-chrom'] && (
           <p className="text-xs text-neutral-500">
-            Chrom marries whoever he has the highest support with at the end of Chapter 11, or a village maiden (not a unit) if there's no
-            one; Lucina's numbers need his wife (the Fire Emblem Wiki).
+            At the end of Chapter 11 Chrom marries whoever he has the highest support with (C or above), or the village maiden if he has
+            no one. Pick her as his wife to see that Lucina: the maiden is a person record of zeros, so Lucina takes only Chrom's side
+            (ev::HeroMarrige, 0x3b2700).
           </p>
         )}
       </div>
@@ -850,7 +859,7 @@ export function Fe13ParentChecker({ data: raw }: { data: Fe13Data }) {
   const [ids, setIds] = useState<string[]>([])
   const [add, setAdd] = useState('')
   const [nested, setNested] = useState<Record<string, string>>({})
-  const byId = new Map(data.units.map((u) => [u.id, u]))
+  const byId = new Map(unitsOf(data).map((u) => [u.id, u]))
   const child = byId.get(childId)
   useScreenshotUnit(child)
   const fixed = child?.parent ? byId.get(child.parent) : undefined

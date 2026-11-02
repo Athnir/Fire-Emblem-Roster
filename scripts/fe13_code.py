@@ -112,3 +112,43 @@ def literal_users(lit):
             if a + 8 + imm == lit:
                 out.append(a)
     return out
+
+
+def cstr(addr):
+    o = addr - BASE
+    return CODE[o:CODE.index(b'\0', o)].decode('shift_jis')
+
+
+SECOND_SEAL_LIST = 0x2cff38
+LIST_ADD = 0x2bbde4
+
+
+def full_class_list():
+    """The classes the Second Seal's list (0x2cff38) adds for a unit whose own, parents' or grandparents' set holds the Tactician
+    (checked by 0x214098): {'female': [JID...], 'male': [JID...]}, in the order the program adds them. Each is the same few
+    instructions: the name's address (`add r0, pc, #n`), its class (0x2de558), then the add step (`mov r1, r0`, `mov r0, r8`, a call to
+    0x2bbde4). The Manakete and Taguel, added after a check of the unit's SID_マムクート or SID_ラグズ flag, are left out."""
+    out = {'female': [], 'male': []}
+    ins = []
+    # Word by word: the routine's string pool sits between its two halves, and capstone stops at the first word it can't read.
+    for a in range(SECOND_SEAL_LIST, SECOND_SEAL_LIST + 0x800, 4):
+        got = dis(a, 1)
+        ins.append(got[0] if got else (a, '.word', ''))
+    flagged = False
+    for k, (a, m, o) in enumerate(ins):
+        if m not in ('add', 'sub') or ', pc, #' not in o or o.count('#') != 1:
+            continue
+        s = cstr(a + 8 + int(o.split('#')[1], 0) * (1 if m == 'add' else -1))
+        if s in ('SID_マムクート', 'SID_ラグズ'):
+            flagged = True
+            continue
+        # (A `nop` can sit between the steps.)
+        tail = [(x[1], x[2]) for x in ins[k + 1:k + 7] if x[1] != 'nop'][:4]
+        if not s.startswith('JID_') or tail != [('bl', '#0x2de558'), ('mov', 'r1, r0'), ('mov', 'r0, r8'), ('bl', f'#{LIST_ADD:#x}')]:
+            continue
+        if not flagged:
+            gender = 'female' if s.endswith('女') else 'male'
+            if s not in out[gender]:
+                out[gender].append(s)
+        flagged = False
+    return out

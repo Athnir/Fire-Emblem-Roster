@@ -6,6 +6,15 @@ export interface Fe13Data {
   classes: Record<string, Fe13Class>
   /** The Avatar's asset and flaw table. */
   assets?: Fe13Asset[]
+  /** Chrom's wife when he marries no one (PID_ダミー). */
+  maiden?: Fe13Unit
+}
+
+const CHROM = 'fe13-chrom'
+
+/** Everyone a marriage can name: the units, and the village maiden. */
+export function unitsOf(data: Fe13Data): Fe13Unit[] {
+  return data.maiden ? [...data.units, data.maiden] : data.units
 }
 
 export const MAX_LEVEL = 20
@@ -165,10 +174,13 @@ export function skillsOf(data: Fe13Data, stages: Fe13Stage[]): string[] {
   return out
 }
 
-/** The units a unit can marry: their S supports. */
+/** The units a unit can marry: their S supports, and for Chrom the village maiden, whom the game gives him when he has no one at the
+ * end of Chapter 11 (ev::HeroMarrige, 0x3b2700). */
 export function spousesOf(data: Fe13Data, unit: Fe13Unit): Fe13Unit[] {
   const byId = new Map(data.units.map((u) => [u.id, u]))
-  return unit.supports.filter((s) => s.levels[3] !== null).map((s) => byId.get(s.partner)!).filter(Boolean)
+  if (unit.maiden) return [byId.get(CHROM)!].filter(Boolean)
+  const out = unit.supports.filter((s) => s.levels[3] !== null).map((s) => byId.get(s.partner)!).filter(Boolean)
+  return unit.id === CHROM && data.maiden ? [...out, data.maiden] : out
 }
 
 
@@ -243,13 +255,14 @@ function parentOf(data: Fe13Data, unit: Fe13Unit, female: boolean, spouses: Reco
   const stages = plan ? project(data, start, plan, { start: via?.raw ?? unit.bases, growths, modifiers, set: via?.classes ?? classSetOf(unit) }) : null
   const last = stages?.[stages.length - 1] ?? { classId: start.classId, level: unit.level, raw: via?.raw ?? unit.bases }
   const personal = {} as Fe13Stats
-  for (const s of FE13_STATS) personal[s] = last.raw[s] - data.classes[last.classId].bases[s]
+  // The maiden has no class: her stats are her own zeros.
+  for (const s of FE13_STATS) personal[s] = last.raw[s] - (data.classes[last.classId]?.bases[s] ?? 0)
   return { unit, growths, modifiers, classes, personal, from: { classId: last.classId, level: last.level, planned: !!stages && stages.length > 1 }, via }
 }
 
 /** A child's inheritance once their fixed parent is married in `spouses` (both ways). */
 export function childOf(data: Fe13Data, child: Fe13Unit, spouses: Record<string, string>, plans: Record<string, Fe13Plan> = {}, depth = 0): Fe13Child | null {
-  const byId = new Map(data.units.map((u) => [u.id, u]))
+  const byId = new Map(unitsOf(data).map((u) => [u.id, u]))
   const fixedUnit = child.parent ? byId.get(child.parent) : undefined
   const otherId = fixedUnit ? spouses[fixedUnit.id] : undefined
   const otherUnit = otherId ? byId.get(otherId) : undefined
@@ -274,6 +287,16 @@ export function childOf(data: Fe13Data, child: Fe13Unit, spouses: Record<string,
     bases[s] = Math.min(caps[s], raw[s])
   }
   return { child, fixed, other, startClass, growths, modifiers, classes, bases, raw }
+}
+
+/** What a child always gets, whoever the other parent is: their own classes and what their fixed parent passes on, and the fixed
+ * parent's modifiers plus 1 (a Morgan whose other parent is a child gets that child's own +1 instead, so still one). */
+export function fixedShare(data: Fe13Data, child: Fe13Unit): { parent: Fe13Unit; classes: string[]; modifiers: Omit<Fe13Stats, 'hp'> } | null {
+  const parent = child.parent ? data.units.find((u) => u.id === child.parent) : undefined
+  if (!parent) return null
+  const modifiers = {} as Omit<Fe13Stats, 'hp'>
+  for (const s of FE13_STATS.slice(1) as Exclude<Fe13Stat, 'hp'>[]) modifiers[s] = parent.modifiers[s] + 1
+  return { parent, classes: [...new Set([...classSetOf(child), ...passedOn(data, classSetOf(parent, child.female), child)])], modifiers }
 }
 
 /** A child's parents in the plan: the fixed one, and their spouse if married. */
