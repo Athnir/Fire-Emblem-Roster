@@ -11,6 +11,7 @@ import {
 } from '../data/fe5/fe5Units'
 import { TelliusBulkUpload } from '../tellius/TelliusBulkUpload'
 import type { TelliusData } from '../tellius/types'
+import { Fe5BulkViewer } from '../thracia/bulk'
 import type { Fe5Data } from '../thracia/logic'
 import { Fe5Planner } from '../thracia/planner'
 import { Fe5Info, Fe5Roster, Fe5Supports } from '../thracia/screens'
@@ -37,6 +38,7 @@ const fe5: GameParts = {
     { id: 'roster', label: 'Roster', component: () => <Fe5Roster data={FE5_DATA} /> },
     { id: 'unit', label: 'Unit Planner', component: () => <Fe5Planner data={FE5_DATA} /> },
     { id: 'supports', label: 'Supports', component: () => <Fe5Supports data={FE5_DATA} /> },
+    { id: 'viewer', label: 'Bulk Viewer', component: () => <Fe5BulkViewer data={FE5_DATA} /> },
     { id: 'info', label: 'Info', component: () => <Fe5Info /> },
   ],
   bulkUpload: ({ onClose }) => <TelliusBulkUpload data={UPLOAD_DATA} title="Thracia 776" onClose={onClose} />,
