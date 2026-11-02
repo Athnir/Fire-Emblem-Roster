@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { FE13_ASSETS, FE13_CHAPTERS, FE13_CLASSES, FE13_MAIDEN, FE13_UNITS } from '../../data/fe13/fe13Units'
-import { capsOf, childOf, classChanges, classSetOf, fixedShare, isFamilyBlocked, legalSteps, levelGain, project, spousesOf, withAvatar, type Fe13Data } from '../logic'
+import { FE13_ASSETS, FE13_CHAPTERS, FE13_CLASSES, FE13_MAIDEN, FE13_SKILLS, FE13_UNITS } from '../../data/fe13/fe13Units'
+import { capsOf, childOf, classChanges, classSetOf, dlcClassesFor, fixedShare, isFamilyBlocked, legalSteps, levelGain, project, reachableSkills, spousesOf, withAvatar, type Fe13Data } from '../logic'
 import { FE13_STATS } from '../types'
 
-const data: Fe13Data = { chapters: FE13_CHAPTERS, units: FE13_UNITS, classes: FE13_CLASSES, maiden: FE13_MAIDEN }
+const data: Fe13Data = { chapters: FE13_CHAPTERS, units: FE13_UNITS, classes: FE13_CLASSES, maiden: FE13_MAIDEN, skills: FE13_SKILLS }
 const marry = (...pairs: [string, string][]) => Object.fromEntries(pairs.flatMap(([a, b]) => [[`fe13-${a}`, `fe13-${b}`], [`fe13-${b}`, `fe13-${a}`]]))
 const unit = (id: string) => FE13_UNITS.find((u) => u.id === `fe13-${id}`)!
 const classNames = (ids: string[]) => ids.map((id) => FE13_CLASSES[id].name)
@@ -190,5 +190,54 @@ describe('Average stats', () => {
     for (const s of pk) expect([s.stats.lck, s.raw.lck]).toEqual([cap, warCleric.raw.lck])
     // A Falcon Knight shows the kept points again.
     expect(stages.find((s) => s.classId === id('Falcon Knight') && s.level === 1)!.stats.lck).toBe(warCleric.raw.lck)
+  })
+})
+
+describe('Skills a unit can have in some playthrough', () => {
+  const has = (id: string, skill: string) => reachableSkills(data, unit(id)).has(skill)
+
+  it("follows the game's inheritance: a child gets another gender's skills only from a parent who can have them", () => {
+    // Panne can't be a Dark Flier; Chrom passes Lucina only Aether.
+    expect(has('yarne', 'Galeforce')).toBe(false)
+    expect(has('owain', 'Galeforce')).toBe(true)
+    expect(has('lucina', 'Counter')).toBe(false)
+    expect(has('lucina', 'Aether')).toBe(true)
+    // The DLC's skills and the enemies' never pass, though a parent can have them.
+    expect(has('owain', 'Rally Heart')).toBe(false)
+    expect(has('owain', 'Luna+')).toBe(false)
+  })
+
+  it("opens Aptitude to Donnel and to a child who can have him as a parent or grandparent, not to Lucina", () => {
+    expect(has('donnel', 'Aptitude')).toBe(true)
+    expect(has('chrom', 'Aptitude')).toBe(false)
+    expect(has('nah', 'Aptitude')).toBe(true)
+    expect(has('lucina', 'Aptitude')).toBe(false)
+    expect(has('morgan-m', 'Aptitude')).toBe(true)
+  })
+})
+
+describe('Aptitude, Limit Breaker and the DLC classes', () => {
+  const id = (name: string, female = false) => Object.values(FE13_CLASSES).find((c) => c.name === name && c.female === female)!.id
+
+  it('adds 20 to every growth with Aptitude, and 10 to every maximum but HP with Limit Breaker', () => {
+    const donnel = unit('donnel')
+    const base = project(data, donnel, { steps: [], targetLevel: 2 })
+    const apt = project(data, donnel, { steps: [], targetLevel: 2, aptitude: true })
+    const total = (extra: number) => Object.fromEntries(FE13_STATS.map((s) => [s, donnel.growths[s] + FE13_CLASSES[donnel.classId].growths![s] + extra])) as typeof donnel.growths
+    expect(apt[1].raw.str - apt[0].raw.str).toBeCloseTo(levelGain(total(20)).str)
+    expect(base[1].raw.str - base[0].raw.str).toBeCloseTo(levelGain(total(0)).str)
+    const caps = capsOf(FE13_CLASSES[donnel.classId], donnel.modifiers, true)
+    const plain = capsOf(FE13_CLASSES[donnel.classId], donnel.modifiers)
+    expect(caps.hp).toBe(plain.hp)
+    expect(caps.str).toBe(plain.str + 10)
+  })
+
+  it("offers each DLC class to its own gender, by its seal once promoted or from Lv 10", () => {
+    expect(dlcClassesFor(data, unit('chrom')).map((c) => FE13_CLASSES[c].name)).toEqual(['Dread Fighter'])
+    expect(dlcClassesFor(data, unit('lissa')).map((c) => FE13_CLASSES[c].name)).toEqual(['Bride'])
+    const df = id('Dread Fighter')
+    expect(classChanges(data, id('Lord'), classSetOf(unit('chrom')), [df]).find((c) => c.to === df)?.minLevel).toBe(10)
+    expect(classChanges(data, id('Great Lord'), classSetOf(unit('chrom')), [df]).find((c) => c.to === df)?.minLevel).toBe(1)
+    expect(classChanges(data, id('Lord'), classSetOf(unit('chrom'))).some((c) => c.to === df)).toBe(false)
   })
 })

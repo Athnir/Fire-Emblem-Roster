@@ -55,7 +55,7 @@ export interface Fe13Unit {
   classSets: { male: string[]; female: string[] }
   /** A child's fixed parent. */
   parent?: string
-  /** The skills they join with (the DLC recruits). */
+  /** The skills they join with (the person's +72; a child also inherits two). */
   skills?: string[]
   supports: Fe13Support[]
   /** The village maiden Chrom marries when he has no one: not a unit, a person record of zeros with no class (PID_ダミー). */
@@ -75,6 +75,19 @@ export interface Fe13Class {
   promotesTo: string[]
   /** The level it stops at: 30 for a special class (neither promoted nor promoting), else 20. */
   maxLevel?: number
+  /** One of the DLC's two classes (the Dread Fighter, the Bride), each reached with a seal of its own. */
+  dlc?: true
+}
+
+export interface Fe13Skill {
+  name: string
+  /** Who can inherit it (RemovableSkillData +0x14, 0x27bc80): 0 any child, 2 a manakete child, 3 a taguel child; 1 (Special Dance),
+   * 4 (the enemies' skills) and 5 (the DLC's) never. */
+  pass: number
+  /** The game's help text. */
+  help: string
+  /** Its place among the game's skill icons. */
+  icon: number
 }
 
 /** What the Avatar's asset or flaw changes. */

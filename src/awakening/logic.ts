@@ -1,4 +1,4 @@
-import { FE13_STATS, type Fe13Asset, type Fe13Class, type Fe13Stat, type Fe13Stats, type Fe13Unit } from './types'
+import { FE13_STATS, type Fe13Asset, type Fe13Class, type Fe13Skill, type Fe13Stat, type Fe13Stats, type Fe13Unit } from './types'
 
 export interface Fe13Data {
   chapters: { id: string; label: string }[]
@@ -8,6 +8,8 @@ export interface Fe13Data {
   assets?: Fe13Asset[]
   /** Chrom's wife when he marries no one (PID_ダミー). */
   maiden?: Fe13Unit
+  /** Every skill, by name. */
+  skills?: Record<string, Fe13Skill>
 }
 
 const CHROM = 'fe13-chrom'
@@ -34,6 +36,12 @@ export interface Fe13Step {
 export interface Fe13Plan {
   steps: Fe13Step[]
   targetLevel: number
+  /** Aptitude equipped: 20 more on every growth (0x27d230). */
+  aptitude?: boolean
+  /** Limit Breaker equipped: 10 more on every maximum but HP (0x2c48f8). */
+  limitBreaker?: boolean
+  /** The DLC classes unlocked for the unit, open to its class changes. */
+  dlc?: string[]
 }
 
 export interface Fe13Stage {
@@ -49,14 +57,15 @@ export interface Fe13Stage {
 export interface Fe13Change {
   to: string
   minLevel: number
-  seal: 'master' | 'second'
+  seal: 'master' | 'second' | 'dlc'
 }
 
 /** What a unit in a class can change into (the seal checks at 0x2d4d3c, the Second Seal's list at 0x2cff38):
  * - a Master Seal promotes from Lv 10;
  * - a Second Seal works once promoted, or from Lv 10 unpromoted. It lists the unit's classes (`set`), what they promote to only for a
- *   promoted unit from Lv 10 or an unpromoted one at Lv 30, and the unit's own class only at its top level. */
-export function classChanges(data: Fe13Data, from: string, set: string[]): Fe13Change[] {
+ *   promoted unit from Lv 10 or an unpromoted one at Lv 30, and the unit's own class only at its top level;
+ * - a DLC class's own seal, for the unlocked ones (`dlc`), once promoted or from Lv 10 (the Dread Fighter's, 0x214278). */
+export function classChanges(data: Fe13Data, from: string, set: string[], dlc: string[] = []): Fe13Change[] {
   const cls = data.classes[from]
   const top = maxLevelOf(cls)
   const out = new Map<string, Fe13Change>()
@@ -69,6 +78,7 @@ export function classChanges(data: Fe13Data, from: string, set: string[]): Fe13C
   for (const id of set) add(id, cls.promoted ? 1 : SEAL_LEVEL, 'second')
   for (const id of set) for (const p of data.classes[id]?.promotesTo ?? []) add(p, cls.promoted ? SEAL_LEVEL : 30, 'second')
   add(from, top, 'second')
+  for (const id of dlc) add(id, cls.promoted ? 1 : SEAL_LEVEL, 'dlc')
   return [...out.values()]
 }
 
@@ -78,7 +88,7 @@ export function legalSteps(data: Fe13Data, startClass: string, startLevel: numbe
   let level = startLevel
   const steps: Fe13Step[] = []
   for (const step of plan.steps) {
-    const change = classChanges(data, from, set).find((c) => c.to === step.to)
+    const change = classChanges(data, from, set, plan.dlc).find((c) => c.to === step.to)
     if (!change || Math.max(level, change.minLevel) > maxLevelOf(data.classes[from])) return { steps, dropped: step }
     steps.push(step)
     from = step.to
@@ -91,10 +101,10 @@ export function classSetOf(unit: Fe13Unit, female = unit.female): string[] {
   return female ? unit.classSets.female : unit.classSets.male
 }
 
-/** A class's maximums for a unit: the class's plus the unit's modifiers. */
-export function capsOf(cls: Fe13Class, modifiers: Partial<Fe13Stats>): Fe13Stats {
+/** A class's maximums for a unit: the class's plus the unit's modifiers, and 10 on every stat but HP with Limit Breaker (0x2c48f8). */
+export function capsOf(cls: Fe13Class, modifiers: Partial<Fe13Stats>, limitBreaker = false): Fe13Stats {
   const out = { ...cls.caps }
-  for (const s of FE13_STATS) out[s] += modifiers[s] ?? 0
+  for (const s of FE13_STATS) out[s] += (modifiers[s] ?? 0) + (limitBreaker && s !== 'hp' ? 10 : 0)
   return out
 }
 
@@ -126,20 +136,22 @@ export interface Fe13Projection {
 export function project(data: Fe13Data, unit: Fe13Unit, plan: Fe13Plan, opts: Fe13Projection = {}): Fe13Stage[] {
   const growths = opts.growths ?? unit.growths
   const modifiers = opts.modifiers ?? unit.modifiers
+  const limitBreaker = !!plan.limitBreaker
+  const aptitude = plan.aptitude ? 20 : 0
   const { steps } = legalSteps(data, unit.classId, unit.level, plan, opts.set ?? classSetOf(unit))
   let cls = data.classes[unit.classId]
   let level = unit.level
   let raw: Fe13Stats = { ...(opts.start ?? unit.bases) }
   const stage = (c: Fe13Class, lv: number, r: Fe13Stats): Fe13Stage => {
-    const caps = capsOf(c, modifiers)
+    const caps = capsOf(c, modifiers, limitBreaker)
     const stats = { ...r }
     for (const s of FE13_STATS) stats[s] = Math.min(caps[s], r[s])
     return { classId: c.id, level: lv, stats, raw: r }
   }
   const grow = (from: Fe13Stats, levels: number, c: Fe13Class) => {
-    const caps = capsOf(c, modifiers)
+    const caps = capsOf(c, modifiers, limitBreaker)
     const total = {} as Fe13Stats
-    for (const s of FE13_STATS) total[s] = (growths[s] ?? 0) + (c.growths?.[s] ?? 0)
+    for (const s of FE13_STATS) total[s] = (growths[s] ?? 0) + (c.growths?.[s] ?? 0) + aptitude
     const gain = levelGain(total)
     const out = { ...from }
     for (const s of FE13_STATS) if (out[s] < caps[s]) out[s] = Math.min(caps[s], out[s] + gain[s] * Math.max(0, levels))
@@ -148,7 +160,7 @@ export function project(data: Fe13Data, unit: Fe13Unit, plan: Fe13Plan, opts: Fe
   const stages: Fe13Stage[] = [stage(cls, level, raw)]
   for (const step of steps) {
     const next = data.classes[step.to]
-    const change = classChanges(data, cls.id, opts.set ?? classSetOf(unit)).find((c) => c.to === step.to)!
+    const change = classChanges(data, cls.id, opts.set ?? classSetOf(unit), plan.dlc).find((c) => c.to === step.to)!
     const at = Math.max(level, change.minLevel, Math.min(maxLevelOf(cls), step.at))
     if (at > level) {
       raw = grow(raw, at - level, cls)
@@ -188,8 +200,8 @@ export function spousesOf(data: Fe13Data, unit: Fe13Unit): Fe13Unit[] {
 // Mercenary and Barbarian) are the game's own class sets.
 
 const LUCINA = 'fe13-lucina'
-/** Classes a parent never passes on (0x2cff38 leaves out Lord, Great Lord and Dancer from anyone but the unit; Conqueror is Walhart's,
- * who has no children), and those only Morgan can take: no other child has a parent with them. */
+/** Classes a parent never passes on (0x2cff38 takes Lord, Dancer and Conqueror only from the unit's own set), and those only Morgan can
+ * take: no other child has a parent with them. */
 const NEVER_PASSED = ['Lord', 'Dancer', 'Conqueror']
 const MORGAN_ONLY = ['Taguel', 'Manakete']
 /** Morgan starts as a Tactician when the other parent's first class is one of these (0x27c150). */
@@ -297,6 +309,68 @@ export function fixedShare(data: Fe13Data, child: Fe13Unit): { parent: Fe13Unit;
   const modifiers = {} as Omit<Fe13Stats, 'hp'>
   for (const s of FE13_STATS.slice(1) as Exclude<Fe13Stat, 'hp'>[]) modifiers[s] = parent.modifiers[s] + 1
   return { parent, classes: [...new Set([...classSetOf(child), ...passedOn(data, classSetOf(parent, child.female), child)])], modifiers }
+}
+
+const AETHER = 'Aether'
+const RIGHTFUL_KING = 'Rightful King'
+/** Chrom and Lucina pass a child Aether (a daughter) or Rightful King (a son) and nothing else (0x27bc80, SID_主人公 and SID_マルス). */
+const ROYAL = [CHROM, LUCINA]
+
+/** The DLC classes a unit can unlock: those of their gender. */
+export function dlcClassesFor(data: Fe13Data, unit: Fe13Unit): string[] {
+  return Object.values(data.classes)
+    .filter((c) => c.dlc && c.female === unit.female)
+    .map((c) => c.id)
+}
+
+/** Everyone who can be a child's other parent in some playthrough, but those in `not` (the Avatar can't be both a parent and a
+ * grandparent of Morgan). */
+function otherParents(data: Fe13Data, child: Fe13Unit, not: string[]): Fe13Unit[] {
+  const fixed = child.parent ? data.units.find((u) => u.id === child.parent) : undefined
+  return fixed ? spousesOf(data, fixed).filter((u) => !not.some((id) => sameUnit(id, u.id))) : []
+}
+
+/** Every class a unit can be in some playthrough: their set and the class they join in, a child's every possible parent's and (for
+ * Morgan) grandparent's for the child's gender (0x2cff38), what those promote to, and the DLC classes of their gender. */
+export function reachableClasses(data: Fe13Data, unit: Fe13Unit, not: string[] = []): string[] {
+  const out = new Set([unit.classId, ...classSetOf(unit)].filter((id) => data.classes[id]))
+  const fixed = unit.parent ? data.units.find((u) => u.id === unit.parent) : undefined
+  if (fixed) {
+    const pass = (p: Fe13Unit) => passedOn(data, classSetOf(p, unit.female), unit).forEach((id) => out.add(id))
+    pass(fixed)
+    for (const other of otherParents(data, unit, not)) {
+      pass(other)
+      // A child parent's own parents are Morgan's grandparents.
+      const gp = other.parent ? data.units.find((u) => u.id === other.parent) : undefined
+      if (gp) [gp, ...otherParents(data, other, [fixed.id])].forEach(pass)
+    }
+  }
+  for (const id of [...out]) for (const p of data.classes[id]?.promotesTo ?? []) out.add(p)
+  for (const id of dlcClassesFor(data, unit)) out.add(id)
+  return [...out]
+}
+
+/** Every skill a unit can have in some playthrough: the ones they join with, their reachable classes', and for a child whatever a
+ * possible parent could have and pass on (0x27bc80): a skill that passes to any child, Wyrmsbane only to one who can be a Manakete,
+ * Beastbane only to one who can be a Taguel; from Chrom or Lucina only Aether (a daughter) or Rightful King (a son). */
+export function reachableSkills(data: Fe13Data, unit: Fe13Unit, not: string[] = []): Set<string> {
+  const classes = reachableClasses(data, unit, not)
+  const out = new Set<string>(unit.skills ?? [])
+  for (const id of classes) for (const s of data.classes[id]?.skills ?? []) out.add(s.skill)
+  const fixed = unit.parent ? data.units.find((u) => u.id === unit.parent) : undefined
+  if (fixed) {
+    const can = (cls: string) => classes.some((id) => data.classes[id]?.name === cls)
+    const passes = (name: string) => {
+      const kind = data.skills?.[name]?.pass ?? 0
+      return kind === 0 || (kind === 2 && can('Manakete')) || (kind === 3 && can('Taguel'))
+    }
+    for (const p of [fixed, ...otherParents(data, unit, not)]) {
+      if (ROYAL.includes(p.id)) out.add(unit.female ? AETHER : RIGHTFUL_KING)
+      else for (const name of reachableSkills(data, p, [...not, fixed.id])) if (passes(name)) out.add(name)
+    }
+  }
+  out.delete('(No skills)')
+  return out
 }
 
 /** A child's parents in the plan: the fixed one, and their spouse if married. */

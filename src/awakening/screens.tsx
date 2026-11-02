@@ -10,11 +10,13 @@ import {
   childrenOf,
   classChanges,
   classSetOf,
+  dlcClassesFor,
   fixedShare,
   isFamilyBlocked,
   isMorgan,
   legalSteps,
   project,
+  reachableSkills,
   sameUnit,
   skillsOf,
   spousesOf,
@@ -320,8 +322,19 @@ export function Fe13Planner({ data: raw }: { data: Fe13Data }) {
   const spouses = useFe13Store((s) => s.spouses)
   const plans = useFe13Store((s) => s.plans)
   const setPlan = useFe13Store((s) => s.setPlan)
-  const plan: Fe13Plan = saved ?? { steps: [], targetLevel: maxLevelOf(data.classes[unit.classId]) }
-  const update = (patch: Partial<Fe13Plan>) => setPlan(unit.id, { ...plan, ...patch })
+  const stored: Fe13Plan = saved ?? { steps: [], targetLevel: maxLevelOf(data.classes[unit.classId]) }
+  const update = (patch: Partial<Fe13Plan>) => setPlan(unit.id, { ...stored, ...patch })
+  // Aptitude only for a unit who can have it in some playthrough (Donnel's Villager, or inherited from a parent who can).
+  const canAptitude = useMemo(() => reachableSkills(data, unit).has('Aptitude'), [data, unit])
+  const plan: Fe13Plan = { ...stored, aptitude: !!stored.aptitude && canAptitude }
+  const dlcClasses = dlcClassesFor(data, unit)
+  const toggleDlc = (id: string) => {
+    const on = plan.dlc?.includes(id)
+    const dlc = on ? (plan.dlc ?? []).filter((x) => x !== id) : [...(plan.dlc ?? []), id]
+    // Locking a class again drops the class changes from the first one into it.
+    const cut = on ? plan.steps.findIndex((st) => st.to === id) : -1
+    update({ dlc, steps: cut >= 0 ? plan.steps.slice(0, cut) : plan.steps })
+  }
   // A child whose parent is married in the Marriage Planner joins with what they inherit (Morgan in the other parent's class).
   const child = unit.parent ? childOf(data, unit, spouses, plans) : null
   const start = child ? { ...unit, classId: child.startClass } : unit
@@ -334,7 +347,7 @@ export function Fe13Planner({ data: raw }: { data: Fe13Data }) {
   let current = start.classId
   let fromLevel = unit.level
   const rows = steps.map((step, i) => {
-    const options = classChanges(data, current, set)
+    const options = classChanges(data, current, set, plan.dlc)
     const row = { i, step, from: current, fromLevel, options }
     current = step.to
     fromLevel = 1
@@ -352,7 +365,7 @@ export function Fe13Planner({ data: raw }: { data: Fe13Data }) {
     // Changing a step's class drops the steps after it: their choices may not be open any more.
     update({ steps: patch.to ? kept : [...kept, ...steps.slice(i + 1)] })
   }
-  const nextOptions = classChanges(data, current, set)
+  const nextOptions = classChanges(data, current, set, plan.dlc)
   return (
     <div className="space-y-4">
       <UnitSelect data={data} value={unit.id} onChange={setUnitId} />
@@ -367,7 +380,7 @@ export function Fe13Planner({ data: raw }: { data: Fe13Data }) {
                   {options.map((c) => (
                     <option key={c.to} value={c.to}>
                       {data.classes[c.to].name}
-                      {c.seal === 'master' ? ' (Master Seal)' : c.to === from ? ' (again, from Lv 1)' : ''}
+                      {c.seal === 'master' ? ' (Master Seal)' : c.seal === 'dlc' ? ' (DLC)' : c.to === from ? ' (again, from Lv 1)' : ''}
                     </option>
                   ))}
                 </select>
@@ -428,6 +441,40 @@ export function Fe13Planner({ data: raw }: { data: Fe13Data }) {
               </button>
             )}
           </div>
+          {dlcClasses.length > 0 && (
+            <div>
+              <h4 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-neutral-400">DLC classes unlocked for {unit.name}</h4>
+              <div className="flex flex-wrap gap-2">
+                {dlcClasses.map((id) => {
+                  const on = !!plan.dlc?.includes(id)
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => toggleDlc(id)}
+                      className={`rounded-full border px-3 py-1 text-xs transition-colors ${
+                        on ? 'border-violet-500 bg-violet-950/50 text-violet-200' : 'border-neutral-700 bg-neutral-800 text-neutral-400 hover:border-neutral-600'
+                      }`}
+                    >
+                      {data.classes[id].name} (DLC)
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+          <div className="flex flex-wrap gap-4">
+            {canAptitude && (
+              <label className="flex items-center gap-2 text-xs text-neutral-300">
+                <input type="checkbox" checked={!!plan.aptitude} onChange={(e) => update({ aptitude: e.target.checked })} />
+                Aptitude equipped (+20 to every growth)
+              </label>
+            )}
+            <label className="flex items-center gap-2 text-xs text-neutral-300">
+              <input type="checkbox" checked={!!plan.limitBreaker} onChange={(e) => update({ limitBreaker: e.target.checked })} />
+              Limit Breaker equipped (+10 to every maximum but HP; DLC)
+            </label>
+          </div>
         </div>
         <p className="text-xs text-neutral-500">
           Average stats: each level adds the personal growth and the class's, and a level that gains nothing is rolled once more, so the
@@ -435,8 +482,10 @@ export function Fe13Planner({ data: raw }: { data: Fe13Data }) {
           Master Seal promotes from Lv 10. A Second Seal changes to a class of the unit's set once promoted, or from Lv 10; into what
           those classes promote to only once promoted and at Lv 10, or at Lv 30 in a special class; and into the unit's own class at its
           top level. The new class starts at Lv 1 with its own bases, and every point gained is kept: a stat over the new class's maximum
-          shows held there (the small number is what's kept) and comes back in a class with higher ones. From the game's program
-          (level-ups 0x2cef88, seals 0x2d4d3c and 0x2cff38, the class change 0x2d0fb8).
+          shows held there (the small number is what's kept) and comes back in a class with higher ones. A DLC class's own seal works
+          once promoted, or from Lv 10. Aptitude adds 20 to every growth and Limit Breaker 10 to every maximum but HP. From the game's
+          program (level-ups 0x2cef88, growths 0x27d230, maximums 0x2c48f8, seals 0x2d4d3c, 0x2cff38 and 0x214278, the class change
+          0x2d0fb8).
           {child
             ? ` As ${child.fixed.unit.name} and ${child.other.unit.name}'s child, with what they inherit (the Marriage Planner).`
             : unit.parent
@@ -448,7 +497,7 @@ export function Fe13Planner({ data: raw }: { data: Fe13Data }) {
             label: `${data.classes[st.classId].name} Lv ${st.level}${i === 0 ? ' (joins)' : ''}`,
             values: st.stats,
             raw: st.raw,
-            caps: capsOf(data.classes[st.classId], modifiers),
+            caps: capsOf(data.classes[st.classId], modifiers, plan.limitBreaker),
           }))}
         />
         <p className="text-sm text-neutral-300">

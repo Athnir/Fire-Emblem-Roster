@@ -105,7 +105,7 @@ two parents), +0x84 the points gained in each stat, +0x8d the level, +0xb4 the f
 - **The Second Seal's list (0x2cff38):**
   - Every regular class of the unit's gender (0x214098) when the unit's, a parent's or a grandparent's set holds the Tactician, plus
     Manakete or Taguel for a unit flagged as one.
-  - The class sets for the unit's gender of seven people: the unit, both parents and the four grandparents. Lord, Great Lord and Dancer
+  - The class sets for the unit's gender of seven people: the unit, both parents and the four grandparents. Lord, Dancer and Conqueror
     come only from the unit's own.
   - What those classes promote to, only for a promoted unit at Lv 10 or more, or an unpromoted one at Lv 30.
   - The unit's own class at its top level. The add step (0x2bbde4) skips a class already listed, and the current one below its top level.
@@ -119,7 +119,7 @@ two parents), +0x84 the points gained in each stat, +0x8d the level, +0xb4 the f
   flaw plus the points gained, before the maximums; the class's base isn't counted. So a child never joins below their own stats. Then
   Morgan takes a class, then the skills.
 - **Morgan's class (0x27c150):** the other parent's first class for Morgan's gender (person +108 for a son, +120 for a daughter); after a
-  Lord, Great Lord or Dancer, the Tactician. A Manakete or Taguel sets Morgan's flag for it.
+  Lord, Dancer or Conqueror, the Tactician. A Manakete or Taguel sets Morgan's flag for it.
 - **Skills a child inherits (0x27bc80):** one from the father, then one from the mother: the parent's equipped skills from the last slot up,
   the first that can pass (RemovableSkillData +0x14: 0 any child, 2 a manakete child, 3 a taguel child; 1 Special Dance, 4 the enemies'
   skills and 5 the DLC's never) and that the child doesn't know. Up to two known ones are passed over; a third ends the search. Chrom or
