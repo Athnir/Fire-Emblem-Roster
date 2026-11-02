@@ -458,19 +458,45 @@ export function childrenOf(data: Fe13Data, a: string, b: string): Fe13Unit[] {
   return data.units.filter((u) => u.parent && (u.parent === a || u.parent === b))
 }
 
-/** The Avatar's asset and flaw; null for none (the person record's own numbers, Serenes Forest's neutral tables). */
-export interface Fe13Build {
-  asset: Fe13Stat | null
-  flaw: Fe13Stat | null
-  /** Their hair colour (one of the game's 20), which their children can take. */
+export type Fe13AvatarId = 'fe13-avatar-m' | 'fe13-avatar-f'
+
+/** How an Avatar looks, as the game's creation menu sets it: Build 01-03 and Hair 01-05 (the face is the default, 01; no accessories,
+ * as Fates' Corrin has none), and their hair colour, one of the game's 20, which their children can take. */
+export interface Fe13Looks {
+  build: number
+  hairstyle: number
   hair?: string
 }
 
+export const DEFAULT_LOOKS: Fe13Looks = { build: 2, hairstyle: 1 }
+
+/** The Avatar's asset and flaw; null for none (the person record's own numbers, Serenes Forest's neutral tables). And how each gender's
+ * Avatar looks. */
+export interface Fe13Build {
+  asset: Fe13Stat | null
+  flaw: Fe13Stat | null
+  /** One hair colour for both, from before each gender had its own: used until a gender's own is picked. */
+  hair?: string
+  looks?: Partial<Record<Fe13AvatarId, Fe13Looks>>
+}
+
+export const isAvatar = (u: Fe13Unit) => u.id === 'fe13-avatar-m' || u.id === 'fe13-avatar-f'
+
+export function looksOf(build: Fe13Build, id: Fe13AvatarId): Fe13Looks {
+  const own = build.looks?.[id]
+  return { ...DEFAULT_LOOKS, ...own, hair: own?.hair ?? build.hair }
+}
+
+/** Each Avatar's hair colour, by unit id, for hairOf. */
+export function avatarHairOf(build: Fe13Build): Record<string, string | undefined> {
+  return { 'fe13-avatar-m': looksOf(build, 'fe13-avatar-m').hair, 'fe13-avatar-f': looksOf(build, 'fe13-avatar-f').hair }
+}
+
 /** A child's hair colour (0x2cdfd8): Lucina always has her own. Any other child takes the hair of their fixed parent's spouse: the
- * father, but for Morgan (F) the mother; the Avatar's chosen colour from the Avatar, and a child spouse's own (from their own father,
- * or Lucina's). With no spouse in the plan, or the village maiden, the colour their portrait is drawn in. */
-export function hairOf(data: Fe13Data, unit: Fe13Unit, spouses: Record<string, string>, avatarHair?: string, depth = 0): { hex?: string; from?: Fe13Unit } {
-  if (unit.id.startsWith('fe13-avatar')) return { hex: avatarHair }
+ * father, but for Morgan (F) the mother; an Avatar's chosen colour from that Avatar (`avatarHair`, by unit id), and a child spouse's own
+ * (from their own father, or Lucina's). With no spouse in the plan, or the village maiden, the colour their portrait is drawn in. */
+export function hairOf(data: Fe13Data, unit: Fe13Unit, spouses: Record<string, string>, avatarHair: Record<string, string | undefined> = {}, depth = 0): { hex?: string; from?: Fe13Unit } {
+  if (unit.id.startsWith('fe13-avatar')) return { hex: avatarHair[unit.id] }
   const spouseId = unit.parent ? spouses[unit.parent] : undefined
   const spouse = spouseId ? unitsOf(data).find((u) => u.id === spouseId) : undefined
   if (unit.id === LUCINA || !spouse || spouse.maiden || depth > 1) return { hex: unit.hair }

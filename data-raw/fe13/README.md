@@ -63,6 +63,13 @@ stretched, then multiplied by the colour). The game's own blend is set up in the
 `dmp_TexEnv[n].constRgba`) and wasn't traced; the hair textures are built the same way as Fates' (a muted grey with white
 highlights, the fill at about half brightness).
 
+The Avatar's portrait is built like Fates' Corrin, from a bald body and a hairstyle. The creation menu's Build 01-03 pick the face files'
+body: the program's table at 0x4d5500, read with the appearance's gender (+0x1c) times 3 plus its build (+0x1d), gives 童顔, 青年 and
+ゴツイ for men and ロリ, 少女 and 妙齢 for women (`fe13_code.avatar_builds`); the face (+0x1e) picks 顔立ちA-E, and the file is
+`FID_マイユニ_<body>_顔立ち<face>` (0x2bad80). Each body's `bu` archive has the bald portrait and the five hairstyles, `髪0`-`髪4` (the
+menu's Hair 01-05). The app has Build, Hair and the hair colour for each gender, with the face left at the default, 01 (the game's own
+default Avatar portrait, `プレイヤー`, is 青年's face A), and no accessories, as its Corrin has none.
+
 ## Growths: enciphered, decoded as the program does (`scripts/fe13_growths.py`)
 
 A person's growths are 8 bytes at +36, a class's at JobData +32. The program (code.bin) decodes each byte with a key from the record's

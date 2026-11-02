@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { FE13_ASSETS, FE13_CHAPTERS, FE13_CLASSES, FE13_MAIDEN, FE13_SKILLS, FE13_UNITS } from '../../data/fe13/fe13Units'
-import { capsOf, childOf, classChanges, classSetOf, dlcClassesFor, familyOf, fixedShare, hairOf, isFamilyBlocked, legalSteps, levelGain, pairUpBonus, project, reachableSkills, spousesOf, statsIn, unitNow, withAvatar, type Fe13Data } from '../logic'
+import { avatarHairOf, capsOf, childOf, classChanges, classSetOf, dlcClassesFor, familyOf, fixedShare, hairOf, isFamilyBlocked, looksOf, legalSteps, levelGain, pairUpBonus, project, reachableSkills, spousesOf, statsIn, unitNow, withAvatar, type Fe13Data } from '../logic'
 import { FE13_STATS } from '../types'
 
 const data: Fe13Data = { chapters: FE13_CHAPTERS, units: FE13_UNITS, classes: FE13_CLASSES, maiden: FE13_MAIDEN, skills: FE13_SKILLS }
@@ -299,7 +299,7 @@ describe('Pair-up (0x2b2c8c, 0x2cd408)', () => {
 
 describe("A child's hair (0x2cdfd8)", () => {
   const hair = (child: string, spouses: Record<string, string>, avatar?: string) => {
-    const h = hairOf(data, unit(child), spouses, avatar)
+    const h = hairOf(data, unit(child), spouses, { 'fe13-avatar-m': avatar, 'fe13-avatar-f': avatar })
     return [h.hex, h.from?.name]
   }
 
@@ -317,5 +317,28 @@ describe("A child's hair (0x2cdfd8)", () => {
     expect(hair('kjelle', marry(['sully', 'avatar-m']), '#4c5f78')).toEqual(['#4c5f78', 'Avatar (M)'])
     // Morgan (M)'s father Owain has Vaike's hair.
     expect(hair('morgan-m', marry(['avatar-f', 'owain'], ['lissa', 'vaike']))).toEqual([unit('vaike').hair, 'Owain'])
+  })
+})
+
+describe("The Avatars' looks", () => {
+  it('start at Build 02 and Hair 01, and each gender keeps its own (the old shared colour until one is picked)', () => {
+    const old = { asset: null, flaw: null, hair: '#a5a6a6' }
+    expect(looksOf(old, 'fe13-avatar-m')).toEqual({ build: 2, hairstyle: 1, hair: '#a5a6a6' })
+    const set = { ...old, looks: { 'fe13-avatar-f': { build: 3, hairstyle: 4, hair: '#dc9393' } } }
+    expect(looksOf(set, 'fe13-avatar-f')).toEqual({ build: 3, hairstyle: 4, hair: '#dc9393' })
+    expect(looksOf(set, 'fe13-avatar-m').hair).toBe('#a5a6a6')
+  })
+
+  it("gives a child the hair of the Avatar who is their parent", () => {
+    const build = {
+      asset: null,
+      flaw: null,
+      looks: { 'fe13-avatar-m': { build: 1, hairstyle: 3, hair: '#4c5f78' }, 'fe13-avatar-f': { build: 2, hairstyle: 1, hair: '#dc9393' } },
+    }
+    expect(hairOf(data, unit('kjelle'), marry(['sully', 'avatar-m']), avatarHairOf(build)).hex).toBe('#4c5f78')
+    // Morgan (F)'s hair is her mother's, never the male Avatar's.
+    expect(hairOf(data, unit('morgan-f'), marry(['avatar-m', 'sumia']), avatarHairOf(build)).hex).toBe(unit('sumia').hair)
+    // Lucina keeps her own with the female Avatar as her mother.
+    expect(hairOf(data, unit('lucina'), marry(['chrom', 'avatar-f']), avatarHairOf(build)).hex).toBe(unit('lucina').hair)
   })
 })

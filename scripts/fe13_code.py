@@ -185,3 +185,12 @@ def avatar_hair_palette():
     for k in range(0, max(mem) + 1, 4):
         out.append('#%02x%02x%02x' % (mem.get(k, 0), mem.get(k + 1, 0), mem.get(k + 2, 0)))
     return out
+
+
+AVATAR_BUILDS = 0x4d5500
+
+
+def avatar_builds():
+    """The Avatar's builds as the face files name them, in the program's table (read by 0x2bad80 with the appearance's gender
+    times 3 plus its build): men's Build 01-03, then women's."""
+    return [cstr(u32(AVATAR_BUILDS + 4 * i)) for i in range(6)]

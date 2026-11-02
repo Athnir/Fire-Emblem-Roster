@@ -1,8 +1,12 @@
 import { useMemo, useRef, useState, type ReactNode } from 'react'
 import { Portrait } from '../components/Portrait'
+import { assetKeys } from '../data/assetStorage'
 import {
   MAX_LEVEL,
   MAX_STEPS,
+  avatarHairOf,
+  isAvatar,
+  looksOf,
   maxLevelOf,
   capsOf,
   childOf,
@@ -26,8 +30,10 @@ import {
   skillsOf,
   spousesOf,
   unitsOf,
+  type Fe13AvatarId,
   type Fe13Child,
   type Fe13Data,
+  type Fe13Looks,
   type Fe13Parent,
   type Fe13Plan,
   type Fe13Rank,
@@ -43,10 +49,51 @@ function artId(name: string): string {
 }
 
 /** A unit's portrait. A child whose hair the game tints (all but Lucina) is drawn from their uploaded layers, the hair in `hairHex` (by
- * default their own colour), as Fates draws its children; without the layers, their flat portrait. */
+ * default their own colour), as Fates draws its children; an Avatar from their build's bald body and their hairstyle, in their colour,
+ * as Fates draws Corrin. Without the layers, their flat portrait. */
 export function UnitPortrait({ unit, size = 64, hairHex }: { unit: Fe13Unit; size?: number; hairHex?: string }) {
+  const avatar = useFe13Store((s) => s.avatar)
+  if (isAvatar(unit)) {
+    const looks = looksOf(avatar, unit.id as Fe13AvatarId)
+    // The layers' upload keys and the static files behind them (scripts/fe13_portraits.py writes public/art/portraits/fe13-avatar/).
+    const body = `${unit.female ? 'f' : 'm'}_${looks.build}`
+    const hair = `hair${looks.hairstyle}`
+    const dir = `${import.meta.env.BASE_URL}art/portraits/fe13-avatar/${body}`
+    const layers = {
+      base: { key: assetKeys.corrinBase(`fe13/${body}`), url: `${dir}/base.png` },
+      hair: { key: assetKeys.corrinHairRaw(`fe13/${body}`, hair), url: `${dir}/${hair}.png` },
+    }
+    return <Portrait characterId={artId(unit.name)} isChild={false} hairHex={looks.hair} layers={layers} flatFallback size={size} />
+  }
   const layered = !!unit.parent && unit.id !== 'fe13-lucina'
   return <Portrait characterId={artId(unit.name)} isChild={layered} hairHex={layered ? (hairHex ?? unit.hair) : undefined} flatFallback size={size} />
+}
+
+/** An Avatar's build and hairstyle, as the game's creation menu numbers them (the colour is with the asset and flaw). */
+function AvatarLooks({ avatarId }: { avatarId: Fe13AvatarId }) {
+  const avatar = useFe13Store((s) => s.avatar)
+  const setAvatar = useFe13Store((s) => s.setAvatar)
+  const looks = looksOf(avatar, avatarId)
+  const set = (patch: Partial<Fe13Looks>) => setAvatar({ ...avatar, looks: { ...avatar.looks, [avatarId]: { ...looks, ...patch } } })
+  const pick = (label: string, key: 'build' | 'hairstyle', count: number) => (
+    <label className="space-y-1">
+      <span className="block text-xs text-neutral-500">{label}</span>
+      <select value={looks[key]} onChange={(e) => set({ [key]: Number(e.target.value) })} className={selectClass}>
+        {Array.from({ length: count }, (_, i) => i + 1).map((n) => (
+          <option key={n} value={n}>
+            {String(n).padStart(2, '0')}
+          </option>
+        ))}
+      </select>
+    </label>
+  )
+  return (
+    <div className="flex flex-wrap items-end gap-2">
+      <span className="pb-1 text-sm font-semibold text-neutral-200">Appearance</span>
+      {pick('Build', 'build', 3)}
+      {pick('Hair', 'hairstyle', 5)}
+    </div>
+  )
 }
 
 /** A hair colour as a swatch. */
@@ -58,7 +105,7 @@ function Swatch({ hex }: { hex?: string }) {
 /** Where a child's hair comes from, with the colour. */
 function HairLine({ data, child, spouses }: { data: Fe13Data; child: Fe13Unit; spouses: Record<string, string> }) {
   const avatar = useFe13Store((s) => s.avatar)
-  const hair = hairOf(data, child, spouses, avatar.hair)
+  const hair = hairOf(data, child, spouses, avatarHairOf(avatar))
   const fromAvatar = hair.from?.id.startsWith('fe13-avatar')
   return (
     <div className="flex items-center gap-1.5 text-xs text-neutral-500">
@@ -82,8 +129,10 @@ const STAT_NAMES: Record<Fe13Stat, string> = {
   res: 'Resistance',
 }
 
-/** The Avatar's asset and flaw, for both Avatars, and their hair colour from the game's own palette. */
-export function AvatarBuild({ palette }: { palette?: string[] }) {
+const AVATARS: Fe13AvatarId[] = ['fe13-avatar-m', 'fe13-avatar-f']
+
+/** The Avatar's asset and flaw, for both Avatars, and each one's hair colour (`genders`: whose) from the game's own palette. */
+export function AvatarBuild({ palette, genders = AVATARS }: { palette?: string[]; genders?: Fe13AvatarId[] }) {
   const avatar = useFe13Store((s) => s.avatar)
   const setAvatar = useFe13Store((s) => s.setAvatar)
   const pick = (label: string, key: 'asset' | 'flaw', other: Fe13Stat | null) => (
@@ -114,23 +163,31 @@ export function AvatarBuild({ palette }: { palette?: string[] }) {
         Changes both Avatars' bases, growths and modifiers, and so what Morgan and the Avatar's other children inherit (the game's
         PersonalityData table). None is the person record's own numbers.
       </p>
-      {palette && palette.length > 0 && (
-        <div className="space-y-1">
-          <span className="block text-xs text-neutral-500">Hair colour (a child whose other parent is the Avatar takes it)</span>
-          <div className="grid w-fit grid-cols-10 gap-1">
-            {palette.map((hex) => (
-              <button
-                key={hex}
-                type="button"
-                onClick={() => setAvatar({ ...avatar, hair: avatar.hair === hex ? undefined : hex })}
-                title={hex}
-                className={`h-5 w-5 rounded border ${avatar.hair === hex ? 'border-2 border-violet-400' : 'border-neutral-700'}`}
-                style={{ backgroundColor: hex }}
-              />
-            ))}
-          </div>
-        </div>
-      )}
+      {palette &&
+        palette.length > 0 &&
+        genders.map((id) => {
+          const looks = looksOf(avatar, id)
+          return (
+            <div key={id} className="space-y-1">
+              <span className="block text-xs text-neutral-500">
+                {genders.length > 1 ? `Hair colour, ${id.endsWith('-f') ? 'female' : 'male'} Avatar` : 'Hair colour'} (a child whose other parent is
+                this Avatar takes it)
+              </span>
+              <div className="grid w-fit grid-cols-10 gap-1">
+                {palette.map((hex) => (
+                  <button
+                    key={hex}
+                    type="button"
+                    onClick={() => setAvatar({ ...avatar, looks: { ...avatar.looks, [id]: { ...looks, hair: hex } } })}
+                    title={hex}
+                    className={`h-5 w-5 rounded border ${looks.hair === hex ? 'border-2 border-violet-400' : 'border-neutral-700'}`}
+                    style={{ backgroundColor: hex }}
+                  />
+                ))}
+              </div>
+            </div>
+          )
+        })}
     </div>
   )
 }
@@ -240,16 +297,17 @@ function UnitDetail({ data, unit }: { data: Fe13Data; unit: Fe13Unit }) {
   const picked = useFe13Store((s) => s.hairParents[unit.id])
   const setHairParent = useFe13Store((s) => s.setHairParent)
   const setAvatar = useFe13Store((s) => s.setAvatar)
-  const setAvatarHair = (hex: string) => setAvatar({ ...avatar, hair: hex })
+  const setAvatarHair = (id: Fe13AvatarId, hex: string) => setAvatar({ ...avatar, looks: { ...avatar.looks, [id]: { ...looksOf(avatar, id), hair: hex } } })
   const fixedParent = share?.parent
   const sources = fixedParent ? spousesOf(data, fixedParent).filter((u) => !u.maiden) : []
   const source = picked && sources.some((u) => u.id === picked) ? picked : undefined
   const hairSpouses = source && fixedParent ? { ...planSpouses, [fixedParent.id]: source, [source]: fixedParent.id } : planSpouses
-  const hair = hairOf(data, unit, hairSpouses, avatar.hair)
+  const hair = hairOf(data, unit, hairSpouses, avatarHairOf(avatar))
+  const hairAvatar = hair.from && isAvatar(hair.from) ? (hair.from.id as Fe13AvatarId) : undefined
   return (
     <div className={panel}>
       <div className="flex flex-col items-start gap-4 sm:flex-row">
-        <UnitPortrait unit={unit} size={unit.parent ? 256 : 128} hairHex={hair.hex}/>
+        <UnitPortrait unit={unit} size={unit.parent || isAvatar(unit) ? 256 : 128} hairHex={hair.hex} />
         <div className="space-y-1 text-sm text-neutral-300">
           <h3 className="text-lg font-semibold text-neutral-100">{unit.name}</h3>
           <div>
@@ -286,7 +344,12 @@ function UnitDetail({ data, unit }: { data: Fe13Data; unit: Fe13Unit }) {
           )}
         </div>
       </div>
-      {unit.id.startsWith('fe13-avatar') && <AvatarBuild palette={data.avatarHair} />}
+      {isAvatar(unit) && (
+        <div className="space-y-3">
+          <AvatarLooks avatarId={unit.id as Fe13AvatarId} />
+          <AvatarBuild palette={data.avatarHair} genders={[unit.id as Fe13AvatarId]} />
+        </div>
+      )}
       {unit.parent && unit.id === 'fe13-lucina' && (
         <p className="border-t border-neutral-800 pt-3 text-xs text-neutral-500">Hair: always her own (fixed, whoever her mother is).</p>
       )}
@@ -304,7 +367,7 @@ function UnitDetail({ data, unit }: { data: Fe13Data; unit: Fe13Unit }) {
             </select>
             <Swatch hex={hair.hex} />
           </div>
-          {hair.from?.id.startsWith('fe13-avatar') && data.avatarHair && (
+          {hairAvatar && data.avatarHair && (
             <div className="space-y-1">
               <span className="text-xs text-neutral-400">The Avatar's hair colour (whatever this playthrough's Avatar picked)</span>
               <div className="grid w-fit grid-cols-10 gap-1">
@@ -312,9 +375,9 @@ function UnitDetail({ data, unit }: { data: Fe13Data; unit: Fe13Unit }) {
                   <button
                     key={hex}
                     type="button"
-                    onClick={() => setAvatarHair(hex)}
+                    onClick={() => setAvatarHair(hairAvatar, hex)}
                     title={hex}
-                    className={`h-6 w-6 rounded border ${avatar.hair === hex ? 'border-2 border-violet-400' : 'border-neutral-700'}`}
+                    className={`h-6 w-6 rounded border ${looksOf(avatar, hairAvatar).hair === hex ? 'border-2 border-violet-400' : 'border-neutral-700'}`}
                     style={{ backgroundColor: hex }}
                   />
                 ))}
@@ -882,13 +945,13 @@ function sourceText(data: Fe13Data, p: Fe13Parent): string {
 function ChildCard({ data, result, spouses }: { data: Fe13Data; result: Fe13Child; spouses: Record<string, string> }) {
   const { child, fixed, other } = result
   const cls = data.classes[result.startClass]
-  const avatarHair = useFe13Store((s) => s.avatar.hair)
+  const avatar = useFe13Store((s) => s.avatar)
   const total = {} as Fe13Stats
   for (const s of FE13_STATS) total[s] = result.growths[s] + (cls.growths?.[s] ?? 0)
   return (
     <div className={panel}>
       <div className="flex flex-wrap items-center gap-3 text-sm text-neutral-300">
-        <UnitPortrait unit={child} size={96} hairHex={hairOf(data, child, spouses, avatarHair).hex} />
+        <UnitPortrait unit={child} size={96} hairHex={hairOf(data, child, spouses, avatarHairOf(avatar)).hex} />
         <div>
           <div className="font-semibold text-neutral-100">{child.name}</div>
           <div className="text-xs text-neutral-500">

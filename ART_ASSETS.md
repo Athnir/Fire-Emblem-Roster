@@ -142,8 +142,10 @@ needed:
 python scripts/fe13_portraits.py
 ```
 
-It writes `data-raw/fe13/art/` (git-ignored): `<name>.png` for every unit, and `children/<name>/base.png` and `raw.png` for each
-child whose hair the game tints (all but Lucina). In the app, Edit Mode -> Bulk Upload -> "Select an entire folder" and pick that
-folder; the children's hair then recolours with the parent it comes from. `--public` writes the same into `public/art/` instead, for
-running the app from this folder. The Avatars and the DLC recruits aren't made by it.
+It writes `data-raw/fe13/art/` (git-ignored): `<name>.png` for every unit, `children/<name>/base.png` and `raw.png` for each child
+whose hair the game tints (all but Lucina), and `avatar/<m|f>_<1-3>/base.png` with `hair1.png` to `hair5.png` for the Avatar's
+builds and hairstyles (the default face). In the app, Edit Mode -> Bulk Upload -> "Select an entire folder" and pick that folder;
+the children's hair then recolours with the parent it comes from, and the Avatar's portrait follows their build, hairstyle and
+colour (the Roster's Avatar pages). `--public` writes the same into `public/art/` instead, for running the app from this folder.
+The DLC recruits aren't made by it.
 

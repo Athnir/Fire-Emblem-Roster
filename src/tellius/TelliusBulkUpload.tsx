@@ -45,16 +45,36 @@ function matchChildLayers(data: TelliusData, files: File[]): MatchResult {
   return { matched, unmatched }
 }
 
-/** A whole folder: files under a "skills" folder are skill icons, under a "children" folder a child's layers, the rest portraits. */
+/** A game's own Avatar in layers, as Fates' Corrin (Awakening): avatar/<body>/base.png, the body bald, and avatar/<body>/hair<n>.png,
+ * each hairstyle; stored under the game's id as Corrin's layers are. */
+function matchAvatarLayers(data: TelliusData, files: File[]): MatchResult {
+  const matched: MatchedFile[] = []
+  const unmatched: File[] = []
+  for (const file of files) {
+    const parts = pathOf(file)
+    const body = parts[parts.indexOf('avatar') + 1]
+    const layer = parts[parts.length - 1].replace(/\.[^.]+$/, '')
+    const id = `${data.gameId}/${body}`
+    if (body && parts.length >= 3 && layer === 'base') matched.push({ file, key: assetKeys.corrinBase(id), label: `Avatar ${body} (base)` })
+    else if (body && parts.length >= 3 && /^hair\d+$/.test(layer)) matched.push({ file, key: assetKeys.corrinHairRaw(id, layer), label: `Avatar ${body} (${layer})` })
+    else unmatched.push(file)
+  }
+  return { matched, unmatched }
+}
+
+/** A whole folder: files under a "skills" folder are skill icons, under "children" a child's layers, under "avatar" the Avatar's, the
+ * rest portraits. */
 function matchFolder(data: TelliusData, files: File[]): MatchResult {
   const isSkill = (f: File) => pathOf(f).includes('skills')
   const isLayer = (f: File) => pathOf(f).includes('children')
+  const isAvatar = (f: File) => pathOf(f).includes('avatar')
   const skills = matchSkills(data, files.filter(isSkill))
   const layers = matchChildLayers(data, files.filter((f) => !isSkill(f) && isLayer(f)))
-  const portraits = matchPortraits(data, files.filter((f) => !isSkill(f) && !isLayer(f)))
+  const avatar = matchAvatarLayers(data, files.filter((f) => !isSkill(f) && !isLayer(f) && isAvatar(f)))
+  const portraits = matchPortraits(data, files.filter((f) => !isSkill(f) && !isLayer(f) && !isAvatar(f)))
   return {
-    matched: [...portraits.matched, ...layers.matched, ...skills.matched],
-    unmatched: [...portraits.unmatched, ...layers.unmatched, ...skills.unmatched],
+    matched: [...portraits.matched, ...layers.matched, ...avatar.matched, ...skills.matched],
+    unmatched: [...portraits.unmatched, ...layers.unmatched, ...avatar.unmatched, ...skills.unmatched],
   }
 }
 
@@ -73,7 +93,7 @@ export function TelliusBulkUpload({ data, title, onClose }: { data: TelliusData;
         </p>
         <UploadSection
           title="Select an entire folder"
-          hint={`Portraits named like "ike.png"; skill icons in a "skills" folder, named like "sol.png"; children's hair layers as children/<name>/base.png and raw.png.`}
+          hint={`Portraits named like "ike.png"; skill icons in a "skills" folder, named like "sol.png"; children's hair layers as children/<name>/base.png and raw.png, and an Avatar's as avatar/<body>/base.png and hair1.png to hair5.png.`}
           match={(files) => matchFolder(data, files)}
           directory
         />

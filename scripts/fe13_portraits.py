@@ -11,6 +11,8 @@ Writes, in the layout Bulk Upload reads:
   <out>/<name>.png                   every unit's portrait, hair in their own colour (the face record's +12)
   <out>/children/<name>/base.png     a child's portrait without hair (their hair comes from a parent; the app tints it)
   <out>/children/<name>/raw.png      that child's hair layer as the game has it
+  <out>/avatar/<m|f>_<1-3>/base.png  the Avatar's portrait for each gender and build, bald (face/マイユニ_<build>_顔立ちA_bu_通常.arc;
+                                     the face is the game's default, A), and hair1.png to hair5.png, its five hairstyles (髪0-髪4)
 
 Run: python scripts/fe13_portraits.py [out folder]
      python scripts/fe13_portraits.py --public   (into public/art/, git-ignored, which the app reads when run from this folder)
@@ -24,6 +26,7 @@ from PIL import Image
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import ctr_texture as T  # noqa: E402
+import fe13_code as C  # noqa: E402
 import fe13_data as D  # noqa: E402
 from fates_lz import decompress  # noqa: E402
 from fe13_bin import Bin, ROMFS  # noqa: E402
@@ -75,6 +78,10 @@ def main():
 
     def layer_dir(stem):
         return os.path.join(PUBLIC, 'children', 'fe13', stem) if public else os.path.join(out, 'children', stem)
+
+    def avatar_dir(body):
+        # The app's static layout for the Avatar (src/awakening/screens.tsx, avatarLayers).
+        return os.path.join(PUBLIC, 'fe13-avatar', body) if public else os.path.join(out, 'avatar', body)
     part = dict((i, o) for i, o, _ in ncsd_partitions(CART))[0]
     rom = RomFS(CART, part)
     files = {p: (off, size) for p, off, size in rom.walk() if p.startswith('/face/')}
@@ -117,7 +124,25 @@ def main():
         os.makedirs(os.path.dirname(flat_path(stem)), exist_ok=True)
         whole.save(flat_path(stem))
         made += 1
-    print(f'{made} portraits, {layered} with a separate hair layer -> {os.path.abspath(PUBLIC if public else out)}')
+    # The Avatar: each gender's three builds (the program's table, 0x4d5500: men's Build 01-03 then women's), face A, five hairstyles.
+    builds = C.avatar_builds()
+    for g, gender in enumerate('mf'):
+        for n in range(3):
+            off, size = files[f'/face/マイユニ_{builds[g * 3 + n]}_顔立ちA_bu_通常.arc']
+            arc = Bin(rom.read(off, size))
+            folder = avatar_dir(f'{gender}_{n + 1}')
+            os.makedirs(folder, exist_ok=True)
+            for lo, label in arc.labels:
+                length, start = arc.u32(lo + 8), arc.u32(lo + 12)
+                if label == '通常.ctpk.lz':
+                    name = 'base'
+                elif label.startswith('髪') and label[1:2].isdigit():
+                    name = f'hair{int(label[1]) + 1}'
+                else:
+                    continue
+                img = next(iter(T.ctpk(decompress(arc.d[0x20 + start:0x20 + start + length])).values()))
+                img.save(os.path.join(folder, f'{name}.png'))
+    print(f"{made} portraits, {layered} with a separate hair layer, and the Avatar's 6 builds -> {os.path.abspath(PUBLIC if public else out)}")
 
 
 if __name__ == '__main__':
