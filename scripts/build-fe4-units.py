@@ -8,8 +8,9 @@ import json
 import os
 
 import fe4_events as ev
-from fe4_names import character_names, class_names, place
-from fe4_units import classes, holy_bloods, people, promotion
+from fe4_names import character_names, class_names, item_names, place
+from fe4_rom import R
+from fe4_units import SKILL_BITS, classes, holy_bloods, love, mothers, people, promotion, skill_mask
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 OUT = os.path.join(ROOT, 'src', 'data', 'fe4', 'fe4Units.ts')
@@ -18,30 +19,36 @@ WEAPONS = ('sword', 'lance', 'axe', 'bow', 'staff', 'fire', 'thunder', 'wind', '
 RANKS = {0: 'A', 1: 'B', 2: 'C'}
 # The second generation starts with the slot ids after the first's (the substitutes and children share theirs).
 GEN2_FIRST_ID = 25
-# Each mother's two children, by their records' slot (Serenes Forest's inheritance page; the game's own mother table isn't
-# found yet). The substitutes in the same slots stand in when she has no children.
-MOTHERS = {'Ayra': (3, 17), 'Brigid': (4, 16), 'Silvia': (7, 23), 'Erinys': (8, 21), 'Lachesis': (9, 24), 'Edain': (11, 18),
-           'Tailtiu': (14, 22)}
-# Children whose parents are fixed by the story: Seliph (Sigurd and Deirdre), Leif and Altena (Quan and Ethlyn).
-FIXED_PARENTS = {'Seliph': ('Sigurd', 'Deirdre'), 'Leif': ('Quan', 'Ethlyn'), 'Altena': ('Quan', 'Ethlyn')}
-
-
-# What the scripts' triggers don't say in a way the reader can name: Serenes Forest's recruitment page.
+# What the scripts' triggers don't say in a way the reader can name: Serenes Forest's recruitment page, unless a routine is named.
 NOTES = {
     'Chulainn': 'By beating the arena with a melee fighter (Serenes Forest).',
     'Beowolf': 'Anyone can talk to him; he asks to be paid 10,000 gold (Serenes Forest).',
     'Ares': 'The turn after Melgen is seized (Serenes Forest).',
-    'Iuchar': 'Only one of Iuchar and Iucharba joins (Serenes Forest).',
-    'Iucharba': 'Only one of Iuchar and Iucharba joins (Serenes Forest).',
+    # Ch.6's two talk triggers set the same event flag (29), so only the first works; the brothers share slot 6.
+    'Iuchar': 'Only one of Iuchar and Iucharba joins: both talks set the same event flag, so only the first works.',
+    'Iucharba': 'Only one of Iuchar and Iucharba joins: both talks set the same event flag, so only the first works.',
     'Altena': 'After Leif talks to her and Travant is defeated (Serenes Forest).',
+    # A chapter's turn count starts at 0 ($80:AF24); a new turn adds one and starts with your phase, phase 0 ($81:A911); a
+    # turn block runs when the turn and phase the game sends as a phase begins match ($81:A9A6, $86:9C1D).
+    **{n: 'Arrives as your turn 2 begins, right after the first enemy phase.' for n in ('Dew', 'Edain')},
+    **{n: 'Arrives as your turn 3 begins.' for n in ('Oifey', 'Tristan', 'Deimne', 'Diarmuid', 'Lester')},
 }
-# Turns that differ from Serenes Forest's recruitment page.
-UNCONFIRMED = {
-    **{n: "The script's turn block is turn 2; Serenes Forest says the first enemy turn."
-       for n in ('Dew', 'Edain')},
-    **{n: "The script's turn block is turn 3; Serenes Forest says the second turn."
-       for n in ('Oifey', 'Tristan', 'Deimne', 'Diarmuid', 'Lester')},
-}
+UNCONFIRMED = {}
+# The story's choices of who joins, which the Roster lets you pick.
+CHOICES = [
+    {'id': 'fe4-iuchar', 'chapter': 'fe4-6', 'question': 'Which brother did Larcei (or Creidne) talk to first?',
+     'options': [{'label': 'Iuchar', 'units': ['Iuchar']}, {'label': 'Iucharba', 'units': ['Iucharba']}]},
+]
+# Leadership the game gives two children when it makes them ($84:835E Seliph, $84:8387 Altena); the rest have none.
+CHILD_LEADERSHIP = {'Seliph': 2, 'Altena': 3}
+# Seliph's holy blood isn't worked out from his parents: $84:835E sets it.
+FIXED_BLOOD = {'Seliph': [{'blood': 'Baldr', 'level': 'major'}, {'blood': 'Naga', 'level': 'minor'}]}
+# Rings (item ids 0x6A-0x79, 10 bytes): +5 picks the stat a ring raises ($84:F1E8; +5 to a stat after its cap, Mov +3 for the
+# Leg Ring, $84:9B1D-$84:9D61); +8 and +9 are skill bits ($87:A2EF, table $87:A280). Rings work from anywhere in the inventory
+# and two of the same don't stack.
+RING_STAT = {1: ('spd', 5), 2: ('mag', 5), 3: ('str', 5), 4: ('def', 5), 5: ('res', 5), 6: ('mov', 3), 7: ('skl', 5)}
+RING_SKILLS = {(0, 0x01): 'Steal', (0, 0x08): 'Miracle', (0, 0x10): 'Critical', (0, 0x20): 'Renewal', (0, 0x40): 'Paragon',
+               (1, 0x01): 'Recover', (1, 0x02): 'Bargain', (1, 0x04): 'Return', (1, 0x08): 'Pursuit', (1, 0x10): 'Canto'}
 CHAPTER_LABELS = ['Prologue'] + [f'Ch.{n}' for n in range(1, 11)] + ['Final']
 TALKS = (0x04, 0x15, 0x16)
 
@@ -136,7 +143,7 @@ def main():
             cb = class_bases(p['class'])
             unit.update({
                 'role': 'fixed',
-                'female': p['female'],
+                **({'female': True} if p['female'] else {}),
                 # HP is the unit's own; the rest are the class's bases plus the unit's own (Luck has no class base).
                 'bases': {s: p['personal'][s] if s == 'hp' else cb[s] + p['personal'][s] for s in STATS},
                 'personal': {s: p['personal'][s] for s in STATS},
@@ -144,9 +151,19 @@ def main():
                 'blood': [{'blood': b, 'level': lv} for b, lv in p['blood']],
                 'skills': p['skills'], 'gold': p['gold'],
                 **({'leadership': p['leadership']} if p['leadership'] else {}),
+                **({'protection': p['protection']} if p['protection'] else {}),
             })
         else:
-            unit.update({'role': 'child', 'mainParent': 'father' if p['main_father'] else 'mother'})
+            # A child's stats and growths come from the parent of their own sex (+8); +0x0B picks the parent for holy blood
+            # and items ($87:A869, $87:A9FB, $87:AA39). The mask says which of the parents' skills can pass ($87:A8E1).
+            mask = skill_mask(i)
+            unit.update({'role': 'child', **({'female': True} if p['female'] else {}),
+                         'mainParent': 'father' if p['main_father'] else 'mother',
+                         'inheritable': [name for (b, bit), name in SKILL_BITS.items() if mask[b] & bit]})
+            if name in CHILD_LEADERSHIP:
+                unit['leadership'] = CHILD_LEADERSHIP[name]
+            if name in FIXED_BLOOD:
+                unit['blood'] = FIXED_BLOOD[name]
         if gen == 2:
             by_slot.setdefault(p['slot'], []).append(unit)
             unit['slot'] = p['slot']
@@ -172,14 +189,18 @@ def main():
             join['note'] = f'Joins {note}.'
         unit['join'] = join
 
-    # Children and the substitutes for them; a second-generation unit sharing a child's slot is that child's substitute.
+    # Children and the substitutes for them, by the game's mothers' table ($83:8993); a second-generation unit sharing a
+    # child's slot is that child's substitute. A mother the love table lets only one man win (Deirdre, Ethlyn) has him.
     by_name = {u['name']: u for u in units}
-    for mother, slots in MOTHERS.items():
-        for slot in slots:
-            group = by_slot[slot]
-            child = next(u for u in group if u['role'] == 'child')
-            child['mother'] = by_name[mother]['id']
-            for u in group:
+    loves = love()
+    for mother, kids in mothers().items():
+        possible = [m for (w, m), (start, _) in loves.items() if w == mother and start is not None and start >= 499]
+        for kid in kids:
+            child = unit_of[kid]
+            child['mother'] = unit_of[mother]['id']
+            if len(possible) == 1:
+                child['father'] = unit_of[possible[0]]['id']
+            for u in by_slot[child['slot']]:
                 if u is not child:
                     u['role'] = 'substitute'
                     u['substituteFor'] = child['id']
@@ -196,9 +217,33 @@ def main():
             u['join']['note'] = ' '.join(filter(None, [u['join'].get('note'), NOTES[u['name']]]))
         if u['name'] in UNCONFIRMED:
             u['unconfirmed'] = UNCONFIRMED[u['name']]
-    for child, (father, mother) in FIXED_PARENTS.items():
-        by_name[child]['father'] = by_name[father]['id']
-        by_name[child]['mother'] = by_name[mother]['id']
+    choices = [{**c, 'options': [{**o, 'units': [by_name[n]['id'] for n in o['units']]} for o in c['options']]} for c in CHOICES]
+
+    # Love ($83:850F, $83:8738): each mother's start and gain per player phase with each man, and the talks that add to it (event
+    # command 0x60 in a scene: woman, man, points; $86:9519).
+    out_love = []
+    for (w, m), (start, growth) in sorted(loves.items()):
+        if w in unit_of and m in unit_of and start is not None:
+            out_love.append({'woman': unit_of[w]['id'], 'man': unit_of[m]['id'], 'start': start, 'growth': growth})
+    talks = {}
+    for n in range(ev.SCENE_COUNT):
+        for op, a in ev.scene_commands(n):
+            if op == 0x60 and len(a) >= 5:
+                w, m, pts = a[0] | a[1] << 8, a[2] | a[3] << 8, a[4] - 256 if a[4] > 127 else a[4]
+                if w in unit_of and m in unit_of:
+                    talks[(w, m, pts)] = None
+    out_talks = [{'woman': unit_of[w]['id'], 'man': unit_of[m]['id'], 'points': pts} for w, m, pts in talks]
+
+    # Rings.
+    inames = item_names()
+    out_rings = []
+    for iid in range(0x6A, 0x7A):
+        from fe4_rom import ITEM_POINTERS, u16
+        e = ITEM_POINTERS + u16(ITEM_POINTERS + 2 * iid)
+        stat = RING_STAT.get(R[e + 5])
+        skills = [nm for (b, bit), nm in RING_SKILLS.items() if R[e + 8 + b] & bit]
+        out_rings.append({'id': str(iid), 'name': inames[iid], **({'stat': stat[0], 'amount': stat[1]} if stat else {}),
+                          **({'skills': skills} if skills else {})})
 
     out_classes = {}
     for j in sorted(used):
@@ -207,9 +252,12 @@ def main():
             'id': str(j), 'name': cnames[j], 'mov': c['mov'], 'flier': c['flier'],
             'bases': class_bases(j),
             'ranks': {w: RANKS[r] for w, r in zip(WEAPONS, c['ranks']) if r in RANKS},
+            **({'skills': c['skills']} if c['skills'] else {}),
+            # The level a unit needs to promote into it ($87:A438): 20 for every promoted class.
+            **({'promoteLevel': c['promote_level']} if c['promote_level'] > 1 else {}),
         }
 
-    out_bloods = [{'id': b['name'], 'name': b['name'], 'weaponType': WEAPONS[b['weapon_type']],
+    out_bloods = [{'id': b['name'], 'name': b['name'], 'weaponType': WEAPONS[b['weapon_type']], 'weapon': inames[b['weapon']],
                    'growths': {s: b['growths'][s] for s in STATS}} for b in bloods]
 
     def js(v):
@@ -217,7 +265,7 @@ def main():
 
     lines = [
         "// Generated by scripts/build-fe4-units.py from the user's own Genealogy of the Holy War ROM. Don't edit by hand.",
-        "import type { Fe4Blood, Fe4Chapter, Fe4Class, Fe4Unit } from '../../genealogy/types'",
+        "import type { Fe4Blood, Fe4Chapter, Fe4Choice, Fe4Class, Fe4Love, Fe4Ring, Fe4Unit } from '../../genealogy/types'",
         '',
         f"export const FE4_CHAPTERS: Fe4Chapter[] = {js([{'id': f'fe4-{n}', 'label': label} for n, label in enumerate(CHAPTER_LABELS)])}",
         '',
@@ -234,10 +282,31 @@ def main():
         *[f'  {js(b)},' for b in out_bloods],
         ']',
         '',
+        "// The story's choices of who joins.",
+        'export const FE4_CHOICES: Fe4Choice[] = [',
+        *[f'  {js(c)},' for c in choices],
+        ']',
+        '',
+        "// The first generation's love: each mother's start and gain per player phase with each man she can marry, and the talks.",
+        'export const FE4_LOVE: Fe4Love = {',
+        '  pairs: [',
+        *[f'    {js(x)},' for x in out_love],
+        '  ],',
+        '  talks: [',
+        *[f'    {js(x)},' for x in out_talks],
+        '  ],',
+        '}',
+        '',
+        '// Rings: carried anywhere, a stat ring adds to the stat past its cap; two of the same don\'t stack.',
+        'export const FE4_RINGS: Fe4Ring[] = [',
+        *[f'  {js(r)},' for r in out_rings],
+        ']',
+        '',
     ]
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     open(OUT, 'w', encoding='utf-8', newline='\n').write('\n'.join(lines))
-    print(f'{len(units)} units, {len(out_classes)} classes, {len(out_bloods)} holy bloods -> {OUT}')
+    print(f'{len(units)} units, {len(out_classes)} classes, {len(out_bloods)} holy bloods, {len(out_love)} love pairs, '
+          f'{len(out_talks)} love talks, {len(out_rings)} rings -> {OUT}')
 
 
 if __name__ == '__main__':

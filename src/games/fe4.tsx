@@ -1,4 +1,4 @@
-import { FE4_BLOODS, FE4_CHAPTERS, FE4_CLASSES, FE4_UNITS } from '../data/fe4/fe4Units'
+import { FE4_BLOODS, FE4_CHAPTERS, FE4_CHOICES, FE4_CLASSES, FE4_LOVE, FE4_RINGS, FE4_UNITS } from '../data/fe4/fe4Units'
 import type { Fe4Data } from '../genealogy/logic'
 import { Fe4Pairings, Fe4Planner, Fe4Roster } from '../genealogy/screens'
 import { TelliusBulkUpload } from '../tellius/TelliusBulkUpload'
@@ -11,6 +11,9 @@ export const FE4_DATA: Fe4Data = {
   units: FE4_UNITS,
   classes: FE4_CLASSES,
   bloods: FE4_BLOODS,
+  choices: FE4_CHOICES,
+  love: FE4_LOVE,
+  rings: FE4_RINGS,
 }
 
 // The bulk upload matches portraits by unit name; Genealogy has no skill icons yet.

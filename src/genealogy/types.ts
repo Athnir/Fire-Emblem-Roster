@@ -40,8 +40,13 @@ export interface Fe4Unit {
   /** Fixed by the story (Seliph, Leif, Altena). */
   father?: string
   substituteFor?: string
-  /** A child: the parent they take after (stats, growths and major blood). */
+  /** A child: the parent their holy blood and items come from (+0x0B). Their stats and growths come from the parent of their own
+   * sex ($87:A869). */
   mainParent?: 'father' | 'mother'
+  /** A child: which of the parents' personal skills can pass to them ($87:A975). */
+  inheritable?: string[]
+  /** The story keeps them alive: 'removed' from the map instead of dying (but not in the Final Chapter), or 'retreats'. */
+  protection?: 'removed' | 'retreats'
   /** What the data leaves unsettled about this unit. */
   unconfirmed?: string
 }
@@ -53,12 +58,18 @@ export interface Fe4Class {
   flier: boolean
   bases: Fe4Stats
   ranks: Partial<Record<string, string>>
+  /** The class's own skills (Canto, Pursuit, Adept...). */
+  skills?: string[]
+  /** The level a unit needs to promote into this class (20). */
+  promoteLevel?: number
 }
 
 export interface Fe4Blood {
   id: string
   name: string
   weaponType: string
+  /** The holy weapon major blood of this line can wield. */
+  weapon: string
   /** Growth bonuses for minor blood; major doubles them. */
   growths: Fe4Stats
 }
@@ -75,4 +86,28 @@ export interface Fe4Join {
   with?: string[]
   turn?: number
   note?: string
+}
+
+/** A choice in the story of who joins (Iuchar or Iucharba). */
+export interface Fe4Choice {
+  id: string
+  chapter: string
+  question: string
+  options: { label: string; units: string[] }[]
+}
+
+/** The first generation's love ($83:850F, $83:8738): each mother's start and gain per player phase with each man she can marry,
+ * and the talks that add to it. */
+export interface Fe4Love {
+  pairs: { woman: string; man: string; start: number; growth: number }[]
+  talks: { woman: string; man: string; points: number }[]
+}
+
+/** A ring: carried anywhere, it adds to a stat (past the cap) or Mov, or gives skills. Two of the same don't stack. */
+export interface Fe4Ring {
+  id: string
+  name: string
+  stat?: Fe4Stat | 'mov'
+  amount?: number
+  skills?: string[]
 }

@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
+import { FE4_DATA } from '../../../games/fe4'
+import { pairingChoices } from '../../../genealogy/hooks'
+import { bloodBonus, childBlood, childProfile, excludedUnits, loveFor, NO_HUSBAND, ringBonus, weaponRanks } from '../../../genealogy/logic'
 import { FE4_STATS } from '../../../genealogy/types'
-import { childProfile } from '../../../genealogy/logic'
-import { FE4_BLOODS, FE4_CHAPTERS, FE4_CLASSES, FE4_UNITS } from '../fe4Units'
+import { FE4_BLOODS, FE4_CHAPTERS, FE4_CLASSES, FE4_LOVE, FE4_RINGS, FE4_UNITS } from '../fe4Units'
 
 // Serenes Forest's Genealogy of the Holy War tables, copied here to check the data built from the ROM against them.
 // Base stats: Lv, HP, Str, Mag, Skl, Spd, Lck, Def, Res, Gold (characters/base-stats), by the patch's names.
@@ -62,19 +64,107 @@ describe('Genealogy of the Holy War units', () => {
 describe('Genealogy of the Holy War children', () => {
   const data = { gameId: 'fe4', chapters: FE4_CHAPTERS, units: FE4_UNITS, classes: FE4_CLASSES, bloods: FE4_BLOODS }
   const named = (name: string) => FE4_UNITS.find((u) => u.name === name)!
-  const stats = (v: number[]) => Object.fromEntries(FE4_STATS.map((s, i) => [s, v[i]])) as Record<(typeof FE4_STATS)[number], number>
+  // A parent as the game stores them: HP, Str to Res above their class's base, Luck (GAME order: HP, Str, Mag, Skl, Spd, Def, Res,
+  // Lck), turned into the stats the planner holds.
+  const parent = (name: string, stored: number[]) => {
+    const unit = named(name)
+    const base = FE4_CLASSES[unit.classId].bases
+    const [hp, str, mag, skl, spd, def, res, lck] = stored
+    const stats = { hp, str: base.str + str, mag: base.mag + mag, skl: base.skl + skl, spd: base.spd + spd, def: base.def + def, res: base.res + res, lck }
+    return { unit, classId: unit.classId, stats, gold: 0 }
+  }
 
-  it("works Seliph out as Serenes Forest's calculations page does", () => {
-    // Its example: Sigurd at HP 40, Str 20, Mag 5, Skl 20, Spd 20, Lck 10, Def 20, Res 10; Deirdre at 15, 5, 30, 15, 15, 5, 5, 30.
-    // Seliph: HP 25, Str 7, Mag 3, Skl 8, Spd 8, Def 7, Res 3; Luck 11 with its random 76 (8 with the 50 used here).
-    const sigurd = { unit: named('Sigurd'), classId: named('Sigurd').classId, stats: stats([40, 20, 5, 20, 20, 10, 20, 10]), gold: 0 }
-    const deirdre = { unit: named('Deirdre'), classId: named('Deirdre').classId, stats: stats([15, 5, 30, 15, 15, 5, 5, 30]), gold: 0 }
-    const seliph = childProfile(data, named('Seliph'), sigurd, deirdre)
-    expect(FE4_STATS.map((s) => seliph.bases[s])).toEqual([25, 7, 3, 8, 8, 8, 7, 3])
-    expect(seliph.blood.map((b) => `${b.level} ${b.blood}`)).toEqual(['major Baldr', 'minor Naga'])
+  it("makes Ced as the game's own routine does ($87:A869, $87:A6E6, run in an emulator)", () => {
+    // Lewyn stored HP 45, Str 8, Mag 12, Skl 14, Spd 15, Def 6, Res 7, Lck 12; Erinys 38, 6, 3, 10, 13, 5, 9, 15. The game's routine,
+    // with a Luck random of 76, gave Ced stored HP 41, Str 4, Mag 6, Skl 9, Spd 17, Def 5, Res 3, Lck 14 (1 + 7 of it random).
+    const ced = childProfile(data, named('Ced'), parent('Lewyn', [45, 8, 12, 14, 15, 6, 7, 12]), parent('Erinys', [38, 6, 3, 10, 13, 5, 9, 15]))
+    const base = FE4_CLASSES[named('Ced').classId].bases
+    expect([ced.bases.hp, ced.bases.str - base.str, ced.bases.mag - base.mag, ced.bases.skl - base.skl, ced.bases.def - base.def, ced.bases.res - base.res]).toEqual([
+      41, 4, 6, 9, 5, 3,
+    ])
+    // Spd is stored at 17: shown at most 30, and wrapped to 1 once saved.
+    expect(ced.bases.spd).toBe(Math.min(30, base.spd + 17))
+    expect(ced.wraps).toEqual(['spd'])
+    // Luck: 14 - 8 = 6 before the random, so 7 to 16, 11.5 on average.
+    expect([ced.luckRange, ced.bases.lck]).toEqual([[7, 16], 11.5])
   })
 
-  it('swaps Leif\'s and Altena\'s main parent, as Serenes Forest says', () => {
-    expect([named('Leif').mainParent, named('Altena').mainParent, named('Seliph').mainParent]).toEqual(['mother', 'father', 'father'])
+  it('takes stats and growths from the parent of the child\'s own sex: Leif from Quan, Altena from Ethlyn', () => {
+    const quan = parent('Quan', [40, 10, 0, 10, 10, 10, 0, 10])
+    const ethlyn = parent('Ethlyn', [30, 5, 5, 10, 10, 5, 5, 20])
+    const leif = childProfile(data, named('Leif'), quan, ethlyn)
+    const altena = childProfile(data, named('Altena'), quan, ethlyn)
+    const own = (main: string, other: string, s: 'str') => named(main).growths![s] + Math.floor(named(other).growths![s] / 2)
+    expect(leif.growths.str).toBe(Math.max(0, own('Quan', 'Ethlyn', 'str') + bloodBonus(data, leif.blood).str))
+    expect(altena.growths.str).toBe(Math.max(0, own('Ethlyn', 'Quan', 'str') + bloodBonus(data, altena.blood).str))
+    // HP: (2 x same-sex parent's + other's) / 10 + 15 + the levels' growth.
+    expect(leif.bases.hp).toBe(Math.floor((2 * 40 + 30) / 10) + 15 + Math.floor(((named('Leif').level - 1) * leif.growths.hp) / 100))
+  })
+
+  it('gives Seliph the blood the game sets, and 2 leadership stars; Altena 3', () => {
+    const seliph = childProfile(data, named('Seliph'), parent('Sigurd', [40, 10, 0, 10, 10, 10, 0, 10]), parent('Deirdre', [30, 0, 10, 5, 5, 0, 10, 10]))
+    expect(seliph.blood.map((b) => `${b.level} ${b.blood}`)).toEqual(['major Baldr', 'minor Naga'])
+    expect([seliph.leadership, named('Altena').leadership]).toEqual([2, 3])
+  })
+
+  it("passes holy blood from the main parent, one step up if the other has it: minor and major make major (Lene with Claud)", () => {
+    expect(childBlood([{ blood: 'Bragi', level: 'minor' }], [{ blood: 'Bragi', level: 'major' }])).toEqual([{ blood: 'Bragi', level: 'major' }])
+    expect(childBlood([{ blood: 'Ullr', level: 'minor' }], [{ blood: 'Ullr', level: 'minor' }])).toEqual([{ blood: 'Ullr', level: 'major' }])
+    expect(childBlood([], [{ blood: 'Od', level: 'major' }])).toEqual([{ blood: 'Od', level: 'minor' }])
+    expect(childBlood([{ blood: 'Od', level: 'minor' }], [])).toEqual([{ blood: 'Od', level: 'minor' }])
+    const lene = childProfile(data, named('Lene'), parent('Claud', [35, 0, 10, 5, 5, 0, 10, 10]), parent('Silvia', [30, 5, 0, 5, 5, 0, 5, 10]))
+    expect(lene.blood).toEqual([{ blood: 'Bragi', level: 'major' }])
+  })
+
+  it("lets only Scáthach, Larcei, Patty and Lene inherit Astra, Luna and Sol ($87:A975)", () => {
+    const can = FE4_UNITS.filter((u) => u.role === 'child' && u.inheritable?.includes('Astra')).map((u) => u.name).sort()
+    expect(can).toEqual(['Larcei', 'Lene', 'Patty', 'Scáthach'])
+    const ayra = parent('Ayra', [30, 5, 0, 10, 10, 5, 0, 10])
+    const lex = parent('Lex', [40, 10, 0, 5, 5, 10, 0, 5])
+    expect(childProfile(data, named('Larcei'), lex, ayra).skills).toContain('Astra')
+  })
+
+  it("links each mother to her children by the game's table, and offers only the men as husbands", () => {
+    const kids = (mother: string) => FE4_UNITS.filter((u) => u.mother === named(mother).id).map((u) => u.name)
+    expect(kids('Ayra')).toEqual(expect.arrayContaining(['Scáthach', 'Larcei']))
+    expect(kids('Brigid')).toEqual(expect.arrayContaining(['Febail', 'Patty']))
+    const { mothers, fathers } = pairingChoices(FE4_DATA)
+    expect(mothers.map((m) => m.name).sort()).toEqual(['Ayra', 'Brigid', 'Edain', 'Erinys', 'Lachesis', 'Silvia', 'Tailtiu'])
+    expect(fathers.every((f) => !f.female)).toBe(true)
+    expect(fathers).toHaveLength(13)
+    expect([named('Seliph').father, named('Leif').father]).toEqual([named('Sigurd').id, named('Quan').id])
+  })
+})
+
+describe('Genealogy of the Holy War love, choices and rings', () => {
+  const named = (name: string) => FE4_UNITS.find((u) => u.name === name)!
+
+  it('lets every mother but Deirdre and Ethlyn marry each of the 13 men, and counts the talks', () => {
+    for (const mother of ['Ayra', 'Brigid', 'Edain', 'Erinys', 'Lachesis', 'Silvia', 'Tailtiu']) {
+      expect([mother, loveFor(FE4_DATA, named(mother).id).filter((l) => l.man !== named('Sigurd').id && l.man !== named('Quan').id).length]).toEqual([mother, 13])
+    }
+    const lex = loveFor(FE4_DATA, named('Ayra').id).find((l) => l.man === named('Lex').id)!
+    expect(lex.talks).toContain(100)
+    expect(FE4_LOVE.pairs.find((p) => p.woman === named('Deirdre').id && p.man === named('Sigurd').id)?.start).toBe(499)
+  })
+
+  it('drops the children or their substitutes by the pairings, and the other brother by the pick', () => {
+    const ayra = named('Ayra').id
+    const kidsOut = excludedUnits(FE4_DATA, {}, { [ayra]: NO_HUSBAND })
+    expect(kidsOut.has(named('Larcei').id) && kidsOut.has(named('Scáthach').id)).toBe(true)
+    const subsOut = excludedUnits(FE4_DATA, {}, { [ayra]: named('Lex').id })
+    expect(subsOut.has(named('Creidne').id) && subsOut.has(named('Dalvin').id)).toBe(true)
+    expect(excludedUnits(FE4_DATA, {}, {}).size).toBe(0)
+    expect([...excludedUnits(FE4_DATA, { 'fe4-iuchar': 0 }, {})]).toEqual([named('Iucharba').id])
+  })
+
+  it("raises weapon ranks by holy blood and gives the ring bonuses the code does", () => {
+    const sigurd = named('Sigurd')
+    const sword = weaponRanks(FE4_DATA, sigurd.classId, sigurd.blood!).find((r) => r.type === 'sword')!
+    expect(sword).toMatchObject({ rank: 'A', holy: 'Tyrfing' })
+    const leg = FE4_RINGS.find((r) => r.name === 'Leg Ring')!
+    const power = FE4_RINGS.find((r) => r.name === 'Power Ring')!
+    expect(ringBonus(FE4_DATA, [leg.id, power.id])).toEqual({ stats: { str: 5 }, mov: 3 })
+    expect(FE4_CLASSES[named('Sigurd').classId].skills).toContain('Canto')
   })
 })
