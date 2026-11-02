@@ -156,7 +156,12 @@ two parents), +0x84 the points gained in each stat, +0x8d the level, +0xb4 the f
 - **Pair-up (0x2b2c8c):** the one behind gives the lead, on each stat but HP, a tenth of their own stat (before any bonus), at most 3;
   on the stats their class boosts (JobData +57-+63), the class's part plus 1 at C or B and 2 at A or S (the support rank, 0x2de238);
   1 more on each with the lead's Defender. Mov gets the class's +56, 2 more with the lead's Deliverer (0x2cd408). Nothing holds a stat
-  at its maximum after it. Parent and child, and siblings, support each other on their own scale, up to A (0x2b0020, 0x2affc4).
+  at its maximum after it. The rank (0x2de238) is the pair's support points against the thresholds in the person's support list;
+  parent and child, and siblings, support each other on their own scale, 1, 6 and 16 points for C, B and A (0x2b0020, 0x2affc4).
+  Serenes Forest's and the Fire Emblem Wiki's class tables match JobData's for every class (the test), as do their rules. Where their
+  words differ, the program settles it: Defender and Deliverer count only on the lead (the wiki; Serenes Forest says "when paired
+  up"), the partner's stat is their own before any boost (Serenes Forest; the wiki says "current stats"), and a bonus can go past a
+  maximum (Serenes Forest; the wiki doesn't say).
 - **Weapons:** a unit's experience in a weapon is the person's (+62-+67) plus the class's byte (0x2d0b60); GameData's WeaponLevelData
   turns it into a rank (91 A, 61 B, 36 C, 16 D, 1 E). It stops at 91 (0x2ceed8), so every class's weapons go up to A and none to S.
   WeaponBonusData has what each rank adds (a Sword at A Atk +3; a Lance, Bow or Tome Atk +2 and Hit +5; an Axe Atk +1 and Hit +10; a

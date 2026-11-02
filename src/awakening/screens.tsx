@@ -562,11 +562,11 @@ function Fe13Mechanics({
           <div className="flex flex-wrap gap-4">
             <label className="flex items-center gap-2 text-xs text-neutral-300">
               <input type="checkbox" checked={defender} onChange={(e) => setDefender(e.target.checked)} />
-              Defender equipped (+1 to each)
+              {unit.name} has Defender equipped (+1 to each)
             </label>
             <label className="flex items-center gap-2 text-xs text-neutral-300">
               <input type="checkbox" checked={deliverer} onChange={(e) => setDeliverer(e.target.checked)} />
-              Deliverer equipped (Mov +2)
+              {unit.name} has Deliverer equipped (Mov +2)
             </label>
           </div>
           <BonusGrid values={received} mov={received.mov} />
@@ -589,10 +589,11 @@ function Fe13Mechanics({
         </div>
       )}
       <p className="text-xs text-neutral-500">
-        The one behind gives the lead a tenth of their own stat, at most 3, on every stat but HP; on the stats their class boosts, the
-        class's part plus 1 at C or B and 2 at A or S. Defender adds 1 to each and Deliverer 2 Mov. The bonus can go past a maximum.
-        Family supports (parent and child, siblings) go up to A. Every class's weapons go up to A; there's no S. From the game's program
-        (0x2b2c8c, 0x2cd408) and GameData (JobData, WeaponBonusData).
+        The one behind gives the lead a tenth of their own stat (before any boost), at most 3, on every stat but HP; on the stats their
+        class boosts, the class's part plus 1 at C or B and 2 at A or S. The lead's own Defender adds 1 to each, and their Deliverer 2
+        Mov. The bonus can go past a maximum. Family supports (parent and child, siblings) go up to A. Every class's weapons go up to A;
+        there's no S. From the game's program (0x2b2c8c, 0x2de238, 0x2cd408) and GameData (JobData, WeaponBonusData); Serenes Forest's
+        and the Fire Emblem Wiki's class tables match it.
       </p>
     </div>
   )

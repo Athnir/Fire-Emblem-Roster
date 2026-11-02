@@ -19,6 +19,24 @@ const SF_DLC_BASES: Record<string, number[]> = {"Pr. Marth": [8, 25, 10, 2, 12, 
 const SF_DLC_SKILLS: Record<string, string[]> = {"Pr. Marth": ["Aptitude", "Charm"], "Roy": ["Dual Strike+", "Aegis"], "Micaiah": ["Shadowgift", "Rally Luck"], "Leif": ["Underdog", "Locktouch", "Renewal"], "Alm": ["Resistance +10", "Aggressor", "Rally Resistance"], "Seliph": ["Galeforce", "Avoid +10", "Charm"], "Elincia": ["Charm", "Rally Speed", "Dual Support+", "Renewal"], "Eirika": ["Rally Heart", "Bond", "Luck +4", "Miracle"], "Lyn": ["Avoid +10", "Zeal", "Acrobat", "Astra"], "Ephraim": ["Conquest", "Outdoor Fighter", "Luna", "Deliverer", "Defender"], "Celica": ["Rightful King", "Tomefaire", "Miracle", "Aegis", "Dual Support+"], "Ike": ["Aether", "Patience", "Sol", "Axebreaker", "Luna"], "Eldigan": ["Outdoor Fighter", "Defender", "Charm", "Swordfaire"], "Est": ["Galeforce", "Aptitude", "Underdog", "Luck +4", "Luna"], "Catria": ["Galeforce", "Dual Strike+", "Lancefaire", "Tomefaire", "Astra"], "Palla": ["Galeforce", "Counter", "Rally Strength", "Rally Speed", "Sol"], "Katarina": ["Shadowgift", "Rally Strength", "Rally Magic", "Rally Speed", "Rally Spectrum"]}
 const SF_DLC_MODIFIERS: Record<string, (number | string)[]> = {"Pr. Marth": [1, 1, 0, 0, 3, -1, -1, "Lck", "HP"], "Roy": [-1, 0, 3, 0, 0, 1, 0, "Skl", "Str"], "Micaiah": [0, 4, 0, 2, -1, -3, 1, "Mag", "Def"], "Leif": [-1, 0, -1, 4, 2, -1, 0, "Spd", "Skl"], "Alm": [4, 0, 1, -3, -1, 2, 0, "Str", "Spd"], "Seliph": [4, 0, 1, -3, -1, 2, 0, "Str", "Spd"], "Elincia": [-1, 3, 0, 2, -1, -1, 1, "Mag", "HP"], "Eirika": [0, 0, 2, 4, 1, -3, -1, "Spd", "Def"], "Lyn": [0, 0, 2, 4, 1, -3, -1, "Spd", "Def"], "Ephraim": [4, -1, 2, -1, 0, 2, -3, "Str", "Res"], "Celica": [-3, 4, -1, 2, 0, -1, 2, "Mag", "Str"], "Ike": [3, -1, 2, 0, -3, 2, 0, "Str", "Lck"], "Eldigan": [1, -1, 4, 0, -3, 2, 0, "Skl", "Lck"], "Est": [4, -3, 2, -1, 0, 2, -1, "Str", "Mag"], "Catria": [-1, -1, 2, 4, 1, -1, -1, "Spd", "HP"], "Palla": [2, 0, 3, -3, -1, 2, 0, "Skl", "Spd"], "Katarina": [-1, 3, 0, 2, -3, 0, 2, "Mag", "Lck"]}
 
+// Pair Up (miscellaneous/pair-up, "Support Unit's Class Bonus"): Str, Mag, Skl, Spd, Lck, Def, Res, Mov. The Fire Emblem Wiki's Pair Up
+// table has the same numbers for every class. "A/B" names both classes of a gendered pair.
+const SF_PAIR_UP: Record<string, number[]> = {
+  Lord: [0, 0, 0, 3, 3, 0, 0, 0], 'Great Lord': [0, 0, 0, 4, 4, 0, 0, 0], Tactician: [1, 1, 2, 2, 0, 0, 0, 0], Grandmaster: [2, 2, 2, 2, 0, 0, 0, 0],
+  Cavalier: [2, 0, 1, 1, 0, 2, 0, 0], Paladin: [2, 0, 2, 2, 0, 2, 0, 0], 'Great Knight': [3, 0, 0, 0, 0, 3, 0, 1], Knight: [2, 0, 0, 0, 0, 4, 0, 0],
+  General: [3, 0, 0, 0, 0, 5, 0, 0], Myrmidon: [0, 0, 0, 4, 2, 0, 0, 0], Swordmaster: [0, 0, 0, 5, 3, 0, 0, 0], Mercenary: [0, 0, 2, 3, 0, 1, 0, 0],
+  Hero: [0, 0, 3, 3, 0, 2, 0, 0], Fighter: [4, 0, 0, 0, 0, 2, 0, 0], Warrior: [5, 0, 0, 0, 0, 3, 0, 0], Barbarian: [4, 0, 0, 2, 0, 0, 0, 0],
+  Berserker: [5, 0, 0, 3, 0, 0, 0, 0], Archer: [2, 0, 2, 0, 0, 2, 0, 0], Sniper: [3, 0, 3, 0, 0, 2, 0, 0], 'Bow Knight': [0, 0, 3, 3, 0, 0, 0, 1],
+  Thief: [0, 0, 2, 2, 0, 0, 0, 1], Assassin: [2, 0, 2, 4, 0, 0, 0, 0], Trickster: [0, 2, 1, 3, 0, 0, 0, 1], 'Pegasus Knight': [0, 0, 0, 3, 0, 0, 3, 0],
+  'Falcon Knight': [0, 0, 0, 4, 0, 0, 4, 0], 'Dark Flier': [0, 3, 0, 3, 0, 0, 2, 0], 'Wyvern Rider': [3, 0, 0, 0, 0, 3, 0, 0],
+  'Wyvern Lord': [4, 0, 0, 0, 0, 4, 0, 0], 'Griffon Rider': [3, 0, 0, 0, 1, 2, 0, 1], Mage: [0, 4, 2, 0, 0, 0, 0, 0], Sage: [0, 4, 2, 0, 0, 0, 2, 0],
+  'Dark Mage': [0, 3, 0, 0, 0, 3, 0, 0], Sorcerer: [0, 3, 0, 0, 0, 2, 3, 0], 'Dark Knight': [0, 2, 0, 0, 0, 3, 1, 1],
+  'Priest/Cleric': [0, 2, 0, 0, 2, 0, 2, 0], 'War Monk/War Cleric': [2, 2, 0, 0, 2, 0, 2, 0], Troubadour: [0, 2, 0, 1, 0, 0, 3, 0],
+  Valkyrie: [0, 3, 0, 2, 0, 0, 3, 0], Villager: [0, 0, 3, 0, 3, 0, 0, 0], Dancer: [0, 0, 0, 3, 3, 0, 0, 0], Taguel: [3, 0, 2, 3, 0, 0, 0, 0],
+  Manakete: [2, 2, 0, 0, 0, 2, 2, 0], Lodestar: [2, 0, 0, 3, 3, 0, 0, 0], 'Dread Fighter': [3, 1, 0, 1, 0, 0, 3, 0], Bride: [0, 2, 0, 2, 2, 0, 2, 0],
+  Conqueror: [2, 0, 0, 2, 0, 2, 0, 1],
+}
+
 const STATS = ['hp', 'str', 'mag', 'skl', 'spd', 'lck', 'def', 'res'] as const
 const unit = (name: string) => FE13_UNITS.find((u) => u.name === name)!
 const cls = (id: string) => FE13_CLASSES[id].name
@@ -146,5 +164,18 @@ describe('Awakening units', () => {
     expect(STATS.map((s) => roy.growths[s])).toEqual([40, 35, 35, 45, 35, 55, 30, 20])
     // Marth is made from the old Marth (45, 40, 20, 45, 45, 80, 35, 25) with a Luck asset and an HP flaw.
     expect(STATS.map((s) => unit('Pr. Marth').growths[s])).toEqual([25, 45, 25, 45, 45, 95, 30, 20])
+  })
+
+  it("gives every class the pair-up bonus Serenes Forest and the Fire Emblem Wiki list (JobData +56: Mov, then Str to Res)", () => {
+    const names = (k: string) => k.split('/')
+    const seen = new Set<string>()
+    for (const c of Object.values(FE13_CLASSES)) {
+      const row = Object.entries(SF_PAIR_UP).find(([k]) => names(k).includes(c.name))
+      expect(row, c.name).toBeDefined()
+      const p = c.pairUp
+      expect([p.str, p.mag, p.skl, p.spd, p.lck, p.def, p.res, p.mov], c.name).toEqual(row![1])
+      seen.add(row![0])
+    }
+    expect([...seen].sort()).toEqual(Object.keys(SF_PAIR_UP).sort())
   })
 })

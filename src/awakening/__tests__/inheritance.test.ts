@@ -269,6 +269,12 @@ describe('Pair-up (0x2b2c8c, 0x2cd408)', () => {
     expect(pairUpBonus(lord, s, 0, { defender: true })).toMatchObject({ str: 2, def: 1 })
   })
 
+  it("matches Serenes Forest's worked example: Chrom with the Avatar behind him as a Grandmaster, at A", () => {
+    // The Avatar's Str 25, Mag 31, Skl 27, Spd 22, Lck 33, Def 15, Res 19.
+    const avatar = stats({ str: 25, mag: 31, skl: 27, spd: 22, lck: 33, def: 15, res: 19 })
+    expect(pairUpBonus(cls('Grandmaster'), avatar, 3)).toEqual({ str: 6, mag: 7, skl: 6, spd: 6, lck: 3, def: 1, res: 1, mov: 0 })
+  })
+
   it('gives Mov only from the class, and 2 more with Deliverer', () => {
     expect(pairUpBonus(cls('Great Knight'), stats({}), 4).mov).toBe(1)
     expect(pairUpBonus(cls('Lord'), stats({}), 4, { deliverer: true }).mov).toBe(2)
