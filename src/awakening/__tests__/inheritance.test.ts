@@ -207,6 +207,12 @@ describe('Skills a unit can have in some playthrough', () => {
     expect(has('owain', 'Luna+')).toBe(false)
   })
 
+  it('lets every child but Gerome, Yarne and Laurent get Galeforce: a son inherits it only from a mother who can be a Dark Flier', () => {
+    const without = FE13_UNITS.filter((u) => u.parent && !reachableSkills(data, u).has('Galeforce')).map((u) => u.name)
+    // Cherche, Panne and Miriel have no Pegasus Knight in their sets, and no man can be a Dark Flier.
+    expect(without).toEqual(['Gerome', 'Yarne', 'Laurent'])
+  })
+
   it("gives everyone the DLC's skill scrolls (any unit can use one, 0x2d5528)", () => {
     for (const id of ['chrom', 'lucina', 'walhart']) {
       expect(has(id, 'Limit Breaker')).toBe(true)
