@@ -10,6 +10,11 @@ describe('computeGrowthRate', () => {
     expect(computeGrowthRate(60, 40)).toBe(50)
     expect(computeGrowthRate(0, 0)).toBe(0)
   })
+
+  it('rounds a half down, as the game halves with integer division (0x5330cc)', () => {
+    expect(computeGrowthRate(55, 40)).toBe(47)
+    expect(computeGrowthRate(45, 0)).toBe(22)
+  })
 })
 
 describe('computeBaseStat', () => {
@@ -34,21 +39,50 @@ describe('computeBaseStat', () => {
   })
 
   it('does not cap when the bonus is below the cap', () => {
-    // C = 10, father 12 (+2), mother 10 (+0) -> bonus = 2/4 = 0.5, cap = 3 -> uncapped
+    // C = 10, father 18 (+8), mother 10 (+0) -> bonus = 8/4 = 2, cap = 3 -> uncapped
     const result = computeBaseStat({
       childAbsoluteBaseStat: 10, childFullGrowthRate: 0, level: 10,
-      fatherCurrentStat: 12, motherCurrentStat: 10, ...zeroClassBases,
+      fatherCurrentStat: 18, motherCurrentStat: 10, ...zeroClassBases,
     })
-    expect(result).toBe(10.5)
+    expect(result).toBe(12)
   })
 
   it('floors each diff at 0 individually before summing', () => {
-    // C = 20, father 10 (diff -10 -> 0), mother 30 (diff 10) -> bonus = 10/4 = 2.5
+    // C = 20, father 10 (diff -10 -> 0), mother 30 (diff 10) -> bonus = 10/4 = 2.5, rounded down to 2
     const result = computeBaseStat({
       childAbsoluteBaseStat: 20, childFullGrowthRate: 0, level: 10,
       fatherCurrentStat: 10, motherCurrentStat: 30, ...zeroClassBases,
     })
-    expect(result).toBe(22.5)
+    expect(result).toBe(22)
+  })
+
+  it("rounds the parents' bonus down, as the game divides by 4 with integers (0x3d8718)", () => {
+    // C = 10, father 13 (+3), mother 10 (+0) -> 3/4 rounds down to 0
+    const result = computeBaseStat({
+      childAbsoluteBaseStat: 10, childFullGrowthRate: 0, level: 10,
+      fatherCurrentStat: 13, motherCurrentStat: 10, ...zeroClassBases,
+    })
+    expect(result).toBe(10)
+  })
+
+  it('rounds C/10 down for the cap (0x3d8718)', () => {
+    // C = 19, father 39 (+20) -> bonus 5, cap = floor(19/10) + 2 = 3
+    const result = computeBaseStat({
+      childAbsoluteBaseStat: 19, childFullGrowthRate: 0, level: 10,
+      fatherCurrentStat: 39, motherCurrentStat: 0, ...zeroClassBases,
+    })
+    expect(result).toBe(22)
+  })
+
+  it("rounds the levels' growth half up, as the game's auto-level does (0x3d7164)", () => {
+    // 50% over 1 level = 0.5 -> 1; 45% over 1 level = 0.45 -> 0; 45% over 8 levels = 3.6 -> 4
+    const at = (growth: number, level: number) => computeBaseStat({
+      childAbsoluteBaseStat: 10, childFullGrowthRate: growth, level,
+      fatherCurrentStat: 0, motherCurrentStat: 0, ...zeroClassBases,
+    })
+    expect(at(50, 11)).toBe(11)
+    expect(at(45, 11)).toBe(10)
+    expect(at(45, 18)).toBe(14)
   })
 
   it("adds the child's own class base stat flat, on top of C + bonus", () => {

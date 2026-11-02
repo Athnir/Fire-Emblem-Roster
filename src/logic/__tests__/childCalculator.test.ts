@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { characters, charactersById } from '../../data/characters'
 import { classesByName } from '../../data/classes'
 import type { Character, StatBlock } from '../../data/types'
-import { computeChild, determineVariableParent, fixedParentContribution, getHairSourceInfo, inheritClasses } from '../childCalculator'
+import { computeChild, determineVariableParent, fixedParentContribution, getHairSourceInfo, inheritClasses, resolveSecondGenParent } from '../childCalculator'
 import { getFixedParent } from '../childLookup'
 
 const zeroStats: StatBlock = { hp: 0, str: 0, mag: 0, skl: 0, spd: 0, lck: 0, def: 0, res: 0 }
@@ -349,6 +349,22 @@ describe('fixedParentContribution', () => {
       expect([child.id, fixedParentContribution(child, charactersById[fixed.id])]).toEqual([child.id, [SF_FIXED_PARENT_CLASS[child.id]]])
       expect([child.id, child.secondaryClass]).toEqual([child.id, SF_FIXED_PARENT_CLASS[child.id]])
     }
+  })
+})
+
+describe('child growths', () => {
+  it("round down at each halving, a second-generation parent's own first (0x53b758, then 0x5330cc)", () => {
+    const siegbert = resolveSecondGenParent(charactersById['siegbert'], { id: 'xander', side: 'father' }, charactersById['felicia'])
+    const corrinF = charactersById['corrin_f']
+    const kana = computeChild({
+      child: charactersById['kana_m'], father: siegbert, mother: corrinF,
+      fatherCurrentStats: siegbert.baseStats, motherCurrentStats: corrinF.baseStats,
+    })
+    // Skl: Siegbert 45 + Felicia 30 = 75, halved to 37; Kana 40 + 37 = 77, halved to 38 (unrounded it would be 38.75)
+    expect(siegbert.growthRates.skl).toBe(37)
+    expect(kana.growthRates.skl).toBe(38)
+    // Spd: 45 + 40 = 85 -> 42; 45 + 42 = 87 -> 43
+    expect(kana.growthRates.spd).toBe(43)
   })
 })
 

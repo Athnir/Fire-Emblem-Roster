@@ -1,11 +1,13 @@
 import { STAT_KEYS, type StatBlock } from '../data/types'
 
 /**
- * child_growth_rate[stat] = (variable_parent_growth_rate[stat] + child_base_growth_rate[stat]) / 2
+ * child_growth_rate[stat] = (variable_parent_growth_rate[stat] + child_base_growth_rate[stat]) / 2, rounded down: the game
+ * halves with integer division (0x5330cc), before it adds the class's growth and Aptitude's 10. A second-generation variable
+ * parent's own growth is halved and rounded down first (0x53b758); resolveSecondGenParent gets that from this function too.
  * Non-variable parent's growths do not factor in at all.
  */
 export function computeGrowthRate(variableParentGrowth: number, childBaseGrowth: number): number {
-  return (variableParentGrowth + childBaseGrowth) / 2
+  return Math.trunc((variableParentGrowth + childBaseGrowth) / 2)
 }
 
 export function computeGrowthRates(
@@ -40,7 +42,9 @@ export interface BaseStatInputs {
  * Step 2: parental bonus — each parent's contribution is their PERSONAL stat (current stat minus
  * their own class's base-stat contribution), not their raw displayed/current stat — capped.
  * Step 3: the child's own class's base-stat contribution is added once, flat, on top.
- * Serenes Forest's child-stat formula (its base-stats pages), less the class's growth (see childFullGrowthRate).
+ * Serenes Forest's child-stat formula (its base-stats pages), less the class's growth (see childFullGrowthRate), with the
+ * game's rounding: the levels' growth is summed and divided by 100, rounding half up (0x3d7164); the bonus is divided by 4 and
+ * the cap's C by 10, both rounding down (0x3d8718).
  */
 export function computeBaseStat(inputs: BaseStatInputs): number {
   const {
@@ -56,17 +60,17 @@ export function computeBaseStat(inputs: BaseStatInputs): number {
 
   // childFullGrowthRate is a percentage integer (e.g. 45 meaning 45%), same units as every other
   // growth rate in the data (characters.ts, computeGrowthRate) — dividing by 100 here converts it
-  // to the per-level fractional gain the formula actually needs. Missing this turned a few points
-  // of expected growth into hundreds (e.g. growth 45, 8 levels above baseline: 45*8=360 instead of
-  // the intended 0.45*8=3.6) — every existing test happened to use level: 10, zeroing out
-  // (level - 10) and hiding the bug completely regardless of this term's scale.
-  const C = childAbsoluteBaseStat + (childFullGrowthRate / 100) * (level - 10)
+  // to stat points. Missing this turned a few points of expected growth into hundreds (e.g. growth
+  // 45, 8 levels above baseline: 45*8=360 instead of 360/100 = 3.6, which the game rounds to 4) —
+  // every existing test happened to use level: 10, zeroing out (level - 10) and hiding the bug
+  // completely regardless of this term's scale.
+  const C = childAbsoluteBaseStat + Math.floor((childFullGrowthRate * (level - 10) + 50) / 100)
   const fatherPersonalStat = fatherCurrentStat - fatherClassBaseStat
   const motherPersonalStat = motherCurrentStat - motherClassBaseStat
   const fatherDiff = Math.max(fatherPersonalStat - C, 0)
   const motherDiff = Math.max(motherPersonalStat - C, 0)
-  const bonus = (fatherDiff + motherDiff) / 4
-  const bonusCapped = Math.min(bonus, Math.floor(C / 10) + 2)
+  const bonus = Math.trunc((fatherDiff + motherDiff) / 4)
+  const bonusCapped = Math.min(bonus, Math.trunc(C / 10) + 2)
   return childClassBaseStat + C + bonusCapped
 }
 

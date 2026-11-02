@@ -88,8 +88,15 @@ In the program, each record starts at its flag word, so the offsets are 8 more t
   the receiver's default class counts.
   - The Friendship Seal never takes the Avatar as the partner.
   - The Avatar's own Friendship Seal takes every same-gender partner at A rank.
+- **Growths (0x5330cc).** A unit's growth is their personal growth, plus their class's, plus 10 with Aptitude. For a child,
+  the personal part is the child's and the variable parent's added and halved, rounding down, before the class's is added.
+  The variable parent is the slot whose gender isn't the fixed parent's (0x53b6e4). A second-generation variable parent counts
+  as their own and their variable parent's personal growths added and halved, rounding down too (0x53b758).
+- **Levelling a child to their join level (0x3d396c calls 0x3d7164).** Each level above their base level (10) adds their full
+  growth to a running sum per stat; at the end the sum is divided by 100, rounding half up, and added (held under the cap).
 - **Recruiting a child (0x3d44a8 calls 0x3d8718).** In this order:
-  1. The base stats: each parent's personal stat less C, floored at 0, the two summed and divided by 4, capped at C/10 + 2.
+  1. The base stats. C is the child's personal stat after the levelling. Each parent's personal stat less C is floored at 0;
+     the two are summed and divided by 4, rounding down, and capped at C/10 (rounded down) + 2.
   2. One skill from each parent, the father's first (0x3d69c0). From the lowest equipped slot up, the child takes the first skill
      that can pass (+0x19) and that they don't already know; at most three known ones are skipped.
   3. The parents' dragon, beast and Dragon Vein flags are copied to the child. This comes after the skills, so a beast flag from a
@@ -99,8 +106,9 @@ In the program, each record starts at its flag word, so the offsets are 8 more t
   mother's, each with the Avatar's boon and bane rows when the parent is the Avatar. A second-generation parent counts as their
   own parents' modifiers, without their +1. Then it adds 1 to every stat but HP.
 
-The app follows this in `offeredClasses`, `parentContribution` and `getSealReclassClass` (`src/logic/classResolution.ts`) and
-`inheritClasses` (`src/logic/childCalculator.ts`).
+The app follows this in `offeredClasses`, `parentContribution` and `getSealReclassClass` (`src/logic/classResolution.ts`),
+`inheritClasses` (`src/logic/childCalculator.ts`), and `computeGrowthRate` and `computeBaseStat` (`src/logic/statCalculator.ts`;
+the base stats keep the user's low estimate, so the levelling there uses the personal growth alone).
 
 ## Where the wikis differ from the program
 

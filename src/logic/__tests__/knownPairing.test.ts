@@ -24,16 +24,16 @@ describe('known pairing: Laslow x Corrin(F) -> Soleil', () => {
     })
 
     // variable parent = mother (Corrin_f, default rule; Soleil is not Shigure/Kana)
-    // growth[str] = (corrinF.growthRates.str=45 + soleil.growthRates.str=60) / 2 = 52.5
-    expect(result.growthRates.str).toBe(52.5)
+    // growth[str] = (corrinF.growthRates.str=45 + soleil.growthRates.str=60) / 2 = 52.5, which the game rounds down to 52
+    expect(result.growthRates.str).toBe(52)
 
-    // C = soleil.baseStats.str(7) + 52.5 * (level10 - 10) = 7
+    // C = soleil.baseStats.str(7) + 52 * (level10 - 10) = 7
     // childClassBaseStat = Mercenary str base = 5
     // father personal = laslow.str(15) - Mercenary str base(5) = 10; diff = max(10-7,0) = 3
     // mother personal = corrinF.str(7) - Nohr Prince(ss) str base(7) = 0; diff = max(0-7,0) = 0
-    // bonus = 3/4 = 0.75; cap = floor(7/10)+2 = 2 -> uncapped
-    // final = 5 (class base) + 7 (C) + 0.75 (bonus) = 12.75
-    expect(result.baseStats.str).toBe(12.75)
+    // bonus = 3/4 = 0.75, which the game rounds down to 0; cap = floor(7/10)+2 = 2
+    // final = 5 (class base) + 7 (C) + 0 (bonus) = 12
+    expect(result.baseStats.str).toBe(12)
   })
 
   it('inherits one class from each parent using the real Class Set data', () => {
