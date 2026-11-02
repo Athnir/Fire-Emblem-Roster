@@ -12,9 +12,16 @@ used (their paths are in fe9_files.py and fe10_files.py: <files>/../sys/main.dol
 import re
 import struct
 
-import capstone
+_md = None
 
-md = capstone.Cs(capstone.CS_ARCH_PPC, capstone.CS_MODE_32 | capstone.CS_MODE_BIG_ENDIAN)
+
+def _disassembler():
+    """capstone, loaded on first use: reading data from the program (the generators) doesn't need it."""
+    global _md
+    if _md is None:
+        import capstone
+        _md = capstone.Cs(capstone.CS_ARCH_PPC, capstone.CS_MODE_32 | capstone.CS_MODE_BIG_ENDIAN)
+    return _md
 
 
 class Dol:
@@ -62,7 +69,7 @@ class Dol:
                 if not code:
                     continue
                 for k in range(0, s, 4):
-                    got = list(md.disasm(self.d[o + k:o + k + 4], a + k))
+                    got = list(_disassembler().disasm(self.d[o + k:o + k + 4], a + k))
                     out.append((a + k, got[0].mnemonic, got[0].op_str) if got else (a + k, '.word', '0x%08x' % struct.unpack_from('>I', self.d, o + k)[0]))
             self._ins = out
             self._at = {a: i for i, (a, _, _) in enumerate(out)}

@@ -90,16 +90,23 @@ def classes(t):
 
 
 def skills(t):
-    """The SID_ tables (40 bytes each). {SID: dict}."""
+    """The SID_ tables (40 bytes each): 0x1B counts the items at the list +0x20 points to, all of which a unit needs
+    to learn the skill (its scroll, or the Occult scroll for a mastery skill); 0x1C counts the list at +0x24, the
+    classes or units of which a unit must be one (none: anyone). The learn check is 0x801058c4. {SID: dict}."""
     out = {}
     for name, o in t.named.items():
         if not name.startswith('SID_'):
             continue
         r = t.raw(o, 40)
+
+        def strings(at, count):
+            base = t.u32(o + at)
+            return [t.g.string(t.u32(base + 4 * i)) for i in range(count)] if base else []
         out[name] = {
             'sid': name, 'label': t.ptr_string(o + 8), 'name': t.name(t.ptr_string(o + 8)),
             'help': t.name(t.ptr_string(o + 0xC)), 'scroll': t.ptr_string(o + 0x14),
-            'index': r[0x18], 'icon': r[0x19], 'capacity': r[0x1A], 'flag': r[0x1B], 'count': r[0x1C],
+            'index': r[0x18], 'icon': r[0x19], 'capacity': r[0x1A], 'item_count': r[0x1B], 'count': r[0x1C],
+            'items': strings(0x20, r[0x1B]), 'only': strings(0x24, r[0x1C]),
         }
     return out
 

@@ -24,22 +24,38 @@ SCENE_SUFFIXES = ('_EV', '_EV1', '_EV2', '_EV3', '_MAP1', '_MAP9')
 # under `unconfirmed`, not as fact.
 CONDITIONS = {
     # C30's RestoreSallyDisposition and Opening1: bmap30_m02_c (Nasir) if G_漆黒の騎士倒した is set, else
-    # bmap30_m01_c (Ena). C29's handler 11 sets the flag when the Black Knight falls.
-    'PID_NASIR': 'Joins if the Black Knight was defeated in {c29}; otherwise Ena joins instead.',
-    'PID_ENA': 'Joins if the Black Knight was not defeated in {c29}; otherwise Nasir joins instead.',
-    # C31's turn-3 handlers place bmap31_m_tibarn_c, _m_naesala_c or _m_giffca_c by BMGetValue(0) = 0, 1, 2.
-    'PID_TIBARN': 'One of Tibarn, Naesala and Giffca joins; Tibarn when the value the script reads is 0.',
-    'PID_NAESALA': 'One of Tibarn, Naesala and Giffca joins; Naesala when the value the script reads is 1.',
-    'PID_GIFFCA': 'One of Tibarn, Naesala and Giffca joins; Giffca when the value the script reads is 2.',
+    # bmap30_m01_c (Ena). C29's handler 12 (the Black Knight defeated) sets the flag and ends the chapter; handler 13
+    # (five turns survived) ends it without. C30's and C31's Opening0 set it only on the debug starts (when
+    # DBG_最初からやってる, which the Prologue sets, is unset).
+    'PID_NASIR': 'Joins if the Black Knight is defeated in {c29}. If the five turns run out first, Ena joins instead.',
+    'PID_ENA': "Joins if the Black Knight isn't defeated in {c29} (the five turns run out). If he is, Nasir joins instead.",
 }
+# C31: a four-way question, BMSetValue(0, DialogGetRes()): Tibarn 0, Naesala 1, Giffca 2, "Don't call." 3. The turn-3
+# handlers place bmap31_m_tibarn_c, _m_naesala_c or _m_giffca_c by the answer. On Easy and Normal (the script's
+# Normal()) it's asked on turn 2 (handler 18); on Hard, after Ashnard's first defeat (handlers 51, 22, 23).
+ROYAL_NOTE = ('You pick who to call: Tibarn, Naesala, Giffca, or no one ("Don\'t call."). On Easy and Normal the question '
+              'comes on turn 2 and the royal arrives on turn 3; on Hard it comes after Ashnard is first defeated.')
+for _pid in ('PID_TIBARN', 'PID_NAESALA', 'PID_GIFFCA'):
+    CONDITIONS[_pid] = ROYAL_NOTE
 UNCONFIRMED = {
-    'PID_TIBARN': 'What sets the value (BMGetValue(0)) is not traced. Serenes Forest: you choose one of the three.',
-    'PID_NAESALA': 'What sets the value (BMGetValue(0)) is not traced. Serenes Forest: you choose one of the three.',
-    'PID_GIFFCA': 'What sets the value (BMGetValue(0)) is not traced. Serenes Forest: you choose one of the three.',
-    'PID_NASIR': "C30's and C31's Opening0 also set the flag, beside the debug starts' joins (always_dbg_*); taken as the debug path.",
-    'PID_ENA': "C30's and C31's Opening0 also set the flag, beside the debug starts' joins (always_dbg_*); taken as the debug path.",
     'PID_KILROY': 'Serenes Forest lists Rhys at 22 HP, 0 Str, 10 Mag, 8 Skl, 5 Spd, 8 Lck, 0 Def, 14 Res; the data gives the numbers here.',
 }
+# The story's choices of who joins, which the Roster lets you pick (chapter files, as CONDITIONS).
+CHOICES = [
+    {'id': 'fe9-black-knight', 'file': 30, 'question': 'Was the Black Knight defeated in {c29}?',
+     'options': [{'label': 'Defeated: Nasir joins', 'units': ['PID_NASIR']},
+                 {'label': 'Not defeated: Ena joins', 'units': ['PID_ENA']}]},
+    {'id': 'fe9-royal', 'file': 31, 'question': 'Who did you call in the Endgame?',
+     'options': [{'label': 'Tibarn', 'units': ['PID_TIBARN']}, {'label': 'Naesala', 'units': ['PID_NAESALA']},
+                 {'label': 'Giffca', 'units': ['PID_GIFFCA']}, {'label': "Don't call", 'units': []}]},
+]
+# What the story's promotions depend on (UnitClassChange in the chapter's script; see story_promotions()).
+PROMOTION_NOTES = {
+    # C20's end: Volke asks to be hired once he's been paid; "Hire." (MS_20_ED_04_03YY) makes him an Assassin.
+    'PID_VOKE': 'if you pick "Hire." when he asks',
+}
+# Skills that need another (the learn check, 0x801058c4, asks Smite for Shove).
+REQUIRES = {'SID_TACKLE2': ['SID_TACKLE']}
 
 
 # The trial maps' units: zmap/always's `always_T_NN` groups, unlocked by clearing the game NN times from beginning to end
@@ -209,6 +225,29 @@ def joins(t, persons):
     return found
 
 
+def story_promotions():
+    """{PID: [(chapter file, 'start' | 'end')]}: the story's promotions, each a `UnitClassChange` on the unit a handler
+    stored with `UnitGetByPID` (Ike's in Ch.18's Opening0, Volke's at Ch.19's end). They're the only way the Ranger and
+    the Thief promote: the Master Seal refuses a class with SID_EVENTCC (0x8003d538), so Sothe never does."""
+    out = {}
+    for n in STORY:
+        script = Script(f'C{n:02d}.cmb')
+        for h in script.handlers():
+            stored, pending, last = {}, None, None
+            for _, op, a in script.disasm(h):
+                if op == 'load':
+                    pending = a
+                elif op == 'str' and pending is not None and isinstance(a, str) and a.startswith('PID_'):
+                    stored[pending] = a
+                elif op == 'var':
+                    last = a
+                elif op == 'call' and a == 'UnitClassChange/1' and last in stored:
+                    when = 'end' if h['kind'] == 1 else 'start' if h['name'].startswith('Opening') else None
+                    assert when, f'a class change outside an opening or an ending: C{n:02d} handler {h["i"]}'
+                    out.setdefault(stored[last], []).append((n, when))
+    return out
+
+
 def ranks(s):
     """'-CA------' -> {'lance': 'C', 'axe': 'A'}. '*' is a type picked at promotion."""
     return {k: c for k, c in zip(RANK_TYPES, s) if c != '-'}
@@ -226,6 +265,7 @@ def main():
     joined = joins(t, persons)
     order = sorted(joined, key=lambda p: (joined[p][0], persons[p]['name']))
     c29 = chapter_label(text, 29)
+    promotions = story_promotions()
 
     used = set()
     units = []
@@ -248,6 +288,10 @@ def main():
         }
         if pid in CONDITIONS:
             unit['join']['note'] = CONDITIONS[pid].format(c29=c29)
+        if pid in promotions:
+            unit['storyPromotions'] = [{'chapter': chapter_id(text, k), 'when': w,
+                                        **({'note': PROMOTION_NOTES[pid]} if pid in PROMOTION_NOTES else {})}
+                                       for k, w in promotions[pid]]
         if pid in UNCONFIRMED:
             unit['unconfirmed'] = UNCONFIRMED[pid]
         units.append(unit)
@@ -293,13 +337,17 @@ def main():
             **({'transformed': 'SID_LYCANTHROPE' in c['skills'] or c['attributes'][1:2] in (['beast'], ['bird'], ['dragon'])} if laguz else {}),
             **({'promotesTo': c['other']} if c['other'] and not promoted and not laguz else {}),
             **({'transformsTo': c['other']} if laguz and c['other'] else {}),
+            # The Master Seal refuses SID_EVENTCC (0x8003d538): the Ranger and the Thief promote only by the story.
+            **({'storyPromotion': True} if 'SID_EVENTCC' in c['skills'] else {}),
             'bases': c['bases'], 'caps': c['caps'], 'mov': c['mov'], 'con': c['con'], 'wt': c['wt'],
-            'capacity': c['capacity'], 'ranks': ranks(c['ranks']), 'skills': visible(c['skills'], sk),
+            # Loading a class (0x8001a958) gives Shove (SID_TACKLE) to every class without Canto (SID_TWICE).
+            'capacity': c['capacity'], 'ranks': ranks(c['ranks']),
+            'skills': visible(c['skills'], sk) + ([] if 'SID_TWICE' in c['skills'] else ['SID_TACKLE']),
         }
 
-    # Each skill's scroll is the item named like it (SID_AMBUSH -> IID_AMBUSH, "Vantage"); the mastery skills are
-    # learned from the Occult scroll (IID_ESOTERIC, first in the skill's list at +0x20). A scroll item the game
-    # gives no name (Daunt's, Celerity's, Tempest's...) is taken as never handed out.
+    # A skill is learned with the items in its list (+0x20): its own scroll (SID_AMBUSH's IID_AMBUSH, "Vantage"), or
+    # the Occult scroll (IID_ESOTERIC) for a mastery skill. An item the game gives no name (Daunt's, Tempest's,
+    # Blossom's...) is taken as never handed out; a skill with no item (Celerity) is never learned at all.
     item_names = {}
     o = t.named['ItemData']
     for k in range(t.u32(o)):
@@ -307,28 +355,27 @@ def main():
         item_names[t.ptr_string(p)] = t.name(t.ptr_string(p + 4))
 
     def scroll_of(sid):
-        first = t.u32(t.named[sid] + 0x20)
-        if first and t.g.string(t.u32(first)) == 'IID_ESOTERIC':
-            return item_names.get('IID_ESOTERIC') or None
-        return item_names.get('IID_' + sid[4:]) or None
+        names = [item_names.get(iid) for iid in sk[sid]['items']]
+        return names[0] if names and all(names) else None
 
     # Skills that can be learned or carried (a capacity, or a unit's or class's own).
     out_skills = {}
     learnable = set()
     for s in sk.values():
-        if s['help'] and (s['capacity'] or s['flag']):
+        if s['help'] and (s['capacity'] or s['item_count']):
             learnable.add(s['sid'])
     shown = learnable | {s for u in units for s in u['skills']} | {s for c in out_classes.values() for s in c['skills']}
     for sid in sorted(shown, key=lambda s: sk[s]['index']):
         s = sk[sid]
-        o = t.named[sid]
-        only = [t.g.string(t.u32(t.u32(o + 0x24) + 4 * i)) for i in range(s['count'])] if t.u32(o + 0x24) else []
+        only = s['only']
         out_skills[sid] = {
             'id': sid, 'name': s['name'], 'description': s['help'], 'capacity': s['capacity'],
-            'removable': bool(s['flag']),
+            # Removing a skill (0x8017bc94) needs an icon and a capacity; a class's own skills never come off.
+            'removable': bool(s['icon'] and s['capacity']),
             **({'scroll': scroll_of(sid)} if scroll_of(sid) else {}),
             **({'onlyClasses': sorted({x for x in only if x.startswith('JID_')})} if any(x.startswith('JID_') for x in only) else {}),
             **({'onlyUnits': sorted({x for x in only if x.startswith('PID_')})} if any(x.startswith('PID_') for x in only) else {}),
+            **({'requires': REQUIRES[sid]} if sid in REQUIRES else {}),
         }
 
     # Supports: the totals RelianceData stores for C, B and A. Serenes Forest's chapter counts are these less the
@@ -348,13 +395,20 @@ def main():
 
     chapters = [{'id': chapter_id(text, n), 'label': chapter_label(text, n),
                  'title': ' '.join(text[f'MCT{n:02d}'].split(':', 1)[-1].split())} for n in STORY] + [TRIAL_CHAPTER]
+    choices = [{'id': c['id'], 'chapter': chapter_id(text, c['file']), 'question': c['question'].format(c29=c29),
+                'options': c['options']} for c in CHOICES]
+    ids = {u['id'] for u in units}
+    for c in choices:
+        for opt in c['options']:
+            assert all(u in ids for u in opt['units']), opt
 
     def js(v):
         return json.dumps(v, ensure_ascii=False)
 
     lines = [
         '// Generated by scripts/build-fe9-units.py from the user\'s own Path of Radiance files. Don\'t edit by hand.',
-        "import type { TelliusBand, TelliusChapter, TelliusClass, TelliusSkill, TelliusSupport, TelliusUnit } from '../../tellius/types'",
+        'import type { TelliusBand, TelliusChapter, TelliusChoice, TelliusClass, TelliusSkill, TelliusSupport, TelliusUnit } from '
+        "'../../tellius/types'",
         '',
         f'export const FE9_CHAPTERS: TelliusChapter[] = {js(chapters)}',
         '',
@@ -377,6 +431,11 @@ def main():
         '// Accessories that change growth rates (the bands and the Knight Ward).',
         'export const FE9_BANDS: TelliusBand[] = [',
         *[f'  {js(b)},' for b in out_bands],
+        ']',
+        '',
+        "// The story's choices of who joins.",
+        'export const FE9_CHOICES: TelliusChoice[] = [',
+        *[f'  {js(c)},' for c in choices],
         ']',
         '',
     ]

@@ -16,6 +16,19 @@ export const FE10_DATA: TelliusData = {
   maxLevel: 20,
   openSupports: FE10_SUPPORTS,
   bonds: FE10_BONDS,
+  rules: {
+    transform: 'double',
+    capacity: 'allButOwn',
+    maxSkills: { count: 6, withClassSkills: true },
+    laguzCapacity: [
+      [15, 15],
+      [30, 50],
+    ],
+    blossom: 'SID_BLOSSOM',
+    celerity: 'SID_CELERITY',
+    bexp: true,
+    transferCopies: 'PID_SOTHE',
+  },
 }
 
 const fe10: GameParts = {

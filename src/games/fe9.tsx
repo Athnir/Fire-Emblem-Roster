@@ -1,4 +1,4 @@
-import { FE9_BANDS, FE9_CHAPTERS, FE9_CLASSES, FE9_SKILLS, FE9_SUPPORTS, FE9_UNITS } from '../data/fe9/fe9Units'
+import { FE9_BANDS, FE9_CHAPTERS, FE9_CHOICES, FE9_CLASSES, FE9_SKILLS, FE9_SUPPORTS, FE9_UNITS } from '../data/fe9/fe9Units'
 import { TelliusBulkUpload } from '../tellius/TelliusBulkUpload'
 import { TelliusPlanner } from '../tellius/TelliusPlanner'
 import { TelliusRoster } from '../tellius/TelliusRoster'
@@ -16,6 +16,14 @@ export const FE9_DATA: TelliusData = {
   maxLevel: 20,
   fixedMode: true,
   bands: FE9_BANDS,
+  choices: FE9_CHOICES,
+  rules: {
+    transform: 'form',
+    capacity: 'nonClass',
+    maxSkills: { count: 5, withClassSkills: false },
+    blossom: 'SID_FRAC90',
+    celerity: 'SID_SWIFT',
+  },
 }
 
 const fe9: GameParts = {

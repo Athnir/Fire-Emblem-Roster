@@ -2,7 +2,8 @@ import { useEffect } from 'react'
 import { AssetIcon } from '../components/AssetIcon'
 import { Portrait } from '../components/Portrait'
 import { useScreenshotContextStore } from '../state/screenshotContextStore'
-import { artId, formatStat } from './logic'
+import { useArmy } from './choiceStore'
+import { artId, formatStat, weaponsText } from './logic'
 import { TELLIUS_STATS, TELLIUS_STAT_LABELS, type TelliusData, type TelliusStats, type TelliusUnit } from './types'
 
 export function UnitPortrait({ data, unit, size = 64 }: { data: TelliusData; unit: TelliusUnit; size?: number }) {
@@ -60,8 +61,9 @@ export function useScreenshotUnit(unit: TelliusUnit | undefined) {
   }, [unit, setUnitLabel])
 }
 
-/** The units in join order, as a select. */
+/** The units in join order, as a select: those in your army, by the story choices picked in the Roster. */
 export function UnitSelect({ data, value, onChange }: { data: TelliusData; value: string; onChange: (id: string) => void }) {
+  const army = useArmy(data)
   return (
     <select
       value={value}
@@ -69,7 +71,7 @@ export function UnitSelect({ data, value, onChange }: { data: TelliusData; value
       className="w-full max-w-xs rounded-md border border-neutral-700 bg-neutral-800 px-2 py-1.5 text-sm text-neutral-200"
     >
       {data.chapters.map((ch) => {
-        const units = data.units.filter((u) => u.joinChapter === ch.id)
+        const units = army.filter((u) => u.joinChapter === ch.id)
         if (units.length === 0) return null
         return (
           <optgroup key={ch.id} label={ch.label}>
@@ -119,4 +121,38 @@ export function StatTable({ rows }: { rows: { label: string; values: TelliusStat
       </table>
     </div>
   )
+}
+
+export function WeaponsLine({ data, classId }: { data: TelliusData; classId: string }) {
+  const text = weaponsText(data, classId)
+  return (
+    <div className="text-sm text-neutral-300">
+      <span className="text-neutral-500">Weapons (as a {data.classes[classId]?.name}): </span>
+      {text || 'none'}
+    </div>
+  )
+}
+
+/** The story's promotions, or why there are none ("Thief promotes only by the story, which never promotes Sothe"). */
+export function StoryPromotions({ data, unit }: { data: TelliusData; unit: TelliusUnit }) {
+  const cls = data.classes[unit.classId]
+  if (unit.storyPromotions?.length) {
+    return (
+      <p className="text-xs text-neutral-400">
+        Promoted by the story, not a Seal or Crown:{' '}
+        {unit.storyPromotions
+          .map((p) => `${p.when === 'end' ? 'at the end of' : 'at the start of'} ${chapterLabel(data, p.chapter)}${p.note ? `, ${p.note}` : ''}`)
+          .join('; then ')}
+        . Whatever level they've reached then.
+      </p>
+    )
+  }
+  if (cls?.storyPromotion && !cls.laguz) {
+    return (
+      <p className="text-xs text-neutral-400">
+        {cls.name} promotes only by the story, and the story never promotes {unit.name}: no Seal works on the class.
+      </p>
+    )
+  }
+  return null
 }

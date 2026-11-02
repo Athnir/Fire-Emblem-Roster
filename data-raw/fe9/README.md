@@ -54,14 +54,34 @@ A unit's stats when they join are the class's bases plus their own; every playab
 | 0x5C-0x63 | small signed values (±5): by Serenes Forest's Fixed mode formula, what defeating this class adds to the growth rate when growth points are counted; the app's projection doesn't count them |
 
 Promotion adds the promoted class's bases minus the base class's, and the Con, Mov and capacity differences (they match Serenes
-Forest's promotion gains).
+Forest's promotion gains). In the program (`sys/main.dol`, read with `scripts/gc_dol.py`): a unit stores only what it has gained,
+and each stat is class base + personal base + gains, held at the class's cap (0x8003b490; Luck is personal + gains, held at 40).
+Promoting (0x8003d2c4) switches the class, so the bases change; level goes to 1, HP fills, weapon ranks rise to at least the new
+class's, and Fixed mode's growth points are halved, rounding down (0x8003d464). A unit promotes on its own at Lv 20 plus 100 EXP
+(0x8003d13c). The Master Seal (0x8003d538) needs Lv 10, and refuses a class with `SID_HIGHER` (promoted, and every laguz),
+`SID_ANIMALIZE` or `SID_EVENTCC`. `SID_EVENTCC` marks the Ranger and the Thief, which only the story promotes: Ike in Ch.18's
+`Opening0` (C19) and Volke at Ch.19's end (C20, if you pick "Hire." when he asks). Sothe never promotes. The generator finds the
+story's promotions by their `UnitClassChange` calls (`story_promotions()`).
+
+Loading a class (0x8001a958) gives it Shove (`SID_TACKLE`) unless it has Canto (`SID_TWICE`): every foot and laguz class shoves,
+the mounted and flying ones don't. The app lists Shove among those classes' skills.
+
+Laguz: transforming (0x8003bbd4) switches the unit to the class's other form (`+0x0C`), so the transformed class's bases and caps
+apply, and Con, Wt and Mov follow the form. Nothing is doubled (that's Radiant Dawn). Laguz classes have `SID_HIGHER`, so they stop
+at Lv 20 and count as level + 20 for EXP.
 
 ### Skills: one `SID_` table each, 40 bytes
 
 0 `SID_`, 8 `MSID_` name label, 0x0C and 0x10 help labels (`Mess_Help_skill_*`), 0x14 an effect id, 0x18 index, 0x19 icon,
-0x1A capacity, 0x1B 1 if it can be removed, 0x1C a count; 0x24 points at that many `JID_` or `PID_` strings, the only classes or
-units that can have it (the mastery skills' classes, Sothe's Blossom); the word at 0x20 points one entry earlier, at the scroll
-item (`IID_ESOTERIC`, the Occult scroll, for every mastery skill).
+0x1A capacity, 0x1B the number of items at the list 0x20 points to, 0x1C the number of `JID_` or `PID_` strings at the list 0x24
+points to. The learn check (0x801058c4) wants an icon, every item of the first list in the convoy or held by a unit (each skill's
+own scroll, or `IID_ESOTERIC`, the Occult scroll, for a mastery skill), and, if the second list has any, the unit or its class in
+it (the mastery skills' classes, Sothe's Blossom). Smite (index 0x45) also needs Shove (0x44).
+
+Carrying skills: capacity used is every skill but the class's own, a unit's own included (0x8017c3c8); the learn screen
+(0x801be92c) refuses a unit with five skills besides the class's. A skill can be removed (0x8017bc94) if it has an icon and a
+capacity and isn't the class's; it's gone for good. Blossom (`SID_FRAC90`, Sothe's): a failed growth roll is rolled again
+(0x80034130), Fixed mode turns 90 points into a stat (0x80034ba8), and EXP is cut to 7/10 (0x8003d094).
 
 Skill scrolls are items named like the skill (`SID_AMBUSH` -> `IID_AMBUSH`, "Vantage"). Some have no name (Paragon, Celerity,
 Tempest, Serenity, Daunt, Canto, Blossom, Reinforce, Insight, Vigilance): the app takes those as never handed out, so only those
@@ -72,8 +92,10 @@ who start with the skill have it. Unconfirmed in-game.
 A count (41 people), then for each: `PID_`, a partner count, and 8-byte entries (partner `PID_`, then three bytes C, B, A). An
 entry whose partner pointer is 0 is empty and skipped. Every pair appears under both people, 68 pairs in all.
 
-The three bytes are totals: Serenes Forest's chapters together are C, B - 1 and A - 2 for all 136 entries. Unconfirmed: why the
-stored totals run one higher for each level already reached.
+The three bytes are totals: Serenes Forest's chapters together are C, B - 1 and A - 2 for all 136 entries, because viewing a
+conversation adds a point to both units (0x8017fc70). A pair gains a point for each chapter they start deployed together
+(0x80015234, from each map's opening), none while a conversation is waiting, and none in Ch.27-2. A conversation is offered when
+the points equal C, B or A and both units have fewer than five support levels (C counts 1, B 2, A 3; 0x80036b20).
 
 ## Who joins, and when (`Scripts/Cnn.cmb`, `zmap/bmapNN/dispos.cmp`, `zmap/always/dispos.cmp`)
 
@@ -98,10 +120,14 @@ Serenes Forest's recruitment page (Kieran, Brom and Nephenee are freed during Ch
 Conditions the scripts put on joins:
 
 - **Nasir or Ena (Ch.28, C30):** `RestoreSallyDisposition` and `Opening1` add `bmap30_m02_c` (Nasir) when the flag
-  `G_漆黒の騎士倒した` is set, `bmap30_m01_c` (Ena) otherwise. C29's handler 11 sets the flag when the Black Knight falls.
-  C30's and C31's `Opening0` also set it, beside the debug joins, so that's taken as the debug path (unconfirmed).
-- **Tibarn, Naesala or Giffca (Endgame, C31):** a turn-3 handler places `bmap31_m_tibarn_c`, `_m_naesala_c` or `_m_giffca_c` for
-  `BMGetValue(0)` = 0, 1 or 2. Serenes Forest says the player chooses; what sets the value isn't traced (unconfirmed).
+  `G_漆黒の騎士倒した` is set, `bmap30_m01_c` (Ena) otherwise. C29's handler 12 sets it when the Black Knight is defeated and ends
+  the chapter; handler 13, the five turns survived, ends it without. C30's and C31's `Opening0` set it only on the debug starts
+  (when `DBG_最初からやってる`, set by the Prologue, is unset).
+- **Tibarn, Naesala or Giffca (Endgame, C31):** `BMSetValue(0, DialogGetRes())` after a four-way question: Tibarn 0, Naesala 1,
+  Giffca 2, "Don't call." 3 (none). A turn-3 handler places `bmap31_m_tibarn_c`, `_m_naesala_c` or `_m_giffca_c` by the answer.
+  On Easy and Normal (the script's `Normal()`) it's asked on turn 2 (handler 18); on Hard, after Ashnard's first defeat (51, 22, 23).
+
+The Roster lets you pick both (`FE9_CHOICES`), and the other options' units drop out of every tab's lists.
 
 ## Bands (ItemData)
 
@@ -110,16 +136,20 @@ Mag, Skl, Spd, Lck, Def, Res, which the item gives while equipped. The accessori
 and the Knight Ward (Spd +30); they match Serenes Forest's accessories page. The Knight Ward's rule flag `eqD` limits it to
 classes with the skill `SID_EQ_D` (Soldiers, Halberdiers, Knights, Generals, the horseback knights and Paladins). Weapons have
 values there too (the Iron Sword's Str -5, Skl +5, Spd +5, Res -5...): Serenes Forest's Fixed mode formula counts them as
-the weapon's alteration. The Unit Planner counts the bands in both modes and leaves weapons out. Unconfirmed: that the bands
-apply in Random mode is Serenes Forest's accessories page, not checked in the code.
+the weapon's alteration. Only the first equipped accessory counts, in both modes and for bonus EXP (Random 0x800341a0, Fixed
+0x80035a98); a weapon's values count in Fixed mode only. The Unit Planner counts the bands and leaves weapons out.
 
 ## Fixed mode
 
-From a second playthrough the game offers Fixed mode. As Serenes Forest describes it (general/fixed-mode), each stat has growth
-points: EXP gained × (growth rate + the equipped weapon's and item's alterations + the defeated class's alteration), rounded,
-held at 255; at a level-up every 100 points is +1 and the rest carries over. Each unit starts with its own points (PersonData
-0x49-0x50). The Unit Planner's Fixed option counts a level as 100 EXP, with the band worn (if any) and no other alterations. Unconfirmed: the formula hasn't been
-checked in `main.dol`, nor what happens to points for a stat at its cap; the weapons' and items' alterations aren't located.
+From a second playthrough the game offers Fixed mode (bit 0x80 of 0x803307a7). Each award of EXP adds, per stat, (growth rate +
+the class fought's change at JobData +0x5C + the weapon's + the first equipped accessory's) × EXP / 100, rounded half up, held
+between 0 and 255 (0x800351fc, 0x80034ff0). The level-up (0x80034ba8) turns 100 points into +1, twice at most (90 with Blossom);
+a stat at its cap still spends its points. Promotion halves them. Each unit starts with its own points (PersonData 0x49-0x50).
+The Unit Planner counts a level as one award of 100 EXP with the band worn: close, not exact (the user's choice, 2026-11-02).
+
+Random mode (0x80034130): each stat rolls the unit's growth plus the accessory's; a sure point per 100 (two at 200); gains cut at
+the caps after all eight are rolled; a level that gains nothing stays empty. No class growth, nothing by difficulty. Bonus EXP
+levels a unit up exactly as battle does (0x801bccc4).
 
 ## The trial maps' units
 

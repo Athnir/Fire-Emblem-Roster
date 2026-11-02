@@ -92,10 +92,20 @@ export interface TelliusUnit {
   heldBack?: string[]
   /** Leadership stars. */
   leadership?: number
-  /** Promotions the story gives (the class can't use a Seal or Crown): at the start or end of these chapters. */
-  storyPromotions?: { chapter: string; when: 'start' | 'end' }[]
-  /** Chapters where, fighting for the other side, a talk brings them back (Radiant Dawn's Jill and Zihark). */
-  talkedBack?: { chapter: string; with: string[] }[]
+  /** Promotions the story gives (the class can't use a Seal or Crown): at the start or end of these chapters, and what
+   * they depend on ('if you pick "Hire." when he asks'). A unit in such a class without one never promotes. */
+  storyPromotions?: { chapter: string; when: 'start' | 'end'; note?: string }[]
+  /** Chapters where, fighting for the other side, a talk brings them back (Radiant Dawn's Jill and Zihark); `porA`: of
+   * those who can talk, the ones who need an A support with them in Path of Radiance. */
+  talkedBack?: { chapter: string; with: string[]; porA?: string[] }[]
+  /** Radiant Dawn: other talks that need an A support from Path of Radiance. */
+  porNotes?: string[]
+  /** Radiant Dawn: the Path of Radiance unit whose save data they take (its id in Path of Radiance's data). */
+  porUnit?: string
+  /** Radiant Dawn: units (Radiant Dawn ids) whose A support with them in Path of Radiance becomes a bond here. */
+  porSupports?: string[]
+  /** Radiant Dawn: chapters the maps keep them half-transformed for (Volug in Part 1). */
+  halfTransformed?: string[]
 }
 
 export interface TelliusClass {
@@ -117,6 +127,8 @@ export interface TelliusClass {
   capacity: number
   /** Weapon ranks the class starts with; '*' is a type picked at promotion. */
   ranks: Partial<Record<TelliusRankType, string>>
+  /** The highest rank of each weapon the class uses (Radiant Dawn). */
+  maxRanks?: Partial<Record<TelliusRankType, string>>
   skills: string[]
   /** Promotes only through the story, not with a Seal or Crown (Radiant Dawn). */
   storyPromotion?: boolean
@@ -143,6 +155,8 @@ export interface TelliusSkill {
   onlyClasses?: string[]
   /** Only these units can carry it. */
   onlyUnits?: string[]
+  /** Skills a unit needs too (Path of Radiance's Smite needs Shove). */
+  requires?: string[]
   /** Radiant Dawn's rules, by SID_/PID_/JID_/SFXC_ id: a unit matching any `deny` can't learn it; one must match
    * every `need`, and one of `allow` when given (with neither, beorc only). */
   deny?: string[]
@@ -153,8 +167,8 @@ export interface TelliusSkill {
 export interface TelliusSupport {
   a: string
   b: string
-  /** The totals the game stores for C, B and A. Serenes Forest's chapters together are C, B - 1 and A - 2 for every
-   * pair (checked in the tests); why the stored totals run one higher per level already reached isn't confirmed. */
+  /** The totals the game stores for C, B and A. Viewing a conversation adds a point to both units (0x8017fc70), so the
+   * chapters fought together are C, B - 1 and A - 2 (as Serenes Forest has them for every pair, checked in the tests). */
   points: [number, number, number]
 }
 
@@ -188,6 +202,39 @@ export interface TelliusBand {
   onlyClasses?: string[]
 }
 
+/** A choice in the story of who joins (Path of Radiance's Nasir or Ena, and the royal called in the Endgame). */
+export interface TelliusChoice {
+  id: string
+  /** The chapter it's made for. */
+  chapter: string
+  question: string
+  /** Each answer and the units it brings (none for "Don't call."). */
+  options: { label: string; units: string[] }[]
+}
+
+/** Where the two games' rules differ, each from the game's program. */
+export interface TelliusRules {
+  /** Transformed laguz: the transformed class's bases and caps (Path of Radiance, 0x8003bbd4), or every stat but HP and
+   * Luck doubled (Radiant Dawn, 0x80122770). */
+  transform: 'form' | 'double'
+  /** What uses capacity: every skill but the class's own (Path of Radiance, 0x8017c3c8), or every skill but those the
+   * unit joins with, the class's included (Radiant Dawn, 0x8011b8a4). */
+  capacity: 'nonClass' | 'allButOwn'
+  /** The most skills a unit carries: besides the class's (Path of Radiance, 5, 0x801be92c), or all told (Radiant Dawn, 6,
+   * 0x802279c4). */
+  maxSkills: { count: number; withClassSkills: boolean }
+  /** Laguz capacity added from a level (Radiant Dawn, 0x80127a90): [level, added]. */
+  laguzCapacity?: [number, number][]
+  /** Blossom: a failed growth roll is rolled again, and Fixed mode turns 90 points into a stat. */
+  blossom: string
+  /** Celerity: Mov +2. */
+  celerity: string
+  /** Bonus EXP gives exactly three stats (Radiant Dawn, 0x8006d790); without it, a bonus EXP level is a level. */
+  bexp?: boolean
+  /** Radiant Dawn: the unit a Path of Radiance save gives their stats there, rather than bonuses (Sothe, 0x8011d978). */
+  transferCopies?: string
+}
+
 /** Everything a Tellius game's screens need, passed in so the screens don't import a game's data. */
 export interface TelliusData {
   /** 'fe9': the namespace for uploaded art and saved plans. */
@@ -206,4 +253,7 @@ export interface TelliusData {
   /** Radiant Dawn's supports and bonds. */
   openSupports?: TelliusOpenSupports
   bonds?: TelliusBond[]
+  /** The story's choices of who joins. */
+  choices?: TelliusChoice[]
+  rules: TelliusRules
 }

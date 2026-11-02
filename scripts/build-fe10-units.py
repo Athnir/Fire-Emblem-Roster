@@ -10,6 +10,8 @@ import os
 import re
 import struct
 
+import fe9_units
+import gc_dol
 from fe10_cmb import Script, calls, scripts
 from fe10_files import FE10
 from fe10_units import (AFFINITY_LABELS, RANK_TYPES, STATS, Tables, bonds, classes, items, people, skills, support_param,
@@ -32,7 +34,9 @@ ALL_TO, TEAM_CHECK, UNIT_CHECK, TEAM_PID = 382, 383, 384, 385
 # Joins the scripts make on a condition: what isn't traced is said under `unconfirmed`, not as fact.
 NOTES = {
     'PID_FRIEDA': 'Joins if she survived {c0107}.',
-    'PID_SOANEVALCKE': 'Found by moving Micaiah, Lethe or Mordecai onto a tile partway through the chapter.',
+    # C0404 handler 3: Micaiah always; Lethe or Mordecai only if IsInheritFE8Data() and FE8UnitCheckExistsByPID(him).
+    'PID_SOANEVALCKE': ('Found by moving Micaiah onto a tile partway through the chapter. Lethe or Mordecai can find him '
+                        'there too, but only with a Path of Radiance save in which he joined.'),
     'PID_VOLKE': 'Joins if paid 3,000 gold (Serenes Forest: by Bastian or Elincia).',
     'PID_PELLEAS': 'Second playthrough on, if he was spared in {c0314} (Serenes Forest).',
     'PID_ERLAN': 'Second playthrough on (Serenes Forest: once Ike\'s memory scene was seen in {c0407b}).',
@@ -45,12 +49,70 @@ UNCONFIRMED = {
     'PID_SOTHE': 'Serenes Forest has him from turn 2: on turn 2 he only passes through a scene and leaves; turn 3 places him.',
 }
 # Story promotions (classes with SID_EVENT_CC can't use a Seal or Crown): the chapter whose script changes the class
-# (UnitClassChange on the unit, in the chapter's closing or opening scenes).
+# (UnitClassChange on the unit, in the chapter's closing or opening scenes). Sothe's is in C0401's ending (handler 72
+# calls 18, whose MS_0401_ED_02 scene promotes him); the opening reaches 18 only on a debug build (EvKeyReadY, in
+# startup.cmb, is 0 when IsFinalVersion()).
 EVENT_PROMOTIONS = {
     'PID_MICAIAH': [('0111', 'end'), ('0407a', 'start')],
-    'PID_SOTHE': [('0401', 'start')],
+    'PID_SOTHE': [('0401', 'end')],
     'PID_IKE': [('0401', 'start')],
 }
+# A Path of Radiance save: the program's table (main.dol 0x803922e8, 71 entries of a Path of Radiance name and the
+# Radiant Dawn one, or 0 for the same) matches the two games' units.
+POR_TABLE, POR_TABLE_SIZE = 0x803922e8, 0x47
+
+
+def por_table():
+    """[(Path of Radiance name, Radiant Dawn name)] from the program's table."""
+    d = gc_dol.Dol(os.path.join(FE10, '..', 'sys', 'main.dol'))
+    out = []
+    for k in range(POR_TABLE_SIZE):
+        por, rd = d.u32(POR_TABLE + 8 * k), d.u32(POR_TABLE + 8 * k + 4)
+        out.append((d.cstr(por), d.cstr(rd) if rd else d.cstr(por)))
+    return out
+
+
+def por_unit(table, pid):
+    """The Path of Radiance unit whose stats a Radiant Dawn unit takes: the first entry naming it (0x8026d02c), so
+    Danved takes Devdan's; Largo's entry names Calill too, but hers comes first."""
+    return next(('PID_' + por for por, rd in table if por and rd == pid[4:]), None)
+
+
+def por_to_rd(table, por_pid):
+    """A Path of Radiance unit's Radiant Dawn PID, as the supports transfer (0x8026d0f8) looks it up."""
+    return next(('PID_' + rd for por, rd in table if por == por_pid[4:]), None)
+
+
+def half_transformed():
+    """{PID: {chapter code}}: maps that place a unit with SID_FIXEDHALFBEAST (Volug in Part 1), which keeps them
+    half-transformed (x1.5, 0x80122770). The placement's skills are at +60...+72 of its 104 bytes."""
+    out = {}
+    for folder in os.listdir(os.path.join(FE10, 'zmap')):
+        m = re.fullmatch(r'bmap(\d{4}[a-e]?)', folder)
+        for diff in 'cnh':
+            path = os.path.join(FE10, 'zmap', folder, f'dispos_{diff}.bin')
+            if not m or not os.path.exists(path):
+                continue
+            r = Reloc(open(path, 'rb').read())
+            for o, _group in r.tables:
+                for k in range(r.data[o]):
+                    rec = o + 4 + 104 * k
+                    if 'SID_FIXEDHALFBEAST' in [r.string(rec + off) for off in range(60, 76, 4)]:
+                        out.setdefault(r.string(rec + 4), set()).add(m.group(1))
+    return out
+
+
+def por_talks(sc, hs, h):
+    """The Path of Radiance A supports a talk needs: the condition handler before a talk (kind 8) or a base
+    conversation (kind 14) itself testing TstConversationFlag('FLG_8_<A>_<B>_A'). [(A, B)] by Path of Radiance name."""
+    cond = hs[h['i'] - 1] if h['kind'] == 8 and h['i'] > 0 else h
+    flags = [a for _, op, a in sc.disasm(cond) if op == 'str' and isinstance(a, str) and re.fullmatch(r'FLG_8_.+_A', a)]
+    out = []
+    for f in flags:
+        names = f[len('FLG_8_'):-2]
+        a, b = names.split('_', 1)
+        out.append((a, b))
+    return out
 
 
 class Reloc:
@@ -169,7 +231,8 @@ def walk(t, persons, playable):
     codes = [chapter_code(s) for s in scripts()]
 
     first = {}  # PID -> (code, how, with, turn, note)
-    switches = {}  # PID -> [(code, [who can talk])]
+    switches = {}  # PID -> [(code, [who can talk], [of them, those who need an A support from Path of Radiance])]
+    por_needed = []  # (code, handler kind, Path of Radiance name, name): talks that need that A support
     team = {}  # PID -> team
     army = {}  # code -> [PID]
     held_back = {}  # code -> [PID] (in your army, but the chapter keeps them off the field)
@@ -196,10 +259,12 @@ def walk(t, persons, playable):
         cands = {}  # PID -> {how: {'with', 'turns', 'notes'}}
         during, after, before, never = [], [], [], set()
 
-        def candidate(pid, how, with_=(), turn=None, note=None):
+        def candidate(pid, how, with_=(), turn=None, note=None, por=()):
             if pid in playable:
-                entry = cands.setdefault(pid, {}).setdefault(how, {'with': set(), 'turns': set(), 'notes': set()})
+                entry = cands.setdefault(pid, {}).setdefault(how, {'with': set(), 'turns': set(), 'notes': set(),
+                                                                    'por': set()})
                 entry['with'] |= set(with_)
+                entry['por'] |= set(por)
                 if turn:
                     entry['turns'].add(turn)
                 if note:
@@ -239,7 +304,8 @@ def walk(t, persons, playable):
                         after.append(('move', pid, None, 5))
                         continue
                     if pid in pair:
-                        candidate(pid, 'talk', [persons[p]['name'] for p in pair if p != pid and p in persons])
+                        others = [persons[p]['name'] for p in pair if p != pid and p in persons]
+                        candidate(pid, 'talk', others, por=others if por_talks(sc, hs, h) else ())
                     elif pair:
                         candidate(pid, 'event', note=f"Joins when {' and '.join(persons[p]['name'] for p in pair)} talk.")
                     else:
@@ -273,7 +339,7 @@ def walk(t, persons, playable):
                 # Someone who has joined before and is talked back to your side (Jill and Zihark, fighting for Daein in
                 # Part 3).
                 if 'talk' in c:
-                    switches.setdefault(pid, []).append((code, sorted(c['talk']['with'])))
+                    switches.setdefault(pid, []).append((code, sorted(c['talk']['with']), sorted(c['talk']['por'])))
                 continue
             how = next(k for k in ('start', 'base', 'talk', 'event', 'next') if k in c)
             e = c[how]
@@ -315,7 +381,11 @@ def walk(t, persons, playable):
         army[code] = sorted(p for p, tm in team.items() if tm in ARMY and p not in never)
         held_back[code] = sorted(p for p, tm in team.items() if tm in ARMY and p in never)
         run(after)
-    return codes, first, army, held_back, switches
+        for h in hs:
+            if h['kind'] in (8, 14):
+                for a, b in por_talks(sc, hs, h):
+                    por_needed.append((code, h['kind'], a, b))
+    return codes, first, army, held_back, switches, por_needed
 
 
 def ranks(s):
@@ -330,7 +400,16 @@ def main():
     pairs = supports(t)
     pool = sorted({a for a, _ in pairs})
     playable = set(pool) | set(EXTRA_UNITS)
-    codes, first, army, held_back, switches = walk(t, persons, playable)
+    codes, first, army, held_back, switches, por_needed = walk(t, persons, playable)
+    table = por_table()
+    half = half_transformed()
+    # Path of Radiance's supports, by its PIDs. A pair with Largo makes no bond (0x8026d3a0's compare with "LARGO").
+    fe9 = fe9_units.Tables()
+    fe9_people = fe9_units.people(fe9)
+    por_partners = {}
+    for a, b, _ in fe9_units.supports(fe9):
+        if a and b and 'PID_LARGO' not in (a, b):
+            por_partners.setdefault(a, set()).add(b)
     missing = playable - set(first)
     assert not missing, f'no join found for {sorted(missing)}'
     labels = {c: chapter_label(text, c) for c in codes}
@@ -370,7 +449,33 @@ def main():
         if notes:
             unit['join']['note'] = ' '.join(notes)
         if pid in switches:
-            unit['talkedBack'] = [{'chapter': chapter_id(text, k), 'with': w} for k, w in switches[pid]]
+            unit['talkedBack'] = [{'chapter': chapter_id(text, k), 'with': w, **({'porA': por} if por else {})}
+                                  for k, w, por in switches[pid]]
+        if pid in half:
+            chapters_ = [chapter_id(text, k) for k in codes if k in half[pid]]
+            unit['halfTransformed'] = [c for c in chapters_ if c in unit['available']]
+        por = por_unit(table, pid)
+        if por and por in fe9_people:
+            unit['porUnit'] = por
+            partners = sorted({por_to_rd(table, q) for q in por_partners.get(por, ())} & playable - {pid})
+            if partners:
+                unit['porSupports'] = partners
+        # Talks that need a Path of Radiance A support, less the talks back to your side (talkedBack's porA says so).
+        notes_ = []
+        for k, kind, a, b in por_needed:
+            pair = [por_to_rd(table, 'PID_' + a), por_to_rd(table, 'PID_' + b)]
+            if pid not in pair:
+                continue
+            other = persons[pair[1 - pair.index(pid)]]['name']
+            if any(k == k2 and other in por for k2, _, por in switches.get(pid, [])):
+                continue
+            if kind == 14:
+                notes_.append(f'At the base before {labels[k]}: their conversation with {other} needs an A support '
+                              'between them in Path of Radiance.')
+            else:
+                notes_.append(f'{labels[k]}: their talk with {other} needs an A support between them in Path of Radiance.')
+        if notes_:
+            unit['porNotes'] = notes_
         if pid in EVENT_PROMOTIONS:
             unit['storyPromotions'] = [{'chapter': chapter_id(text, k), 'when': w} for k, w in EVENT_PROMOTIONS[pid]]
         if pid in UNCONFIRMED:
@@ -402,7 +507,7 @@ def main():
             **({'transformsTo': c['transform']} if c['transform'] else {}),
             **({'storyPromotion': True} if 'SID_EVENT_CC' in c['skills'] else {}),
             'bases': c['bases'], 'caps': c['caps'], 'mov': c['mov'], 'con': c['con'], 'wt': c['wt'],
-            'capacity': c['capacity'], 'ranks': ranks(c['ranks']),
+            'capacity': c['capacity'], 'ranks': ranks(c['ranks']), 'maxRanks': ranks(c['max_ranks']),
             'skills': [x for x in visible(c['skills']) if x != mastery],
             **({'mastery': mastery} if mastery else {}),
             'attributes': c['attributes'],

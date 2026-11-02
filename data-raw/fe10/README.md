@@ -37,6 +37,8 @@ end exactly where the next table starts, which the reader checks.
 - `SID_HIGHER` marks a second tier, `SID_HIGHEST` a third, `SID_EVENT_CC` a class only the story promotes (Ike's Hero,
   Micaiah's Light Mage and Light Sage, Sothe's Rogue). A beorc class's mastery skill is in its skill list: the one of
   capacity 25 or more without a scroll (Aether, Astra, the Black Knight's Eclipse).
+- Byte 7 is 21 on classes that can still promote, 0 elsewhere. The class growth rates are never read by the program.
+- The top-ranks string (`max_ranks`) is each weapon's highest rank in the class; the Unit Planner shows it.
 
 ## SkillData (`SID_` tables, 44 bytes)
 
@@ -44,23 +46,62 @@ end exactly where the next table starts, which the reader checks.
 30 capacity, 31 order, 32 and 33 two list lengths, 36 and 40 the lists. Each list entry is 8 bytes: a flag (byte 0) and a
 pointer to a `SID_`, `PID_`, `JID_` or `SFXC_` string.
 
-Who can learn a scroll, read from the lists and checked against Serenes Forest's notes (tested; not traced in the code):
-- First list, flag 1: a unit matching any can't (already having it; herons for most; priests for Counter...).
-- First list, flag 0: a unit must match every one (`SFXC_ALIZE` and `SFXC_DRAGON`: dragons only; `SFXC_HUMAN` and Elincia:
-  Mercy). A laguz's tags are split between its two forms, so either form's count.
-- Second list: a unit must match one, when there is one (Shriek's hawk and raven classes; Blessing's herons;
-  `SFXC_HUMAN`, `SFXC_ALIZE`: anyone).
-- With no second list and no flag-0 entry, beorc only (Shade, Discipline, Disarm, Corrosion, Stillness).
-- A scroll item named "dummy" (Serenity, Tempest) is never handed out.
+Who can learn a scroll (0x80119dc8; matching 0x80127650): never if byte 31 is 0 or the first list is empty; every entry of
+the first list must hold (flag 0: the unit matches it, by PID, JID, a skill it has, or an SFXC tag of either laguz form; flag 1:
+it doesn't); and one entry of the second list, if there is one. Every scroll skill's first list has the skill itself (flag 1),
+and Serenes Forest's notes come out the same (tested). A scroll item named "dummy" (Serenity, Tempest) is never handed out.
+
+Carrying skills: at most six, the class's included (0x802279c4). Capacity used is every skill's but the ones the unit joins with
+(PersonData's, flagged at 0x8010a078): the class's Shove (5) and Canto (10) count, and the mastery skill. A laguz's capacity is
+the class's, +15 from Lv 15 and +50 from Lv 30 (0x80127a90): 20, 35, 70 (royals 50, 65, 100).
+
+Growth (0x8006d380): each stat rolls the unit's own rate (plus a per-unit byte at unit+0x121, only ever 0); a sure point per 100,
+then the rest rolled; a stat at its cap isn't rolled and a gain is cut to the room left. A level where nothing rises gives +1 to the
+highest growth with room (the app leaves that out: its averages can run a little low). Blossom rolls a failed roll again
+(0x8006d2c8) and halves battle EXP; Paragon doubles it (0x801207b4).
+
+Bonus EXP (0x8006d790): the level is rolled as usual without Blossom or Paragon, then the risen stat with the lowest growth is
+dropped until three are left (the earlier on a tie), or the highest growths that didn't rise and have room are added until there
+are three (the earlier on a tie). Cost (0x80120524): 100 EXP at 1 + f × (L × m − 1) each, L the level + 20 in a second tier or
++ 40 in a third (laguz none), m 1.5 for laguz, f 1/3 Easy, 1/2 Normal, 1 Hard. Serenes Forest's and the Fire Emblem Wiki's Easy
+and Hard costs are off.
+
+Promotion (0x8011ffd0): the listed gains, Lv 1, the new class's caps, Con, Mov and capacity; ranks rise to at least the class's.
+Automatic at Lv 20 plus 100 EXP (0x8006d1fc), bonus EXP included. The Master Seal (first tier) and Master Crown (second) need
+Lv 10, a beorc, no `SID_EVENT_CC` (0x8011ff28); Mist needs the Holy Crown.
+
+Laguz: transformed, every stat but HP and Luck doubled; ×1.5 rounded down while half-transformed (`SID_FIXEDHALFBEAST`, or
+Wildheart); held at the transformed caps, which are exactly double (0x80122770). Level 40 (0x8010a7d4). Volug's Part 1
+placements carry `SID_FIXEDHALFBEAST` (a placement's skills are at +60...+72 of its 104 bytes), so he's half-transformed there.
 
 ## Supports: RelianceData, RelianceParam, KiznaData
 
 - `RelianceData`: 71 people, each with a list of all 71 (themselves included): partner PID, a signed byte (-1 on 302
-  pairs, use unknown), the pair's kind 0-4. Everyone listed can support everyone else.
+  pairs; the program never reads it), the pair's kind 0-4. Everyone listed can support everyone else. Each gain adds the
+  kind's `RelianceParam` value, floored at 0 (0x8012eab4); points stop at 50, 100 and 150 until the conversation is seen,
+  which adds 1.
 - `RelianceParam`: `32 64 96 97` the totals for C, B and A (50, 100, 150) and one more; seven points per action
   (`0f 1e 03 05 04 01 02`, see the Armory's notes); `02 01 00 ff fe` what each kind adds to every gain.
 - `KiznaData`: a count, then 12-byte bonds: PID, PID, then 1 and the bond's value (5 or 10). The last entries are
-  test names, not PIDs.
+  test names, not PIDs. A bond adds its value to the unit's critical and dodge while the bonded unit is next to them
+  (0x80112cd4). No script adds one (`AddKizna` is never called); a Path of Radiance save does (below).
+
+## A Path of Radiance save (0x8011d580, 0x8026d02c, 0x8026d0f8)
+
+The program's table at main.dol 0x803922e8 (71 entries: a Path of Radiance name, and the Radiant Dawn one or 0 for the same)
+matches the two games' units; the generator reads it. A unit takes the first entry naming it (0x8026d02c): 51 of the 73 do.
+Danved takes Devdan's (`DALAHOWE`). Largo's entry names Calill too, but hers comes first, so she never gets his. The Black
+Knight's entry names `DARKKNIGHT`, but his unit is `PID_DARKKNIGHT_0`, so he never gets one.
+
+- A unit that finished at Lv 20 in a promoted class (level byte 40; laguz count) gets +5 HP or +2 for each stat at its cap
+  there (a bitmask in their record), held at the caps here. Sothe instead takes his stats there if he finished at Lv 20.
+- Weapon ranks there add 40, 80, 120 or 160 weapon EXP for C to S (not counted in the app).
+- Supports there (0x8026d0f8, by each Path of Radiance name's entry) speed the pair's support and set `FLG_8_<A>_<B>_C/B/A`;
+  an A support adds a +5 bond (0x801130d4) unless the pair has one, or either is Largo.
+- The flags gate some talks: a condition handler before a talk (kind 8), or a base conversation (kind 14), tests
+  `TstConversationFlag('FLG_8_<A>_<B>_A')`. Jill and Lethe (Part 3 Ch.6), Jill and Mist, Ilyana and Zihark, Brom and Zihark
+  (Ch.7 and the Endgame, talking Jill or Zihark back), Ike and Soren (the base before Part 4 Endgame (5)). Stefan (C0404
+  handler 3): Micaiah always finds him; Lethe or Mordecai only with `IsInheritFE8Data()` and his record in the save.
 
 ## Scripts: joins and armies
 
@@ -90,15 +131,14 @@ during the chapter (less `UnitNeverSallyByPID`), then the `_ED` moves. A move ou
 wherever the unit is. Whole-army moves outside the TEAM_ functions only stage cutscenes and are skipped. A recruit by
 talk always counts (Jill and Zihark, talked back to Ike's side in Part 3, are then with him). Not yet checked in-game.
 
-Story promotions: `UnitClassChange` on Micaiah at Part 1's Endgame (its end) and Part 4's Endgame (1), on Sothe and Ike in
-Part 4's Prologue (C0111, C0401, C0407a; the units are found through the handler's stored variables).
+Story promotions: `UnitClassChange` on Micaiah at Part 1's Endgame (its end) and Part 4's Endgame (1), on Ike at the start of
+Part 4's Prologue and on Sothe at its end (C0111, C0401, C0407a; the units are found through the handler's stored variables).
+Sothe's is in C0401's handler 18 (the `MS_0401_ED_02` scene), which the chapter's end (handler 72) calls; the opening calls it
+only when `EvKeyReadY()` is true, which startup.cmb makes false on the final build (`IsFinalVersion()`). The natives do nothing
+unless the class has `SID_EVENT_CC` and a promotion.
 
 ## Unconfirmed
 
-- The growth formula (each level adds the unit's own rate; the class's growths are for generic units) and promotion
-  gains are Serenes Forest's account, not traced in `main.dol`.
-- Transformed laguz stats: everything but HP and Luck doubled, held at the transformed caps (the caps double those
-  stats too); not traced in the code. Laguz levels go to 40 (Serenes Forest).
-- The skill list rules above; the support table's signed byte; what a bond's value does.
-- Story promotions' conditions (Ike's in the Endgame is behind a check not yet read).
-- Path of Radiance save transfers raise some bases (Serenes' stars); the app shows the bases without one.
+- Nothing above is checked in-game yet (the user's spot checks: an Archer's capacity, two bonus EXP level-ups).
+- Two flags that switch bonds off (global 0x804cb700 bit 0x20000, battle +0x108 bit 0x800) aren't understood.
+- Whether a Path of Radiance save keeps dead units' records (Path of Radiance's own code isn't read for it).
