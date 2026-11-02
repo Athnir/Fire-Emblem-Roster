@@ -42,6 +42,9 @@ new rule, add it here.
 - **Check mechanics in the program code for each game; never assume they match another game** (stat inheritance, caps, growth
   formulas, support and pair-up bonuses).
 - **Anything not confirmed goes under `unconfirmed`, not stated as fact.**
+- **Fates' child base stats stay a low estimate** (user, 2026-11-01): the parents count at their join stats and the levels
+  above 10 grow at the child's personal growth alone. There's no field for the parents' real stats (it's complex enough); the
+  screens say a child usually comes out a point or two higher.
 
 ## Saved data
 

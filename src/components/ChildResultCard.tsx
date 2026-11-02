@@ -91,6 +91,9 @@ export function ChildResultCard({ child, result }: Props) {
                 </div>
               ))}
             </div>
+            <p className="mt-1 text-xs text-neutral-500">
+              A low estimate: in the game, they usually come out a point or two higher.
+            </p>
           </div>
 
           <div className="text-sm">

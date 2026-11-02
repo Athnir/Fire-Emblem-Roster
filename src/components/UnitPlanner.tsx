@@ -1708,6 +1708,11 @@ export function UnitDetail({
           stats={effectiveBaseStats}
           round={Boolean(childResult)}
         />
+        {childResult && (
+          <p className="-mt-3 text-xs text-neutral-500">
+            A low estimate: in the game, a child's base stats usually come out a point or two higher.
+          </p>
+        )}
         <StatTable
           title={`Stat Caps (${statCapsDisplayClass?.name ?? defaultClassName})`}
           stats={roughEstimateCaps}

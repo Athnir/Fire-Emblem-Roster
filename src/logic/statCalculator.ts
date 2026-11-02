@@ -23,7 +23,7 @@ export interface BaseStatInputs {
   childAbsoluteBaseStat: number
   /** The child's own default class's base-stat contribution (added once, flat, on top of C+bonus). */
   childClassBaseStat: number
-  /** The child's full growth in their own class: their inherited personal growth plus the class's growth (computeChild adds it). */
+  /** The growth for the levels above 10. computeChild passes the inherited personal growth alone, a deliberate low estimate (Serenes Forest's formula adds the class's growth). */
   childFullGrowthRate: number
   level: number
   /** Parent's actual current stat total at recruitment time (not their base stats, ideally). */
@@ -35,12 +35,12 @@ export interface BaseStatInputs {
 }
 
 /**
- * Step 1: C = child's "natural" stat at their join level (their own absolute base + growth at their
- * full growth rate, personal plus class, for each level above the level-10 baseline).
+ * Step 1: C = child's "natural" stat at their join level (their own absolute base + any growth
+ * from levels above the level-10 baseline).
  * Step 2: parental bonus — each parent's contribution is their PERSONAL stat (current stat minus
  * their own class's base-stat contribution), not their raw displayed/current stat — capped.
  * Step 3: the child's own class's base-stat contribution is added once, flat, on top.
- * Serenes Forest's child-stat formula (its base-stats pages), which Fire Emblem Wiki's Inheritance page repeats.
+ * Serenes Forest's child-stat formula (its base-stats pages), less the class's growth (see childFullGrowthRate).
  */
 export function computeBaseStat(inputs: BaseStatInputs): number {
   const {

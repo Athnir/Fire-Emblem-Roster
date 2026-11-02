@@ -353,15 +353,15 @@ describe('fixedParentContribution', () => {
 })
 
 describe('computeChild base stats', () => {
-  it("grows the levels above 10 at the child's full growth in their class (inherited personal growth plus the class's)", () => {
+  it("is a deliberate low estimate: the levels above 10 grow at the child's personal growth alone, not the class's too", () => {
     const cavalier = classesByName['Cavalier']
     const child = makeCharacter({ id: 'siegbert', startingClass: 'Cavalier', baseStats: { ...zeroStats, str: 5 }, growthRates: { ...zeroStats, str: 40 } })
     const father = makeCharacter({ id: 'xander' })
     const mother = makeCharacter({ id: 'some_wife', gender: 'F', growthRates: { ...zeroStats, str: 60 } })
     const result = computeChild({ child, father, mother, fatherCurrentStats: zeroStats, motherCurrentStats: zeroStats, level: 20 })
-    // C = 5 + ((40 + 60) / 2 + Cavalier's Str growth) % x 10 levels; no parent bonus; plus Cavalier's base Str.
-    const fullGrowth = 50 + cavalier.growthModifiers.str
-    expect(result.baseStats.str).toBeCloseTo(cavalier.statModifiers.str + 5 + (fullGrowth / 100) * 10)
-    expect(result.growthRates.str).toBe(50) // the personal growth shown stays the blend alone
+    // C = 5 + (40 + 60) / 2 % x 10 levels; no parent bonus; plus Cavalier's base Str. Serenes Forest's formula would add
+    // Cavalier's Str growth for those 10 levels too, which the user chose to leave out (2026-11-01).
+    expect(result.baseStats.str).toBeCloseTo(cavalier.statModifiers.str + 5 + 5)
+    expect(result.growthRates.str).toBe(50)
   })
 })

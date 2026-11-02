@@ -2,7 +2,6 @@ import { charactersById } from '../data/characters'
 import { classesByName } from '../data/classes'
 import type { Character, ClassData, Route, StatBlock } from '../data/types'
 import { getClassLine, parentContribution } from './classResolution'
-import { classGrowthRate } from './levelProjection'
 import { computeBaseStats, computeGrowthRates, computeMaxStatModifiers } from './statCalculator'
 
 type ParentSide = 'father' | 'mother'
@@ -133,15 +132,14 @@ export function computeChild(input: ComputeChildInput): ComputedChild {
   const variableParentGrowths =
     variableParent === 'father' ? father.growthRates : mother.growthRates
   const growthRates = computeGrowthRates(variableParentGrowths, child.growthRates)
-  // The levels above 10 grow at the child's full growth in their class (the inherited personal growth plus the class's own), as
-  // Serenes Forest's child-stat formula counts them.
-  const startingClassData = classesByName[child.startingClass]
-  const fullGrowthRates = startingClassData ? classGrowthRate(growthRates, startingClassData) : growthRates
 
+  // A deliberate low estimate (user, 2026-11-01): the parents count at their join stats, and the levels above 10 grow at the
+  // child's personal growth alone (Serenes Forest's formula adds the class's growth too). In the game, children usually come
+  // out a point or two higher; the screens say so.
   const baseStats = computeBaseStats(
     child.baseStats,
     classBaseStatsFor(child.startingClass),
-    fullGrowthRates,
+    growthRates,
     level,
     fatherCurrentStats,
     classBaseStatsFor(father.joinClass ?? father.startingClass),
