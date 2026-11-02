@@ -1,4 +1,5 @@
 import { FE4_BLOODS, FE4_CHAPTERS, FE4_CHOICES, FE4_CLASSES, FE4_LOVE, FE4_RINGS, FE4_UNITS } from '../data/fe4/fe4Units'
+import { Fe4BulkViewer } from '../genealogy/bulk'
 import type { Fe4Data } from '../genealogy/logic'
 import { Fe4Pairings, Fe4Planner, Fe4Roster } from '../genealogy/screens'
 import { TelliusBulkUpload } from '../tellius/TelliusBulkUpload'
@@ -24,6 +25,7 @@ const fe4: GameParts = {
     { id: 'roster', label: 'Roster', component: () => <Fe4Roster data={FE4_DATA} /> },
     { id: 'unit', label: 'Unit Planner', component: () => <Fe4Planner data={FE4_DATA} /> },
     { id: 'pairings', label: 'Pairings', component: () => <Fe4Pairings data={FE4_DATA} /> },
+    { id: 'viewer', label: 'Bulk Viewer', component: () => <Fe4BulkViewer data={FE4_DATA} /> },
   ],
   bulkUpload: ({ onClose }) => <TelliusBulkUpload data={UPLOAD_DATA} title="Genealogy of the Holy War" onClose={onClose} />,
 }
