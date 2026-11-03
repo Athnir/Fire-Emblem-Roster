@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { BackupControls } from './components/BackupControls'
 import { EditModeToggle } from './components/EditModeToggle'
 import { SpoilerToggle } from './components/SpoilerToggle'
+import { UpdateButton } from './components/UpdateButton'
 import { ExportImageButton } from './components/ExportImageButton'
 import { IosInstallBanner } from './components/IosInstallBanner'
 import { LocalDataWarningBanner } from './components/LocalDataWarningBanner'
@@ -103,6 +104,7 @@ function App() {
             <BackupControls />
             <SpoilerToggle />
             <EditModeToggle />
+            <UpdateButton />
             {editModeEnabled && BulkUpload && (
               <button
                 type="button"

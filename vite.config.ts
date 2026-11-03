@@ -14,6 +14,8 @@ export default defineConfig(() => ({
   // passes the repo's own name rather than this file hard-coding it, so renaming the repo on GitHub
   // (it was Fire-Emblem-Fates-Unit-Planner) can't leave the deploy pointing at a dead path.
   base: process.env.PAGES_BASE ?? '/',
+  // When the build was made, shown by the header's Check for update button (src/components/UpdateButton.tsx).
+  define: { __BUILD_TIME__: JSON.stringify(new Date().toISOString()) },
   // host: true binds the dev server to all network interfaces (not just localhost) so it's
   // reachable from a phone on the same Wi-Fi/LAN for mobile testing. allowedHosts lists the
   // Tailscale MagicDNS hostname too — Vite blocks any Host header it doesn't recognize by
