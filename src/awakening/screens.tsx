@@ -1283,7 +1283,8 @@ export function Fe13ParentChecker({ data: raw }: { data: Fe13Data }) {
     return f ? spousesOf(data, f).filter((p) => !p.parent && !p.id.startsWith('fe13-avatar')) : []
   }
   const spousesFor = (id: string): Record<string, string> => {
-    const cand = byId.get(id)!
+    const cand = byId.get(id)
+    if (!cand) return {}
     const n = nested[id]
     return fixed ? { [fixed.id]: id, [id]: fixed.id, ...(n && cand.parent ? { [cand.parent]: n, [n]: cand.parent } : {}) } : {}
   }
@@ -1348,7 +1349,8 @@ export function Fe13ParentChecker({ data: raw }: { data: Fe13Data }) {
       {child && ids.length === 0 && <p className="text-sm text-neutral-500">Add at least one candidate to compare.</p>}
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         {ids.map((id) => {
-          const cand = byId.get(id)!
+          const cand = byId.get(id)
+          if (!cand) return null
           const r = resultFor(id)
           return (
             <div key={id} className="space-y-2 rounded-lg border border-neutral-800 bg-neutral-900 p-3">

@@ -34,3 +34,11 @@ export const useSpoilerStore = create<SpoilerState>()(
     { name: 'fe-roster-spoiler' },
   ),
 )
+
+/** For a game whose story runs one way: the chapters reached with the spoiler block on (undefined with it off). */
+export function useReached(key: string, chapters: { id: string }[]): Set<string> | undefined {
+  const block = useSpoilerStore((s) => s.block)
+  const at = useSpoilerStore((s) => s.progress[key] ?? 0)
+  if (!block) return undefined
+  return new Set(chapters.slice(0, Math.min(at, chapters.length - 1) + 1).map((c) => c.id))
+}

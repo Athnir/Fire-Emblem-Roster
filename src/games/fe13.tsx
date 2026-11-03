@@ -1,27 +1,39 @@
 import { Fe13BulkViewer } from '../awakening/bulk'
+import { LinearSpoilerBar } from '../components/LinearSpoilerBar'
 import { Fe13MarriagePlanner, Fe13Planner, Fe13Roster, Fe13Supports } from '../awakening/screens'
 import { Fe13SkillPlanner } from '../awakening/skills'
 import type { Fe13Data } from '../awakening/logic'
 import { FE13_ASSETS, FE13_AVATAR_HAIR, FE13_CHAPTERS, FE13_CLASSES, FE13_MAIDEN, FE13_SKILLS, FE13_UNITS, FE13_WEAPON_BONUS } from '../data/fe13/fe13Units'
 import { TelliusBulkUpload } from '../tellius/TelliusBulkUpload'
 import type { TelliusData } from '../tellius/types'
+import { useReached } from '../state/spoilerStore'
 import type { GameParts } from './index'
 
 export const FE13_DATA: Fe13Data = { chapters: FE13_CHAPTERS, units: FE13_UNITS, classes: FE13_CLASSES, assets: FE13_ASSETS, maiden: FE13_MAIDEN, skills: FE13_SKILLS, weaponBonus: FE13_WEAPON_BONUS, avatarHair: FE13_AVATAR_HAIR }
+
+/** The data as the spoiler block opens it: the chapters and paralogues reached and the units they've brought (a child with their
+ * paralogue). */
+function useFe13Data(): Fe13Data {
+  const reached = useReached('fe13', FE13_DATA.chapters)
+  if (!reached) return FE13_DATA
+  return { ...FE13_DATA, chapters: FE13_DATA.chapters.filter((c) => reached.has(c.id)), units: FE13_DATA.units.filter((u) => !u.joinChapter || reached.has(u.joinChapter)) }
+}
 
 // The bulk upload matches portraits by unit name, and skill icons (in a "skills" folder) by skill name.
 const UPLOAD_DATA = { gameId: 'fe13', units: FE13_UNITS, skills: FE13_SKILLS } as unknown as TelliusData
 
 const fe13: GameParts = {
   tabs: [
-    { id: 'roster', label: 'Roster', component: () => <Fe13Roster data={FE13_DATA} /> },
-    { id: 'unit', label: 'Unit Planner', component: () => <Fe13Planner data={FE13_DATA} /> },
-    { id: 'supports', label: 'Supports', component: () => <Fe13Supports data={FE13_DATA} /> },
-    { id: 'pairings', label: 'Marriage Planner', component: () => <Fe13MarriagePlanner data={FE13_DATA} /> },
-    { id: 'skills', label: 'Skill Planner', component: () => <Fe13SkillPlanner data={FE13_DATA} /> },
+    { id: 'roster', label: 'Roster', component: () => <Fe13Roster data={useFe13Data()} /> },
+    { id: 'unit', label: 'Unit Planner', component: () => <Fe13Planner data={useFe13Data()} /> },
+    { id: 'supports', label: 'Supports', component: () => <Fe13Supports data={useFe13Data()} /> },
+    { id: 'pairings', label: 'Marriage Planner', component: () => <Fe13MarriagePlanner data={useFe13Data()} /> },
+    { id: 'skills', label: 'Skill Planner', component: () => <Fe13SkillPlanner data={useFe13Data()} /> },
     // As Fates: the Parent Checker sits in the Bulk Viewer, next to the Team Viewer.
-    { id: 'viewer', label: 'Bulk Viewer', component: () => <Fe13BulkViewer data={FE13_DATA} /> },
+    { id: 'viewer', label: 'Bulk Viewer', component: () => <Fe13BulkViewer data={useFe13Data()} /> },
   ],
+  spoiler: "Every tab follows the chapter you're on: units show once they join, the children with their paralogues.",
+  spoilerBar: () => <LinearSpoilerBar gameId="fe13" chapters={FE13_DATA.chapters} />,
   bulkUpload: ({ onClose }) => <TelliusBulkUpload data={UPLOAD_DATA} title="Awakening" onClose={onClose} />,
 }
 
