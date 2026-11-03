@@ -34,6 +34,7 @@ const fe1: GameParts = {
     { id: 'roster', label: 'Roster', component: () => <GbaRoster data={FE1_DATA} /> },
     { id: 'unit', label: 'Unit Planner', component: () => <GbaPlanner data={FE1_DATA} /> },
   ],
+  spoiler: "Each tab follows the chapter you're on: units show once they join.",
   bulkUpload: ({ onClose }) => <TelliusBulkUpload data={UPLOAD_DATA} title="Shadow Dragon & the Blade of Light" onClose={onClose} />,
 }
 

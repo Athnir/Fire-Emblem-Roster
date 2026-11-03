@@ -30,6 +30,15 @@ export interface GbaStory {
   noSupports?: boolean
 }
 
+/** A split in a story: after a chapter, the ways on, each with its own chapters. */
+export interface GbaBranch {
+  id: string
+  /** The last chapter before it. */
+  after: string
+  question: string
+  choices: { id: string; label: string; chapters: string[] }[]
+}
+
 export interface GbaChapter {
   id: string
   label: string

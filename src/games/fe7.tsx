@@ -29,6 +29,7 @@ const fe7: GameParts = {
     { id: 'unit', label: 'Unit Planner', component: () => <GbaPlanner data={FE7_DATA} /> },
     { id: 'supports', label: 'Supports', component: () => <GbaSupports data={FE7_DATA} /> },
   ],
+  spoiler: "Each tab follows the chapter you're on in the story picked (Lyn's, Eliwood's or Hector's, each keeping its own place): units show once they join.",
   bulkUpload: ({ onClose }) => <TelliusBulkUpload data={UPLOAD_DATA} title="The Blazing Blade" onClose={onClose} />,
 }
 

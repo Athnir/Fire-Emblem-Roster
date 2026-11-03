@@ -27,6 +27,7 @@ const fe8: GameParts = {
     { id: 'unit', label: 'Unit Planner', component: () => <GbaPlanner data={FE8_DATA} /> },
     { id: 'supports', label: 'Supports', component: () => <GbaSupports data={FE8_DATA} /> },
   ],
+  spoiler: "Each tab follows the chapter you're on: units show once they join, and the bar asks for Eirika's or Ephraim's route when you reach the split after Chapter 8.",
   bulkUpload: ({ onClose }) => <TelliusBulkUpload data={UPLOAD_DATA} title="The Sacred Stones" onClose={onClose} />,
 }
 

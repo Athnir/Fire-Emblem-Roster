@@ -80,6 +80,8 @@ new rule, add it here.
 - **What the game has one copy of is flagged, not blocked** (user, 2026-11-02, Thracia's skill manuals): two plans can use it, and a
   note says the game doesn't allow it and names the other unit, as Fates' warning for a spouse picked twice.
 - **When units leave and come back shows in the Roster** (user, 2026-11-02, Thracia), and stays blank under the spoiler block.
+- **Support levels are written out with their half levels** (user, 2026-11-03, Three Houses): C+, B+ and A+ where a pair has them,
+  and a pair that stops before A shows where it stops.
 - **Skill Planners don't work out which skill a child inherits** (user, 2026-11-02): the skills are picked, and the general pool
   lists every skill the unit can have in some playthrough, following the game for what can pass (as Fates' looser pool does). In
   Awakening the classes show as chips to pick, as the DLC classes do, since the lists are long.
@@ -95,6 +97,12 @@ new rule, add it here.
 
 A global switch, as in the Armory: on, a game is played along chapter by chapter, and nothing is shown before the chapter that
 reveals it. What that means for each tab is settled with the user as each game is built.
+
+- **A story split is picked when you reach it** (user, 2026-11-03, Three Houses): with the block on, the Roster asks for what's known
+  at the start (Three Houses: the house) and asks for the route only once the chapter bar reaches the split (Chapter 12). With the
+  block off, the route is picked straight away.
+- **Every game gets the block** (user, 2026-11-03): its chapter bar, units shown once they can have joined, picks asked at their
+  chapter, time-away lines blank.
 
 ## Build and offline
 

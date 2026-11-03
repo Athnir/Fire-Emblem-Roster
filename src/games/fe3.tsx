@@ -34,6 +34,7 @@ const fe3: GameParts = {
     { id: 'unit', label: 'Unit Planner', component: () => <GbaPlanner data={FE3_DATA} /> },
     { id: 'supports', label: 'Supports', component: () => <GbaSupports data={FE3_DATA} /> },
   ],
+  spoiler: "Each tab follows the chapter you're on in the Book picked (each keeping its own place): units show once they join.",
   bulkUpload: ({ onClose }) => <TelliusBulkUpload data={UPLOAD_DATA} title="Mystery of the Emblem" onClose={onClose} />,
 }
 

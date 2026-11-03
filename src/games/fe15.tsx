@@ -35,6 +35,7 @@ const fe15: GameParts = {
     { id: 'unit', label: 'Unit Planner', component: () => <GbaPlanner data={FE15_DATA} /> },
     { id: 'supports', label: 'Supports', component: () => <GbaSupports data={FE15_DATA} /> },
   ],
+  spoiler: "Each tab follows the act you're on with the army picked (Alm's or Celica's, each keeping its own place): units show once they join.",
   bulkUpload: ({ onClose }) => <TelliusBulkUpload data={UPLOAD_DATA} title="Shadows of Valentia" onClose={onClose} />,
 }
 

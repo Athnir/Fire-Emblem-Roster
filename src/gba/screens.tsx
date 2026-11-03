@@ -1,13 +1,16 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { ChapterBar } from '../components/ChapterBar'
 import { Portrait } from '../components/Portrait'
 import { useScreenshotContextStore } from '../state/screenshotContextStore'
+import { useSpoilerStore } from '../state/spoilerStore'
 import {
   GBA_GROWING,
   GBA_STATS,
   GBA_STAT_LABELS,
   type GbaAffinity,
+  type GbaBranch,
   type GbaClass,
   type GbaChapter,
   type GbaStats,
@@ -27,6 +30,8 @@ export interface GbaData {
   stories?: GbaStory[]
   /** The story shown until one is picked (the first, unless set). */
   defaultStory?: string
+  /** Splits in one story that the spoiler block asks for (The Binding Blade's 10A or 10B, Ilia or Sacae). */
+  branches?: GbaBranch[]
   chapters: GbaChapter[]
   units: GbaUnit[]
   classes: Record<string, GbaClass>
@@ -109,10 +114,55 @@ const useGbaStore = create<GbaState>()(
   ),
 )
 
-/** The game's data for the story picked (all of it for a game told in one), and the switch to pick another. */
+/** The story's splits as the spoiler block walks them: a game's own (The Binding Blade's), or for a game whose stories part after
+ * shared chapters (The Sacred Stones) the stories themselves, after the last shared chapter. */
+function branchesOf(data: GbaData): GbaBranch[] {
+  if (data.branches) return data.branches
+  const first = data.chapters.findIndex((c) => c.story)
+  if (!data.stories?.length || first <= 0) return []
+  return [
+    {
+      id: 'route',
+      after: data.chapters[first - 1].id,
+      question: "The story splits here: pick the route you're playing to carry on.",
+      choices: data.stories.map((st) => ({ id: st.id, label: st.label, chapters: data.chapters.filter((c) => c.story === st.id).map((c) => c.id) })),
+    },
+  ]
+}
+
+/** Stories told apart from the start, each its own army (Lyn's, Eliwood's and Hector's; the two Books; Alm's and Celica's). */
+const separateStories = (data: GbaData) => !!data.stories?.length && data.chapters.every((c) => c.story)
+
+/** The chapters the spoiler block walks with the routes picked so far: up to the first split not picked yet, which comes back. */
+function walkOf(data: GbaData, chapters: GbaChapter[], picks: Record<string, string>) {
+  const branches = branchesOf(data)
+  const steps: GbaChapter[] = []
+  const picked: string[] = []
+  for (const ch of chapters) {
+    const branch = branches.find((b) => b.choices.some((c) => c.chapters.includes(ch.id)))
+    if (branch) {
+      const pick = picks[`${data.gameId}/${branch.id}`]
+      const choice = branch.choices.find((c) => c.id === pick)
+      if (!choice) return { steps, picked, split: branch }
+      if (!choice.chapters.includes(ch.id)) continue
+      if (!picked.includes(choice.label)) picked.push(choice.label)
+    }
+    steps.push(ch)
+  }
+  return { steps, picked, split: undefined }
+}
+
+/** The game's data for the story picked (all of it for a game told in one), and the switch to pick another. With the spoiler block
+ * on, the chapters you've reached and the units they've brought, and the bar that walks the story (asking at each split). */
 function useStory(data: GbaData): { view: GbaData; story?: GbaStory; picker: ReactNode } {
   const picked = useGbaStore((s) => s.stories?.[data.gameId])
   const setStory = useGbaStore((s) => s.setStory)
+  const block = useSpoilerStore((s) => s.block)
+  const progress = useSpoilerStore((s) => s.progress)
+  const branchPicks = useSpoilerStore((s) => s.branches)
+  const setProgress = useSpoilerStore((s) => s.setProgress)
+  const setBranch = useSpoilerStore((s) => s.setBranch)
+  if (block) return spoilerView(data, picked, setStory, { progress, branchPicks, setProgress, setBranch })
   if (!data.stories?.length) return { view: data, picker: null }
   const story = data.stories.find((s) => s.id === picked) ?? data.stories.find((s) => s.id === data.defaultStory) ?? data.stories[0]
   const view: GbaData = {
@@ -120,15 +170,80 @@ function useStory(data: GbaData): { view: GbaData; story?: GbaStory; picker: Rea
     chapters: data.chapters.filter((c) => !c.story || c.story === story.id),
     units: data.units.filter((u) => !u.story || u.story === story.id),
   }
+  return { view, story, picker: <StoryPicker data={data} story={story} onPick={(id) => setStory(data.gameId, id)} /> }
+}
+
+interface SpoilerState {
+  progress: Record<string, number>
+  branchPicks: Record<string, string>
+  setProgress: (key: string, at: number) => void
+  setBranch: (key: string, choice: string | null) => void
+}
+
+/** The spoiler block's view: a game told in separate stories walks the one picked (each with its own place); any other walks its
+ * chapters in order, asking at each split. A unit shows once the chapter they join in is reached. */
+function spoilerView(data: GbaData, picked: string | undefined, setStory: (gameId: string, id: string) => void, sp: SpoilerState) {
+  const separate = separateStories(data)
+  const story = separate ? (data.stories!.find((s) => s.id === picked) ?? data.stories!.find((s) => s.id === data.defaultStory) ?? data.stories![0]) : undefined
+  const key = story ? `${data.gameId}/${story.id}` : data.gameId
+  const { steps, picked: routes, split } = walkOf(data, story ? data.chapters.filter((c) => c.story === story.id) : data.chapters, sp.branchPicks)
+  const at = Math.min(sp.progress[key] ?? 0, Math.max(0, steps.length - 1))
+  const reached = steps.slice(0, at + 1)
+  const ids = new Set(reached.map((c) => c.id))
+  // The route a story-split game is on, once picked at its split: its own units come in with it.
+  const route = !separate && data.stories?.length ? data.stories.find((s) => s.id === sp.branchPicks[`${data.gameId}/route`]) : undefined
+  const view: GbaData = {
+    ...data,
+    chapters: reached,
+    units: data.units.filter((u) => ids.has(u.joinChapter) && (!u.story || u.story === (story ?? route)?.id)),
+  }
+  const onChange = (i: number) => {
+    // Going back before a split takes back the route picked there.
+    for (const b of branchesOf(data)) {
+      const pickedChoice = b.choices.find((c) => c.id === sp.branchPicks[`${data.gameId}/${b.id}`])
+      const first = pickedChoice ? steps.findIndex((c) => pickedChoice.chapters.includes(c.id)) : -1
+      if (first >= 0 && i < first) sp.setBranch(`${data.gameId}/${b.id}`, null)
+    }
+    sp.setProgress(key, Math.max(0, i))
+  }
+  const bar = (
+    <ChapterBar
+      steps={steps}
+      at={at}
+      onChange={onChange}
+      picked={routes.join(', ') || undefined}
+      split={
+        split && {
+          question: split.question,
+          choices: split.choices.map((c) => ({ id: c.id, label: c.label, proceed: `Proceed: ${c.label}` })),
+          onPick: (id) => {
+            sp.setBranch(`${data.gameId}/${split.id}`, id)
+            sp.setProgress(key, steps.length)
+          },
+        }
+      }
+    />
+  )
   const picker = (
+    <div className="space-y-2">
+      {story && <StoryPicker data={data} story={story} onPick={(id) => setStory(data.gameId, id)} />}
+      {bar}
+    </div>
+  )
+  return { view, story: story ?? route, picker }
+}
+
+/** The switch between a game's stories. */
+function StoryPicker({ data, story, onPick }: { data: GbaData; story: GbaStory; onPick: (id: string) => void }) {
+  return (
     <div className="flex flex-wrap gap-1" role="radiogroup" aria-label="Story">
-      {data.stories.map((s) => (
+      {(data.stories ?? []).map((s) => (
         <button
           key={s.id}
           type="button"
           role="radio"
           aria-checked={s.id === story.id}
-          onClick={() => setStory(data.gameId, s.id)}
+          onClick={() => onPick(s.id)}
           className={`rounded-md border px-3 py-1 text-sm ${
             s.id === story.id ? 'border-violet-500 bg-violet-950/50 text-neutral-100' : 'border-neutral-800 bg-neutral-900 text-neutral-400 hover:border-neutral-600'
           }`}
@@ -138,7 +253,6 @@ function useStory(data: GbaData): { view: GbaData; story?: GbaStory; picker: Rea
       ))}
     </div>
   )
-  return { view, story, picker }
 }
 
 const selectClass = 'rounded-md border border-neutral-700 bg-neutral-800 px-2 py-1 text-sm text-neutral-200'
