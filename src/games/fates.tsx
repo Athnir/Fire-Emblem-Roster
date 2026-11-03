@@ -3,6 +3,7 @@ import { BulkAssetUpload } from '../components/BulkAssetUpload'
 import { BulkViewer } from '../components/BulkViewer'
 import { CorrinBuildPanel } from '../components/CorrinBuildPanel'
 import { ExportImageButton } from '../components/ExportImageButton'
+import { FatesSpoilerBar } from '../components/FatesSpoilerBar'
 import { MarriagePlanner } from '../components/MarriagePlanner'
 import { RosterBrowser } from '../components/RosterBrowser'
 import { RouteBackground } from '../components/RouteBackground'
@@ -41,6 +42,9 @@ const fates: GameParts = {
     { id: 'viewer', label: 'Bulk Viewer', component: BulkViewer },
   ],
   banner: CorrinBuildPanel,
+  spoiler:
+    "The Roster and the planners follow the chapter you're on: units show once they join (the children with their paralogues), and the route is asked as Chapter 5 ends. The Bulk Viewer isn't set up for it yet.",
+  spoilerBar: FatesSpoilerBar,
   background: FatesBackground,
   bulkUpload: BulkAssetUpload,
   exportButton: FatesExportButton,

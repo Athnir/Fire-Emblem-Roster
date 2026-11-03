@@ -32,6 +32,7 @@ import type { WorkingSetEntry } from '../state/savedBuildsStore'
 import { useScreenshotContextStore } from '../state/screenshotContextStore'
 import { RouteFilter } from './RouteFilter'
 import { BuildSetManager } from './BuildSetManager'
+import { useFatesVisible } from '../logic/fatesSpoiler'
 
 const STAT_LABELS: Record<string, string> = {
   hp: 'HP', str: 'Str', mag: 'Mag', skl: 'Skl', spd: 'Spd', lck: 'Lck', def: 'Def', res: 'Res',
@@ -1977,9 +1978,11 @@ export function UnitPlanner() {
   // right UnitDetail is mounted (see the effect in UnitDetail keyed off this same value).
   const [pendingBuildData, setPendingBuildData] = useState<Record<string, unknown> | null>(null)
 
+  // With the spoiler block on, only who the chapter you're on has brought (src/logic/fatesSpoiler.ts).
+  const visible = useFatesVisible()
   const participants = useMemo(
-    () => characters.filter((c) => isRouteCompatible(c.route, activeRoute)),
-    [activeRoute],
+    () => characters.filter((c) => isRouteCompatible(c.route, activeRoute) && visible(c)),
+    [activeRoute, visible],
   )
   const character = unitId ? charactersById[unitId] : undefined
 

@@ -18,6 +18,7 @@ import { useScreenshotContextStore } from '../state/screenshotContextStore'
 import { AssetIcon } from './AssetIcon'
 import { Portrait } from './Portrait'
 import { RouteFilter } from './RouteFilter'
+import { useFatesVisible } from '../logic/fatesSpoiler'
 
 /** Non-child candidates who could plausibly be the given fixed parent's spouse and thus supply a
  * dynamic-hair child's hair color. Corrin is included alongside the fixed-hex adults — their color
@@ -275,15 +276,17 @@ export function RosterBrowser() {
     detailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }, [selectedId])
 
+  // With the spoiler block on, only who the chapter you're on has brought (src/logic/fatesSpoiler.ts).
+  const visible = useFatesVisible()
   const filtered = useMemo(() => {
     return characters.filter((c) => {
-      if (!isRouteCompatible(c.route, activeRoute)) return false
+      if (!isRouteCompatible(c.route, activeRoute) || !visible(c)) return false
       if (genderFilter !== 'all' && c.gender !== genderFilter && c.gender !== 'both') return false
       if (childFilter === 'adults' && c.isChild) return false
       if (childFilter === 'children' && !c.isChild) return false
       return true
     })
-  }, [activeRoute, genderFilter, childFilter])
+  }, [activeRoute, genderFilter, childFilter, visible])
 
   const selected = selectedId ? charactersById[selectedId] : undefined
 

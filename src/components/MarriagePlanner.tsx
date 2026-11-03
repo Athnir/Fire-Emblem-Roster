@@ -14,6 +14,7 @@ import { useScreenshotContextStore } from '../state/screenshotContextStore'
 import { ChildResultCard } from './ChildResultCard'
 import { PlanManager } from './PlanManager'
 import { RouteFilter } from './RouteFilter'
+import { useFatesVisible } from '../logic/fatesSpoiler'
 
 const childCandidates = characters.filter((c) => c.isChild)
 // Every child has exactly one FIXED parent (see getFixedParent) — the character whose face/stats
@@ -40,9 +41,11 @@ export function MarriagePlanner() {
   // The full route-compatible roster, including children — children are never a Primary option
   // (see optionsForPrimary below) but remain valid Spouse picks, since Corrin can marry some of
   // them and children can marry each other (barring siblings).
+  // With the spoiler block on, only who the chapter you're on has brought (src/logic/fatesSpoiler.ts).
+  const visible = useFatesVisible()
   const participants = useMemo(
-    () => characters.filter((c) => isRouteCompatible(c.route, activeRoute)),
-    [activeRoute],
+    () => characters.filter((c) => isRouteCompatible(c.route, activeRoute) && visible(c)),
+    [activeRoute, visible],
   )
 
   const primary = primaryId ? withCorrinBuild(charactersById[primaryId], corrinBuild) : undefined

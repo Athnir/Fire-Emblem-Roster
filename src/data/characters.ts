@@ -509,11 +509,11 @@ export const characters: Character[] = [
     possibleParents: { father: ['kaze'], mother: [] },
   },
   {
-    // Jakob (Dwyer's fixed father) joins Ch1 if Corrin is female, or Ch16/17 if Corrin is male —
-    // the app has no "which Corrin gender are you playing" setting to key off of, so this uses the
-    // later (male-Corrin) unlock chapter uniformly, to avoid ever falsely flagging Dwyer as
-    // available too early. Female-Corrin players can safely ignore the extra wait shown here.
-    id: 'dwyer', name: 'Dwyer', gender: 'M', route: ['all'], unlockChapter: {Birthright: 16, Conquest: 17, Revelation: 16},
+    // Jakob (Dwyer's fixed father) joins in Ch2 (back for good in Ch6) if Corrin is female, or joins My Castle once Ch15 is
+    // cleared, on every route, if Corrin is male (castle/castle_join.bin; Serenes Forest and Fire Emblem Wiki agree) — the app has
+    // no "which Corrin gender are you playing" setting to key off of, so this uses the later (male-Corrin) unlock chapter
+    // uniformly, to avoid ever falsely flagging Dwyer as available too early. Female-Corrin players can safely ignore the extra wait.
+    id: 'dwyer', name: 'Dwyer', gender: 'M', route: ['all'], unlockChapter: {Birthright: 16, Conquest: 16, Revelation: 16},
     startingClass: 'Troubadour', secondaryClass: 'Cavalier',
     baseStats: s(8, 7, 7, 2, 6, 4, 6, 7), growthRates: s(45, 45, 30, 20, 30, 30, 30, 35),
     statCaps: s(35, 16, 19, 24, 20, 23, 16, 21), maxStatModifiers: ZERO_MOD,

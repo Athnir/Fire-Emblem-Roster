@@ -26,6 +26,7 @@ import { useScreenshotContextStore } from '../state/screenshotContextStore'
 import { AssetIcon } from './AssetIcon'
 import { BuildSetManager } from './BuildSetManager'
 import { RouteFilter } from './RouteFilter'
+import { useFatesVisible } from '../logic/fatesSpoiler'
 
 const MAX_LOADOUT = 5
 
@@ -140,9 +141,11 @@ export function SkillPlanner() {
 
   // Children are selectable too — Corrin can marry some of them, and children can marry each
   // other (barring siblings) — canMarry below still gates it on real S-support data either way.
+  // With the spoiler block on, only who the chapter you're on has brought (src/logic/fatesSpoiler.ts).
+  const visible = useFatesVisible()
   const participants = useMemo(
-    () => characters.filter((c) => isRouteCompatible(c.route, activeRoute)),
-    [activeRoute],
+    () => characters.filter((c) => isRouteCompatible(c.route, activeRoute) && visible(c)),
+    [activeRoute, visible],
   )
 
   // Switching routes can leave a unit selected that doesn't exist on the new one (e.g. picking Leo
