@@ -23,7 +23,9 @@ R = open(ROM, 'rb').read()
 assert zlib.crc32(R) == CRC32, f'{ROM} is not the clean Thracia 776 dump (CRC32 {CRC32:08X})'
 
 ITEMS = 0xB080AB          # 23 bytes per item id (0 is "none")
-ITEM_COUNT = 0xA0
+# The table ends where the name pointers start ($B0:8FC3 = $B0:80AB + 23 x 0xA8): the last eight records (0xA0-0xA7) are the
+# Bargain to Luna manuals.
+ITEM_COUNT = 0xA8
 CLASSES = 0x868000        # 36 bytes per class id, from id 1
 CHARACTERS = 0x869A2D     # 48 bytes per character id, from id 1
 CHAPTERS = 0x84804A       # 52 bytes per chapter

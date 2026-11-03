@@ -129,6 +129,11 @@ describe('Thracia 776 units', () => {
       'Body Ring': 'con +3', 'Shield Ring': 'def +2', 'Skill Ring': 'skl +3', 'Leg Ring': 'mov +2',
     })
     expect(FE5_MANUALS.map((m) => m.skill).sort()).toEqual(['Accost', 'Adept', 'Luna', 'Nihil', 'Paragon', 'Sol', 'Vantage', 'Wrath'])
+    // The manuals are the item table's last records (it holds 0xA8: ids 160-167 are past where a 0xA0-record reader stops).
+    expect(Object.fromEntries(FE5_MANUALS.map((m) => [m.id, m.name]))).toEqual({
+      158: 'Paragon Manual', 159: 'Accost Manual', 161: 'Vantage Manual', 162: 'Wrath Manual', 163: 'Adept Manual',
+      165: 'Nihil Manual', 166: 'Sol Manual', 167: 'Luna Manual',
+    })
   })
 
   it('reads every support, the givers who are not playable too', () => {

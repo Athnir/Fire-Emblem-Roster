@@ -217,7 +217,7 @@ def mount_pairs():
 
 
 def main():
-    names, cnames, inames = character_names(), class_names(), item_names(0xA8)
+    names, cnames, inames = character_names(), class_names(), item_names()
     chapter_of = {h: chapter_id(i) for i, h in enumerate(HEADINGS)}
     found = {c: v for c, v in joins().items()}
     for c, (heading, how, with_, place, note) in JOIN_FIXES.items():

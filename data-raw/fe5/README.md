@@ -75,6 +75,8 @@ holy scrolls anywhere. Bits, where the code tests them:
   Canto. **Skill manuals** (items 158-167, $87:BDAF): each teaches its skill for good, refused if the unit has it. Eight are in the
   chapters (Paragon Ch.6 house, Wrath 8x chest, Vantage Colho Ch.12, Accost 12x chest, Sol Ilios 16A, Nihil Conomor 16A, Luna a
   Sellsword 16B, Adept Gustav Ch.18); Bargain and Miracle are in none. Mareeta learns Astra talking to Shannam in Ch.15 ($FD:AD54).
+  The manuals are the item table's last records: it holds 0xA8 (ids 0-0xA7, `ITEM_COUNT` in `fe5_rom.py`), ending where the name
+  pointers start (`$B0:8FC3` = `$B0:80AB` + 23 x 0xA8), so a reader that stops at 0xA0 loses Bargain to Luna.
 
 ## Stars, supports and the rest
 
