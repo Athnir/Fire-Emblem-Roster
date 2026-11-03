@@ -607,7 +607,10 @@ export const FE16_UNITS: Fe16Unit[] = [
     },
     "away": [
       "Silver Snow: leaves at the end of Part I, in Chapter 11 (Serenes Forest; not traced)."
-    ]
+    ],
+    "leavesAt": {
+      "ss": 12
+    }
   },
   {
     "id": "fe16-dimitri",
@@ -1190,7 +1193,10 @@ export const FE16_UNITS: Fe16Unit[] = [
     },
     "away": [
       "Silver Snow: leaves at the end of Part I, in Chapter 11 (Serenes Forest; not traced)."
-    ]
+    ],
+    "leavesAt": {
+      "ss": 12
+    }
   },
   {
     "id": "fe16-ferdinand",
@@ -4612,7 +4618,6 @@ export const FE16_UNITS: Fe16Unit[] = [
       "0"
     ],
     "routes": [
-      "cf",
       "ss",
       "am",
       "vw"
@@ -4639,7 +4644,10 @@ export const FE16_UNITS: Fe16Unit[] = [
     },
     "notes": [
       "On the Black Eagles' path, only from Chapter 12 on Silver Snow (the monastery script)."
-    ]
+    ],
+    "joinsAt": {
+      "be": 12
+    }
   },
   {
     "id": "fe16-leonie",
@@ -5022,6 +5030,11 @@ export const FE16_UNITS: Fe16Unit[] = [
     },
     "recruit": {
       "bylethLevel": 15
+    },
+    "joinsAt": {
+      "be": 12,
+      "bl": 12,
+      "gd": 12
     }
   },
   {
@@ -5212,7 +5225,15 @@ export const FE16_UNITS: Fe16Unit[] = [
     },
     "away": [
       "Crimson Flower: leaves in Chapter 11 (Serenes Forest; not traced)."
-    ]
+    ],
+    "joinsAt": {
+      "be": 7,
+      "bl": 7,
+      "gd": 7
+    },
+    "leavesAt": {
+      "cf": 12
+    }
   },
   {
     "id": "fe16-hanneman",
@@ -5389,6 +5410,11 @@ export const FE16_UNITS: Fe16Unit[] = [
     "recruit": {
       "bylethLevel": 15,
       "window": "from Chapter 8"
+    },
+    "joinsAt": {
+      "be": 8,
+      "bl": 8,
+      "gd": 8
     }
   },
   {
@@ -5555,6 +5581,11 @@ export const FE16_UNITS: Fe16Unit[] = [
     "recruit": {
       "bylethLevel": 15,
       "window": "from Chapter 8"
+    },
+    "joinsAt": {
+      "be": 8,
+      "bl": 8,
+      "gd": 8
     }
   },
   {
@@ -5712,6 +5743,9 @@ export const FE16_UNITS: Fe16Unit[] = [
     },
     "recruit": {
       "bylethLevel": 15
+    },
+    "joinsAt": {
+      "bl": 13
     }
   },
   {
@@ -5880,6 +5914,11 @@ export const FE16_UNITS: Fe16Unit[] = [
     "recruit": {
       "bylethLevel": 15,
       "window": "from Chapter 11"
+    },
+    "joinsAt": {
+      "be": 11,
+      "bl": 11,
+      "gd": 11
     }
   },
   {
@@ -6053,7 +6092,12 @@ export const FE16_UNITS: Fe16Unit[] = [
     },
     "notes": [
       "On the Black Eagles' path, only from Chapter 12 on Silver Snow, where she joins on her own (Serenes Forest; not traced)."
-    ]
+    ],
+    "joinsAt": {
+      "be": 12,
+      "bl": 4,
+      "gd": 4
+    }
   },
   {
     "id": "fe16-shamir",
@@ -6228,7 +6272,12 @@ export const FE16_UNITS: Fe16Unit[] = [
     },
     "notes": [
       "On the Black Eagles' path she joins on her own in Chapter 12 on Silver Snow (Serenes Forest; not traced)."
-    ]
+    ],
+    "joinsAt": {
+      "be": 5,
+      "bl": 5,
+      "gd": 5
+    }
   },
   {
     "id": "fe16-cyril",
@@ -6397,7 +6446,12 @@ export const FE16_UNITS: Fe16Unit[] = [
     },
     "notes": [
       "On the Black Eagles' path, only from Chapter 12 on Silver Snow, where he joins on his own (Serenes Forest; not traced)."
-    ]
+    ],
+    "joinsAt": {
+      "be": 12,
+      "bl": 5,
+      "gd": 5
+    }
   },
   {
     "id": "fe16-yuri",

@@ -50,6 +50,21 @@ ROUTES = {
     26: ['ss', 'am', 'vw'],                               # Seteth
     30: ['am'],                                           # Gilbert
     32: ['ss', 'am', 'vw'], 34: ['ss', 'am', 'vw'],       # Catherine, Cyril (monastery script: not on the Black Eagles' path before 12)
+    24: ['ss', 'am', 'vw'],                               # Hilda (the same)
+}
+# The chapter each unit can first be yours in, by the house taught (what the spoiler block opens; 1 when not listed): the monastery
+# script's recruitment windows, and Serenes Forest's chapters for those who join on their own.
+JOINS_AT = {
+    24: {'be': 12},                          # Hilda: on the Black Eagles' path, Silver Snow from Chapter 12
+    26: {'be': 12, 'bl': 12, 'gd': 12},      # Seteth: on his own
+    27: {'be': 7, 'bl': 7, 'gd': 7},         # Flayn: on her own
+    28: {'be': 8, 'bl': 8, 'gd': 8},         # Hanneman
+    29: {'be': 8, 'bl': 8, 'gd': 8},         # Manuela
+    30: {'bl': 13},                          # Gilbert: on his own, Azure Moon
+    31: {'be': 11, 'bl': 11, 'gd': 11},      # Alois
+    32: {'be': 12, 'bl': 4, 'gd': 4},        # Catherine
+    33: {'be': 5, 'bl': 5, 'gd': 5},         # Shamir
+    34: {'be': 12, 'bl': 5, 'gd': 5},        # Cyril
 }
 AUTO = {
     26: 'Joins on his own in Chapter 12 (Serenes Forest; not traced).',
@@ -76,6 +91,8 @@ NOTES = {
     1046: 'Expansion Pass (DLC). Joins after the paralogue The Secret Merchant, which places her as your unit; the conditions '
           'aren\'t traced.',
 }
+# The chapter units leave in for good, by route (with the spoiler block on, they drop out from then). Serenes Forest's, not traced.
+LEAVES_AT = {2: {'ss': 12}, 5: {'ss': 12}, 27: {'cf': 12}}
 # When units leave and come back (spoilers: blank under the spoiler block). Serenes Forest's, not traced.
 AWAY = {
     2: ['Silver Snow: leaves at the end of Part I, in Chapter 11 (Serenes Forest; not traced).'],
@@ -197,6 +214,10 @@ def build():
             u['notes'] = [NOTES[p]]
         if p in AWAY:
             u['away'] = AWAY[p]
+        if p in JOINS_AT:
+            u['joinsAt'] = JOINS_AT[p]
+        if p in LEAVES_AT:
+            u['leavesAt'] = LEAVES_AT[p]
         if p in DLC:
             u['dlc'] = True
         units.append(u)

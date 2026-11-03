@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useScreenshotContextStore } from '../state/screenshotContextStore'
+import { useSpoilerStore } from '../state/spoilerStore'
 import { defaultPlan, inArmy, labelOf, type Fe16Data, type Fe16Picks, type Fe16Plan } from './logic'
 import { useFe16Store } from './store'
 import type { Fe16Unit } from './types'
@@ -26,14 +27,22 @@ export function useScreenshotUnit(unit: Fe16Unit | undefined) {
   }, [unit, setUnitLabel])
 }
 
-/** The units that can be in your army under the picks. */
-export function armyWith(data: Fe16Data, picks: Fe16Picks) {
-  return data.units.filter((u) => inArmy(u, picks))
+/** The units that can be in your army under the picks; with the spoiler block on (`chapter`), those who can have joined by then. */
+export function armyWith(data: Fe16Data, picks: Fe16Picks, chapter?: number) {
+  return data.units.filter((u) => inArmy(u, picks, chapter))
+}
+
+/** The spoiler block for Three Houses: whether it's on, and the chapter you're on (0 before a house is picked). */
+export function useSpoiler(data: Fe16Data) {
+  const block = useSpoilerStore((s) => s.block)
+  const saved = useSpoilerStore((s) => s.progress[data.gameId])
+  return { block, chapter: block ? (saved ?? 0) : undefined }
 }
 
 export function useArmy(data: Fe16Data) {
   const picks = useFe16Store((s) => s.picks)
-  return { units: armyWith(data, picks), picks }
+  const { block, chapter } = useSpoiler(data)
+  return { units: armyWith(data, picks, chapter), picks, block, chapter }
 }
 
 /** Every unit's plan from a set of saved plans (the store's by default). */

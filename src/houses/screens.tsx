@@ -1,18 +1,26 @@
 import { useRef, useState } from 'react'
-import { useArmy, useScreenshotUnit } from './hooks'
+import { useSpoilerStore } from '../state/spoilerStore'
+import { selectClass, useArmy, useScreenshotUnit } from './hooks'
 import {
   BYLETH_CHOICE,
   groupOf,
   groupsFor,
+  HOUSE_CHOICE,
   inArmy,
   joinText,
+  LAST_CHAPTER,
   labelOf,
+  levelsText,
   ROUTE_CHOICE,
+  ROUTE_NAMES,
+  routeOf,
+  SPLIT_CHAPTER,
   supportsOf,
   topTalk,
   type Fe16Data,
   type Fe16Picks,
 } from './logic'
+import { useFe16Store } from './store'
 import { FE16_SKILL_LABELS, FE16_SKILLS, type Fe16Unit } from './types'
 import { ChoicePicker, LearnTable, StatTable, UnitPortrait, UnitSelect } from './ui'
 
@@ -51,11 +59,11 @@ function SkillRanks({ data, unit }: { data: Fe16Data; unit: Fe16Unit }) {
   )
 }
 
-function UnitDetail({ data, unit, picks }: { data: Fe16Data; unit: Fe16Unit; picks: Fe16Picks }) {
+function UnitDetail({ data, unit, picks, chapter }: { data: Fe16Data; unit: Fe16Unit; picks: Fe16Picks; chapter?: number }) {
   const [everyone, setEveryone] = useState(false)
   const cls = data.classes[unit.classId]
   const byId = new Map(data.units.map((u) => [u.id, u]))
-  const supports = supportsOf(data, unit.id).filter((s) => s.npc || (byId.get(s.partner) && inArmy(byId.get(s.partner)!, picks)))
+  const supports = supportsOf(data, unit.id).filter((s) => s.npc || (byId.get(s.partner) && inArmy(byId.get(s.partner)!, picks, chapter)))
   return (
     <div className="space-y-4 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
       <div className="flex flex-col items-start gap-4 sm:flex-row">
@@ -67,7 +75,7 @@ function UnitDetail({ data, unit, picks }: { data: Fe16Data; unit: Fe16Unit; pic
           </div>
           <div>
             <span className="text-neutral-500">Joins: </span>
-            {joinText(unit, picks.route)}
+            {joinText(unit, picks.house)}
           </div>
           {unit.notes?.map((n) => (
             <div key={n} className="text-neutral-400">
@@ -89,7 +97,7 @@ function UnitDetail({ data, unit, picks }: { data: Fe16Data; unit: Fe16Unit; pic
       </div>
       {/* When the unit leaves and comes back. These are spoilers: under the spoiler block, once the Roster has one, they stay blank
           (the user's rule, 2026-11-02). */}
-      {unit.away && (
+      {unit.away && chapter === undefined && (
         <div className="space-y-1 text-sm">
           <h4 className="text-sm font-semibold text-neutral-200">Time away</h4>
           <ul className="list-disc space-y-0.5 pl-5 text-neutral-400">
@@ -133,11 +141,12 @@ function UnitDetail({ data, unit, picks }: { data: Fe16Data; unit: Fe16Unit; pic
       {supports.length > 0 && (
         <div className="space-y-1 text-sm text-neutral-300">
           <h4 className="text-sm font-semibold text-neutral-200">Supports</h4>
+          <p className="text-xs text-neutral-500">Each pair's levels, from their conversations: some have the half levels (C+, B+, A+), some stop at B.</p>
           <div>
             {supports.map((s, i) => (
               <span key={`${s.partner}`}>
                 {i > 0 && ', '}
-                {s.npc ?? labelOf(byId.get(s.partner)!)} <span className="text-neutral-500">{topTalk(s.talks)}</span>
+                {s.npc ?? labelOf(byId.get(s.partner)!)} <span className="text-neutral-500">{levelsText(s.talks)}</span>
               </span>
             ))}
           </div>
@@ -147,22 +156,105 @@ function UnitDetail({ data, unit, picks }: { data: Fe16Data; unit: Fe16Unit; pic
   )
 }
 
-/** Every unit by house, with the two picks on top (Byleth's gender, the route); tapping one shows their data below. */
+/** The spoiler block's bar for Three Houses: the chapter you're on, back and on, and at the split the Black Eagles' route. */
+function ChapterBar({ data, picks, chapter }: { data: Fe16Data; picks: Fe16Picks; chapter: number }) {
+  const setProgress = useSpoilerStore((s) => s.setProgress)
+  const setPick = useFe16Store((s) => s.setPick)
+  const route = routeOf(picks)
+  const last = route ? LAST_CHAPTER[route] : SPLIT_CHAPTER - 1
+  const go = (ch: number) => {
+    // Going back before the split takes back the route picked there.
+    if (ch < SPLIT_CHAPTER && picks.house === 'be' && picks.route) setPick('route', null)
+    setProgress(data.gameId, ch)
+  }
+  if (!picks.house) return <p className="text-xs text-emerald-400">Pick the house you teach to start at Chapter 1.</p>
+  const atSplit = chapter === SPLIT_CHAPTER - 1 && !route
+  const button = 'rounded border px-3 py-1 text-sm disabled:cursor-default disabled:opacity-40'
+  const proceed = `${button} border-emerald-600 bg-emerald-900/60 text-emerald-100 hover:bg-emerald-800/60`
+  return (
+    <section aria-label="Spoiler block" className="space-y-2 rounded border border-emerald-900 bg-emerald-950/30 p-3 text-sm">
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="mr-auto text-neutral-200">
+          <span className="text-neutral-400">Opened up to </span>
+          <strong className="text-neutral-100">Chapter {chapter}</strong>
+          {route && chapter >= SPLIT_CHAPTER && <span className="text-neutral-500"> · {ROUTE_NAMES[route]}</span>}
+        </p>
+        <button type="button" onClick={() => go(chapter - 1)} disabled={chapter <= 1} className={`${button} border-neutral-700 text-neutral-300 hover:bg-neutral-800`}>
+          ‹ Back
+        </button>
+        {atSplit && picks.house === 'be' ? (
+          ROUTE_CHOICE.options.map((o) => (
+            <button
+              key={o.value}
+              type="button"
+              onClick={() => {
+                setPick('route', o.value)
+                setProgress(data.gameId, SPLIT_CHAPTER)
+              }}
+              className={proceed}
+            >
+              Proceed to Chapter {SPLIT_CHAPTER}: {o.label} ›
+            </button>
+          ))
+        ) : (
+          <button type="button" onClick={() => go(chapter + 1)} disabled={chapter >= last} className={proceed}>
+            {chapter >= last && route ? 'End of the story' : `Proceed to Chapter ${chapter + 1} ›`}
+          </button>
+        )}
+        <select value={chapter} onChange={(e) => go(Number(e.target.value))} aria-label="Jump to a chapter" className={selectClass}>
+          {Array.from({ length: last }, (_, i) => i + 1).map((ch) => (
+            <option key={ch} value={ch}>
+              {ch === chapter ? `Jump to… (now Chapter ${ch})` : `Chapter ${ch}`}
+            </option>
+          ))}
+        </select>
+      </div>
+      {atSplit && picks.house === 'be' && <p className="text-neutral-400">The story splits here: pick the route you're playing to carry on.</p>}
+    </section>
+  )
+}
+
+/** Byleth's gender and the house taught; the Black Eagles' route right away with the spoiler block off, at the split with it on. */
+function Picks({ data, picks, chapter }: { data: Fe16Data; picks: Fe16Picks; chapter?: number }) {
+  const setProgress = useSpoilerStore((s) => s.setProgress)
+  const setPick = useFe16Store((s) => s.setPick)
+  const route = routeOf(picks)
+  return (
+    <div className="space-y-2">
+      <ChoicePicker choice={BYLETH_CHOICE} />
+      <ChoicePicker
+        choice={HOUSE_CHOICE}
+        onPick={(house) => {
+          if (house !== 'be') setPick('route', null)
+          if (chapter !== undefined) setProgress(data.gameId, house ? Math.min(Math.max(chapter, 1), SPLIT_CHAPTER - 1) : 0)
+        }}
+      />
+      {chapter === undefined && picks.house === 'be' && <ChoicePicker choice={ROUTE_CHOICE} />}
+      {chapter === undefined && route && picks.house !== 'be' && (
+        <p className="text-xs text-neutral-400">Their route from Chapter {SPLIT_CHAPTER}: {ROUTE_NAMES[route]}.</p>
+      )}
+      {chapter !== undefined && <ChapterBar data={data} picks={picks} chapter={chapter} />}
+      <p className="text-xs text-neutral-500">
+        {chapter === undefined
+          ? 'The units your picks rule out drop out of every tab.'
+          : "The spoiler block is on: a unit shows once they can be yours by the chapter you're on, the route is asked at the split, and when units leave stays blank."}
+      </p>
+    </div>
+  )
+}
+
+/** Every unit by house, with the picks on top (Byleth's gender, the house, the route); tapping one shows their data below. */
 export function Fe16Roster({ data }: { data: Fe16Data }) {
-  const { units, picks } = useArmy(data)
+  const { units, picks, chapter } = useArmy(data)
   const [selectedId, setSelectedId] = useState(units[0]?.id ?? '')
   const detailRef = useRef<HTMLDivElement>(null)
   const selected = units.find((u) => u.id === selectedId) ?? units[0]
   useScreenshotUnit(selected)
   return (
     <div className="space-y-6">
-      <div className="space-y-2">
-        <ChoicePicker choice={BYLETH_CHOICE} />
-        <ChoicePicker choice={ROUTE_CHOICE} />
-        <p className="text-xs text-neutral-500">The units your picks rule out drop out of every tab.</p>
-      </div>
+      <Picks data={data} picks={picks} chapter={chapter} />
       <div className="space-y-3">
-        {groupsFor(picks.route).map((g) => {
+        {groupsFor(picks.house).map((g) => {
           const here = units.filter((u) => groupOf(u) === g)
           if (here.length === 0) return null
           return (
@@ -191,7 +283,7 @@ export function Fe16Roster({ data }: { data: Fe16Data }) {
         })}
       </div>
       <div ref={detailRef} className="scroll-mt-4">
-        {selected && <UnitDetail data={data} unit={selected} picks={picks} />}
+        {selected && <UnitDetail data={data} unit={selected} picks={picks} chapter={chapter} />}
       </div>
     </div>
   )
@@ -201,20 +293,21 @@ const TALKS = ['C', 'C+', 'B', 'B+', 'A', 'A+', 'S']
 
 /** Who supports whom, with every conversation the pair has (C to S), and the pairs with an ending together. */
 export function Fe16Supports({ data }: { data: Fe16Data }) {
-  const { units, picks } = useArmy(data)
+  const { units, picks, chapter } = useArmy(data)
   const [unitId, setUnitId] = useState(units[0]?.id ?? '')
   const unit = units.find((u) => u.id === unitId) ?? units[0]
   useScreenshotUnit(unit)
   if (!unit) return null
   const byId = new Map(data.units.map((u) => [u.id, u]))
-  const rows = supportsOf(data, unit.id).filter((s) => s.npc || (byId.get(s.partner) && inArmy(byId.get(s.partner)!, picks)))
+  const rows = supportsOf(data, unit.id).filter((s) => s.npc || (byId.get(s.partner) && inArmy(byId.get(s.partner)!, picks, chapter)))
   return (
     <div className="space-y-4">
       <UnitSelect units={units} picks={picks} value={unit.id} onChange={setUnitId} />
       <div className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
         <p className="text-xs text-neutral-500">
-          Every conversation the pair has, from the game's support list. Only Byleth has S supports, each with the genders the list allows;
-          a ♥ marks a pair with an ending together. What supports give in battle is in the Armory.
+          Each pair's support levels, one per conversation in the game's support list. Besides C, B, A and S, some pairs have the half
+          levels C+, B+ or A+ (Byleth and Edelgard: C, C+, B, A, S), and some stop at B. Only Byleth has S supports, each with the
+          genders the list allows; a ♥ marks a pair with an ending together. What supports give in battle is in the Armory.
         </p>
         {rows.length === 0 ? (
           <p className="text-sm text-neutral-500">No supports.</p>
@@ -224,6 +317,7 @@ export function Fe16Supports({ data }: { data: Fe16Data }) {
               <thead>
                 <tr className="text-xs text-neutral-500">
                   <th className="py-1 pr-2 text-left font-normal">Partner</th>
+                  <th className="px-1 py-1 text-left font-normal">Top</th>
                   {TALKS.map((t) => (
                     <th key={t} className="px-1 py-1 text-center font-normal">
                       {t}
@@ -247,6 +341,7 @@ export function Fe16Supports({ data }: { data: Fe16Data }) {
                         )}
                         {s.pairedEnding && <span className="ml-1 text-pink-400">♥</span>}
                       </td>
+                      <td className="px-1 py-1 text-neutral-200">{topTalk(s.talks)}</td>
                       {TALKS.map((t) => (
                         <td key={t} className="px-1 py-1 text-center text-emerald-400">
                           {s.talks.includes(t) ? '●' : <span className="text-neutral-700">·</span>}

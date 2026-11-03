@@ -78,7 +78,7 @@ export function StatGrid({ values, suffix = '' }: { values: Fe16Stats & { mov?: 
 export function UnitSelect({ units, picks, value, onChange }: { units: Fe16Unit[]; picks: Fe16Picks; value: string; onChange: (id: string) => void }) {
   return (
     <select value={value} onChange={(e) => onChange(e.target.value)} className={`${selectClass} w-full max-w-xs`}>
-      {groupsFor(picks.route).map((g) => {
+      {groupsFor(picks.house).map((g) => {
         const here = units.filter((u) => groupOf(u) === g)
         if (here.length === 0) return null
         return (
@@ -95,19 +95,23 @@ export function UnitSelect({ units, picks, value, onChange }: { units: Fe16Unit[
   )
 }
 
-/** One of the Roster's picks, as buttons. */
-export function ChoicePicker({ choice }: { choice: Fe16Choice }) {
+/** One of the Roster's picks, as buttons. `onPick` runs after a pick (the spoiler block moves on with the house). */
+export function ChoicePicker({ choice, onPick }: { choice: Fe16Choice; onPick?: (value: string | null) => void }) {
   const picked = useFe16Store((s) => s.picks[choice.id as keyof Fe16Picks])
   const setPick = useFe16Store((s) => s.setPick)
+  const pick = (value: string | null) => {
+    setPick(choice.id, value)
+    onPick?.(value)
+  }
   return (
     <div className="space-y-1.5 rounded-md border border-neutral-800 bg-neutral-900/60 p-2">
       <div className="text-xs text-neutral-400">{choice.question}</div>
       <div className="flex flex-wrap gap-1.5">
-        <button type="button" onClick={() => setPick(choice.id as keyof Fe16Picks, null)} className={chip(picked === undefined)}>
+        <button type="button" onClick={() => pick(null)} className={chip(picked === undefined)}>
           Not picked
         </button>
         {choice.options.map((opt) => (
-          <button key={opt.value} type="button" onClick={() => setPick(choice.id as keyof Fe16Picks, opt.value)} className={chip(picked === opt.value)}>
+          <button key={opt.value} type="button" onClick={() => pick(opt.value)} className={chip(picked === opt.value)}>
             {opt.label}
           </button>
         ))}

@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { BackupControls } from './components/BackupControls'
 import { EditModeToggle } from './components/EditModeToggle'
+import { SpoilerToggle } from './components/SpoilerToggle'
 import { ExportImageButton } from './components/ExportImageButton'
 import { IosInstallBanner } from './components/IosInstallBanner'
 import { LocalDataWarningBanner } from './components/LocalDataWarningBanner'
 import { GAMES, type GameParts } from './games'
 import { usePlannerStore } from './state/plannerStore'
+import { useSpoilerStore } from './state/spoilerStore'
 
 /** The picked game, kept on the device. Under the 'fe-roster-' prefix so it's in the backup. */
 const GAME_KEY = 'fe-roster-game'
@@ -25,6 +27,7 @@ function App() {
   const [parts, setParts] = useState<{ id: string; parts: GameParts } | null>(null)
   const [tabId, setTabId] = useState('roster')
   const editModeEnabled = usePlannerStore((state) => state.editModeEnabled)
+  const spoilerBlock = useSpoilerStore((state) => state.block)
   const mainRef = useRef<HTMLElement>(null)
   const [bulkUploadOpen, setBulkUploadOpen] = useState(false)
   const game = GAMES.find((g) => g.id === gameId) ?? GAMES[0]
@@ -97,6 +100,7 @@ function App() {
                 <ExportImageButton targetRef={mainRef} tabLabel={tab.label} context={game.short} />
               ))}
             <BackupControls />
+            <SpoilerToggle />
             <EditModeToggle />
             {editModeEnabled && BulkUpload && (
               <button
@@ -123,6 +127,11 @@ function App() {
             </button>
           ))}
         </nav>
+        {spoilerBlock && current && (
+          <p className="mt-2 text-xs text-emerald-400">
+            {current.spoiler ?? `The spoiler block isn't set up for ${game.short} yet, so everything shows.`}
+          </p>
+        )}
         {editModeEnabled && (
           <p className="mt-2 text-xs text-amber-400">
             Edit Mode is on — click any skill icon to upload your own image.

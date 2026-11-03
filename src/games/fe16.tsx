@@ -34,6 +34,7 @@ const fe16: GameParts = {
     { id: 'roster', label: 'Roster', component: () => <Fe16Roster data={FE16_DATA} /> },
     { id: 'supports', label: 'Supports', component: () => <Fe16Supports data={FE16_DATA} /> },
   ],
+  spoiler: "The Roster follows the chapter you're on: units show once they can be yours, the Black Eagles' route is asked at the split (Chapter 12), and when units leave stays blank.",
   bulkUpload: ({ onClose }) => <TelliusBulkUpload data={UPLOAD_DATA} title="Three Houses" onClose={onClose} />,
 }
 

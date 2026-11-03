@@ -16,6 +16,8 @@ export interface GameParts {
   background?: ComponentType
   /** Edit Mode's Bulk Upload for this game's art. */
   bulkUpload: ComponentType<{ onClose: () => void }>
+  /** What the spoiler block hides in this game, said under the header while it's on. A game without one isn't set up yet. */
+  spoiler?: string
   /** "Save as image", when the game names its files with more than the tab and unit (Fates: the plan and route). */
   exportButton?: ComponentType<{ targetRef: RefObject<HTMLElement | null>; tabLabel: string }>
 }

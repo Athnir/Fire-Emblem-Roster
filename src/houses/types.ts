@@ -39,6 +39,8 @@ export const FE16_RANKS = ['E', 'E+', 'D', 'D+', 'C', 'C+', 'B', 'B+', 'A', 'A+'
 /** The four routes of Part II: Crimson Flower and Silver Snow (the Black Eagles), Azure Moon (the Blue Lions), Verdant Wind (the
  * Golden Deer). */
 export type Fe16Route = 'cf' | 'ss' | 'am' | 'vw'
+/** The three houses: the Black Eagles, the Blue Lions, the Golden Deer. */
+export type Fe16House = 'be' | 'bl' | 'gd'
 
 /** Something a unit learns at a skill rank: an ability, a combat art or a spell. */
 export interface Fe16Learn {
@@ -89,6 +91,10 @@ export interface Fe16Unit {
   certified: string[]
   /** The routes they can be yours on. */
   routes: Fe16Route[]
+  /** The chapter they can first be yours in, by the house taught (1 where not given): what the spoiler block opens. */
+  joinsAt?: Partial<Record<Fe16House, number>>
+  /** The chapter they leave in for good, by route: with the spoiler block on, they drop out from then. */
+  leavesAt?: Partial<Record<Fe16Route, number>>
   /** 'lord': Byleth; 'house': only in their own house; 'student': their house, or recruited by another; 'recruit': staff and DLC
    * units, recruited; 'auto': joins on their own. */
   join: { how: 'lord' | 'house' | 'student' | 'recruit' | 'auto'; house?: string; note?: string }
