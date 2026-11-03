@@ -1,7 +1,8 @@
 import { useEffect } from 'react'
 import { useScreenshotContextStore } from '../state/screenshotContextStore'
 import { useSpoilerStore } from '../state/spoilerStore'
-import { defaultPlan, inArmy, labelOf, type Fe16Data, type Fe16Picks, type Fe16Plan } from './logic'
+import { inArmy, labelOf, type Fe16Data, type Fe16Picks } from './logic'
+import { defaultPlan, type Fe16Plan } from './plan'
 import { useFe16Store } from './store'
 import type { Fe16Unit } from './types'
 

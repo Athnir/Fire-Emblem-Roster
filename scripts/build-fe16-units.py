@@ -11,6 +11,7 @@ import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import fe16_data as D  # noqa: E402
 import fe16_units as U  # noqa: E402
 
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'src', 'data', 'fe16', 'fe16Units.ts')
@@ -22,7 +23,8 @@ SKILL_OF = dict(zip(U.SKILLS, ['sword', 'lance', 'axe', 'bow', 'brawl', 'reason'
 # The classes a unit can be. Every certification exam's class (the Pegasus Knight is 54, the playable one; 23 is the foes'), the
 # DLC's four (Abyssian Exam Pass), and the unique classes of the units who have them. The rest are the foes' and the story's.
 GENERAL = [c for c in range(0, 40) if c not in (6, 17, 23)] + [54, 84, 85, 86, 87]
-# Who alone can be in a unique class. Not yet traced in the program: Fire Emblem Wiki's and Serenes Forest's (unconfirmed).
+# Who alone can be in a unique class (the class lists' test, 0x651160: the Lord is persons 2-4's alone; the unique classes are
+# offered only once certified, and only the story certifies them), and how each is given.
 UNIQUE = {
     6: ['edelgard', 'dimitri', 'claude'],   # Lord
     56: ['edelgard'], 40: ['edelgard'],     # Armored Lord, Emperor
@@ -32,6 +34,24 @@ UNIQUE = {
     91: ['jeritza'],                        # Death Knight
     43: None,                               # Dancer: anyone (the White Heron Cup's winner)
 }
+GIVEN = {
+    56: 'The story gives it at the time skip (0x3d91b0), with Aymr: Crimson Flower.',
+    57: 'The story gives it at the time skip (0x3d91b0): Azure Moon.',
+    58: 'The story gives it at the time skip (0x3d91b0), with Failnaught: Verdant Wind.',
+    40: 'The story certifies it at the start of Crimson Flower\'s Chapter 16 (a ceremony, 0x253e50): no level or seal needed.',
+    44: 'The story certifies it at the start of Azure Moon\'s Chapter 16 (a ceremony, 0x253e50): no level or seal needed.',
+    17: 'The story certifies it at the start of Verdant Wind\'s Chapter 17 (a ceremony, 0x253e50): no level or seal needed.',
+    42: 'The story certifies it in Chapter 11 (a ceremony, 0x1d5280).',
+    43: 'Certified for the White Heron Cup\'s winner (0x1ffaf0), its only source: one unit a playthrough.',
+    91: 'The class Jeritza joins in; no one else is offered it.',
+}
+# A class whose exam needs another class certified first (0x632c90): the Dark Bishop, the Dark Mage.
+REQUIRES = {29: 15}
+# The units whose growths Aptitude raises by 20 (ability property 58, summed by 0x3d3020): Cyril's personal ability is the only one.
+APTITUDE = 'Aptitude'
+# fixed_flow.bin's route tables (file 7, sections 0-3) and fixed_scenario.bin (file 22): the level a unit recruited, or joining by
+# the story, gets in each chapter's month (0x3d0dc0: the chapter's battle +0x1e, its +0x1c).
+FLOW_ROUTES = {0: 'ss', 1: 'am', 2: 'vw', 3: 'cf'}
 CLASSES = GENERAL + list(UNIQUE)
 
 HOUSE_ROUTES = {'Black Eagles': ['cf', 'ss'], 'Blue Lions': ['am'], 'Golden Deer': ['vw']}
@@ -216,6 +236,14 @@ def build():
             u['away'] = AWAY[p]
         if p in JOINS_AT:
             u['joinsAt'] = JOINS_AT[p]
+        # The level-up's two-point minimum (persondata section 3 +8 bit 7, 0x3d3020) and the time skip's level-ups (its +0, 0x3d91b0).
+        if c['raw']['section3_flags8'] & 0x80:
+            u['minimumTwo'] = True
+        if c['raw']['section3_bytes0_2'][0]:
+            u['timeskipLevels'] = c['raw']['section3_bytes0_2'][0]
+        if rec and (rec['class_early'] or rec['class_late']):
+            u['recruitClasses'] = [str(rec['class_early']['id']) if rec['class_early'] else u['classId'],
+                                   str(rec['class_late']['id']) if rec['class_late'] else u['classId']]
         if p in LEAVES_AT:
             u['leavesAt'] = LEAVES_AT[p]
         if p in DLC:
@@ -247,6 +275,12 @@ def build():
             cls['mount'] = mount
         if n in GENERAL:
             cls['exam'] = {'seal': cert['item']['name'] if cert['item'] else None, 'ranks': ranks_of(cert['ranks'])}
+        # The growths a unit joining partway is levelled with (classdata +0x13 HP, +0x1e Str to Cha: 0x3d4260).
+        cls['joinGrowths'] = stats(c['enemy_growths'], extra=['mov'])
+        if n in GIVEN:
+            cls['given'] = GIVEN[n]
+        if n in REQUIRES:
+            cls['requires'] = str(REQUIRES[n])
         if who is not None:
             cls['who'] = ['fe16-' + w for w in who]
         if n == 43:
@@ -280,7 +314,22 @@ def build():
     spells = {s['name']: s['description'] for s in U.spells() if s['name']}
     rank_rewards = [{'skill': SKILL_OF[r['skill']], 'rank': r['rank'], 'name': r['name'], 'kind': r['kind']} for r in U.rank_rewards()]
     crests = {c['name']: c['description'] for c in U.crests() if c['name']}
-    return units, out_classes, supports, abilities, arts, spells, rank_rewards, crests
+    scenarios = D.table(22, 0)
+    join_levels = {}
+    for k, route in FLOW_ROUTES.items():
+        levels = []
+        for r in D.table(7, k):
+            levels.append(scenarios[r[0x1E]][0x1C] if r[0x1E] != 0xFF else None)
+        join_levels[route] = levels
+    statues = {}
+    for r in D.table(30, 5):
+        caps = {}
+        for k, name in enumerate(['str', 'mag', 'dex', 'spd', 'lck', 'def', 'res', 'mov', 'cha']):
+            if r[0xC + k]:
+                caps[name] = r[0xC + k]
+        if caps:
+            statues.setdefault(str(r[4]), {})[str(r[3])] = caps
+    return units, out_classes, supports, abilities, arts, spells, rank_rewards, crests, join_levels, statues
 
 
 def ts(v):
@@ -288,7 +337,7 @@ def ts(v):
 
 
 def main():
-    units, classes, supports, abilities, arts, spells, rank_rewards, crests = build()
+    units, classes, supports, abilities, arts, spells, rank_rewards, crests, join_levels, statues = build()
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     body = f'''// Generated by scripts/build-fe16-units.py from the user's own Three Houses dump (1.2.0 and the DLC). Don't edit by hand.
 import type {{ Fe16Class, Fe16Learn, Fe16Support, Fe16Unit }} from '../../houses/types'
@@ -307,6 +356,12 @@ export const FE16_ABILITIES: Record<string, string> = {ts(abilities)}
 export const FE16_ARTS: Record<string, string> = {ts(arts)}
 export const FE16_SPELLS: Record<string, string> = {ts(spells)}
 export const FE16_CRESTS: Record<string, string> = {ts(crests)}
+
+/** The level a unit recruited (or joining by the story) gets in each chapter's month, by route: index = chapter (0 the Prologue). */
+export const FE16_JOIN_LEVELS: Record<string, (number | null)[]> = {json.dumps(join_levels)}
+
+/** The Saint Statues' raises to the maximums, by statue and its level (fixed_shopdata.bin section 5; only level 9 adds any). */
+export const FE16_STATUES: Record<string, Record<string, Partial<Record<string, number>>>> = {json.dumps(statues)}
 '''
     open(OUT, 'w', encoding='utf-8', newline='\n').write(body)
     print(f'{len(units)} units, {len(classes)} classes, {len(supports)} supports, {len(abilities)} abilities, {len(arts)} arts, '

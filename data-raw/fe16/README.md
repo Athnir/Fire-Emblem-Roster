@@ -62,6 +62,50 @@ level needed (the staff; 255 none), u8 the class if recruited late, u8 stat (Str
 joins a female Byleth with no requirement (Sylvain), u8 the stat's value. The monastery script (file 360, LO08_00.bsi) holds a
 `RecruitTalk` event per recruitable unit, under its chapter and route conditions.
 
+## Mechanics read in the program
+
+The program is the update's `main` NSO (`romfs/main.bin`, relocated at 0; AArch64, no symbols): function starts from
+`.eh_frame_hdr` (0x188d300), and each data table reached through its GOT entry, which the loader at 0x3b5330 names (persondata
+section 0 at 0x1aa7810, classdata section 0 at 0x1aa7948, lobby_common section 4 at 0x1aa9a30). A unit is a 0x24c-byte slot (60 at
+GameData +0x644): +0x20 its own random seed, +0x4a level, +0x4b class, +0x4c HP, +0x4e..+0x56 Str to Cha, +0xac flags (bit 5
+riding). GameData +0x2427c is the chapter, +0x2449c the difficulty, +0x2449e the route (0 Black Eagles / Silver Snow, 1 Azure Moon,
+2 Verdant Wind, 3 Crimson Flower).
+
+- **Level-up** (`0x3d3020`): each stat's growth is the person's + the class's modifier (+ 20 with Aptitude, Cyril's personal
+  ability: ability property 58); nothing from difficulty, items, crests or supports. The unit's own seed (x * 1103515245 + 12345,
+  (x >> 16) % 100) rolls ten stats in order, Mov included; a growth of 101 or more gives (g − 1) / 100 sure points first. A stat
+  gains when the roll is below its growth. **The two-point minimum**: for a person whose section 3 +8 has bit 7 (Byleth, the
+  students, Flayn, Cyril, the Ashen Wolves, Jeritza, Anna; not Seteth, Hanneman, Manuela, Gilbert, Alois, Catherine, Shamir), a level
+  that gained 0 or 1 points gets the rest up to 2, one each to the stats that missed (growth 1 or more) by the least. Caps: the
+  person's own (HP at most 199, others 99), and a Saint Statue at level 9 adds 5 to two of them (`0x3f32b0`; fixed_shopdata section
+  5). Mov never grows. EXP per level: growthdata section 5; Lv 99 the top.
+- **Shown stats** (`0xb0240`): the unit's own + the class's boosts, + the mount's while mounted and riding; held at 0-99 (Mov 1-19).
+  A boost can go past the maximum. Max HP adds the class's HP boost.
+- **Class bases** (`0x412fa0`): own = max(own, the class's base), for good, on passing an exam and on every class change (and after
+  a join's averaging); nothing lowers them again.
+- **Joining partway** (`0x3d0dc0`, `0x3d4260`): the level is the chapter's battle's (fixed_flow route table +0x1e, fixed_scenario
+  +0x1c: 2k − 1 in Part I's Chapter k; Part II per route); the class is the recruitment record's early class from Lv 5, its late one
+  from Lv 10 (both certified); the stats are the Lv 1 bases plus, for each, growth = the person's + the class's join growths
+  (classdata +0x13 HP, +0x1e Str to Cha) + Aptitude, any non-zero total at least 5, Def and Res at most 60, times (level − 1) / 100
+  rounded half up; held at the maximums; lifted to the class's bases. Fire Emblem Wiki's Hanneman recruited in Chapter 8 (Lv 15:
+  32, 10, 19, 12, 9, 9, 7, 15, 11) matches exactly (`src/houses/__tests__/housesRules.test.ts`).
+- **Story joins** (`0x3d7720`, at chapter changes; `0x3d91b0`, the time skip): Flayn after Chapter 6 (Lv 11); on Silver Snow,
+  Catherine, Cyril and Shamir (not yet yours) at the Chapter 11 change (Lv 21) as Edelgard and Hubert leave (`0x3d8400`); Seteth on
+  Silver Snow, or on Azure Moon and Verdant Wind with Flayn yours; Gilbert on Azure Moon (Lv 25, then his time-skip level); Jeritza
+  on Crimson Flower with the Expansion Pass.
+- **The time skip** (`0x3d91b0`): every person but Byleth gets section 3 +0 random level-ups (0 to 4); on Normal, anyone below 20
+  is raised to 20. Ashe (Silver Snow, Verdant Wind) and Lorenz (Silver Snow, Azure Moon) leave if yours; Dimitri becomes a High
+  Lord, Claude a Wyvern Master (Failnaught), Edelgard an Armored Lord (Aymr), with the bases applied.
+- **Recruiting** (`0x2423c0`): a student's request (a flag a B support can bring) or Sylvain with a female Byleth passes at once;
+  otherwise with s the support level with Byleth (0 none, 1 C, 2 C+, 3 B, 4 B+, 5 A; the lower of the points' level and the
+  pair's top), need(v) = max(v − ⌊s·v·20/100⌋, 0) of Byleth's own stat (no boosts), of Byleth's rank (E 0 to S+ 11), and of Byleth's
+  level for the staff. Serenes Forest's table agrees but one cell (Felix's Sword with a B+ support: D here, D+ there).
+- **Class access** (`0x651160`, used by every class list): the class's gender (no exceptions: Hapi can't be a Dark Mage, Yuri a
+  Gremory); the Lord only for persons 2-4; a class without an exam only once certified; the Dark Bishop needs the Dark Mage
+  certified; the DLC classes the Expansion Pass. The Emperor, Great Lord and Barbarossa are certified by a ceremony (script
+  command 2790) at the start of Crimson Flower's and Azure Moon's Chapter 16 and Verdant Wind's 17, with no level or seal;
+  Enlightened One in Chapter 11; the Dancer for the White Heron Cup's winner only (`0x1ffaf0`); the Death Knight 91 is Jeritza's.
+
 ## Checked against Serenes Forest and Fire Emblem Wiki
 
 Every unit's bases, growths and maximums, and every class's bases, growths, boosts and mount bonus, match Serenes Forest
@@ -74,7 +118,8 @@ Jeritza's personal ability is Murderous Intent, and he learns Mastermind at Swor
 
 ## Unconfirmed
 
-- The joins the files don't spell out: Flayn (Chapter 7), Seteth (Chapter 12), Gilbert (Chapter 13, Azure Moon), and the leaves in
-  Part II, are Serenes Forest's; the DLC units' conditions aren't traced.
-- Which units alone can be in the unique classes (the house leaders', Byleth's Enlightened One, Jeritza's Death Knight).
+- The chapter Seteth's join counts its level from (Serenes Forest: 12), and whether the chapter variable during a month is that
+  month's chapter (Hanneman's and Gilbert's numbers say so).
+- What ends recruiting after Part I; the odds of a student's request at B; the Ashen Wolves', Anna's and Jeritza's flags.
+- Which saint each statue is; what clears the riding bit; Ashe's and Lorenz's levels when they come back.
 - The support flag at +6, the value at +8, bit 10; the budding talent's parameter; the classes at section 3 +31..+33.

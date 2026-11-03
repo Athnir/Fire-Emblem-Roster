@@ -359,3 +359,39 @@ export function Fe16Supports({ data }: { data: Fe16Data }) {
     </div>
   )
 }
+
+/** Rules too long for the other tabs: recruiting, the time skip and the rest, from the game's code, for checking by hand. */
+export function Fe16Info() {
+  const section = (title: string, lines: string[]) => (
+    <section className="space-y-2 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
+      <h3 className="text-base font-semibold text-neutral-100">{title}</h3>
+      <ul className="list-disc space-y-1 pl-5 text-sm text-neutral-300">
+        {lines.map((l) => (
+          <li key={l}>{l}</li>
+        ))}
+      </ul>
+    </section>
+  )
+  return (
+    <div className="space-y-4">
+      <p className="text-xs text-neutral-500">The rules behind recruiting and the time skip, from the game's code (0x2423c0, 0x3d91b0), for checking by hand.</p>
+      {section('Recruiting', [
+        "A unit's requirements are a stat of Byleth's and a skill rank of Byleth's, or for the staff Byleth's level (the Roster lists each). They're Byleth's own: class boosts and abilities don't count.",
+        "A support with Byleth cuts each requirement by a fifth of it per support level, the cut rounded down: C one fifth, C+ two fifths, B three, B+ four; at A there are none. A skill rank counts as its place from E (0) to S+ (11). The support level counted is the lower of the pair's points and their top level.",
+        'A student who asks to join (the request a B support can bring) joins at once, and Sylvain joins a female Byleth with no requirement. The Ashen Wolves need Cindered Shadows cleared and its events, and Anna the Expansion Pass, beyond their requirements.',
+        "A unit recruited joins at the chapter's level (2 × the chapter − 1 in Part I), in the class their record gives for it (the first from Lv 5, the second from Lv 10), with stats averaged the same way every time: the Unit Planner works them out.",
+      ])}
+      {section('The time skip', [
+        'Every unit but Byleth gets a set number of random level-ups (none for Bernadetta, Flayn and Jeritza, up to four for Dedue). On Normal, anyone still below Lv 20 is then raised to 20.',
+        'Ashe (Silver Snow and Verdant Wind) and Lorenz (Silver Snow and Azure Moon) leave if they were recruited, after three random level-ups; they come back in Chapters 15 and 16.',
+        "The house leaders change class: Edelgard to the Armored Lord (with Aymr), Dimitri to the High Lord, Claude to the Wyvern Master (with Failnaught). Their last classes come in a ceremony: Crimson Flower's and Azure Moon's Chapter 16, Verdant Wind's 17; Byleth's Enlightened One in Chapter 11.",
+        'Story joins: Flayn after Chapter 6 (Lv 11); on Silver Snow, Catherine, Cyril and Shamir (if not yours yet) at the Chapter 11 change, at Lv 21, as Edelgard and Hubert leave; Seteth on Silver Snow, or on Azure Moon and Verdant Wind with Flayn yours; Gilbert on Azure Moon; Jeritza on Crimson Flower with the Expansion Pass.',
+      ])}
+      {section('Level-ups', [
+        "Each stat rolls 0-99 against the unit's growth plus the class's, from the unit's own seed (a reload doesn't change it). A growth over 100 gives a sure point per full 100.",
+        'Most units get at least two points a level: when a level gains 0 or 1, the stats that missed by the least make it up to 2. Seteth, Hanneman, Manuela, Gilbert, Alois, Catherine and Shamir can level with fewer.',
+        'Cyril\'s Aptitude adds 20 to every growth but Mov. Mov never grows. The level stops at 99; the maximums are each unit\'s own, and a Saint Statue at level 9 raises two of them by 5.',
+      ])}
+    </div>
+  )
+}

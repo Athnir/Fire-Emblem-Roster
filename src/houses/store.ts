@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Fe16Picks, Fe16Plan } from './logic'
+import type { Fe16Picks } from './logic'
+import type { Fe16Plan } from './plan'
 
 interface Fe16State {
   /** {unit id: plan}. */

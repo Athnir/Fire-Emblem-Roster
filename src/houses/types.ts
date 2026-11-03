@@ -95,6 +95,12 @@ export interface Fe16Unit {
   joinsAt?: Partial<Record<Fe16House, number>>
   /** The chapter they leave in for good, by route: with the spoiler block on, they drop out from then. */
   leavesAt?: Partial<Record<Fe16Route, number>>
+  /** The level-up's two-point minimum applies to them (persondata section 3 +8 bit 7): not the staff and knights. */
+  minimumTwo?: true
+  /** Random level-ups the time skip gives them (section 3 +0). */
+  timeskipLevels?: number
+  /** The class they're put in when they join partway: from Lv 5 the first, from Lv 10 the second (fixed_lobby_common.bin). */
+  recruitClasses?: [string, string]
   /** 'lord': Byleth; 'house': only in their own house; 'student': their house, or recruited by another; 'recruit': staff and DLC
    * units, recruited; 'auto': joins on their own. */
   join: { how: 'lord' | 'house' | 'student' | 'recruit' | 'auto'; house?: string; note?: string }
@@ -133,6 +139,12 @@ export interface Fe16Class {
   /** Reached outside the exams (the Dancer: the White Heron Cup). */
   unique?: true
   dlc?: true
+  /** The growths a unit joining partway in this class is levelled with (classdata +0x13, +0x1e). */
+  joinGrowths: Fe16StatsMov
+  /** How the story gives a unique class. */
+  given?: string
+  /** A class that must be certified first (the Dark Bishop's Dark Mage). */
+  requires?: string
 }
 
 export interface Fe16Support {

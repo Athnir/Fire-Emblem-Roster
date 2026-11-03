@@ -199,7 +199,8 @@ export const FE16_UNITS: Fe16Unit[] = [
       "skill": "faith",
       "name": "White Magic Avo +20",
       "kind": "ability"
-    }
+    },
+    "minimumTwo": true
   },
   {
     "id": "fe16-byleth-f",
@@ -398,7 +399,8 @@ export const FE16_UNITS: Fe16Unit[] = [
       "skill": "faith",
       "name": "White Magic Avo +20",
       "kind": "ability"
-    }
+    },
+    "minimumTwo": true
   },
   {
     "id": "fe16-edelgard",
@@ -608,6 +610,8 @@ export const FE16_UNITS: Fe16Unit[] = [
     "away": [
       "Silver Snow: leaves at the end of Part I, in Chapter 11 (Serenes Forest; not traced)."
     ],
+    "minimumTwo": true,
+    "timeskipLevels": 2,
     "leavesAt": {
       "ss": 12
     }
@@ -798,7 +802,9 @@ export const FE16_UNITS: Fe16Unit[] = [
       "skill": "riding",
       "name": "Seal Movement",
       "kind": "ability"
-    }
+    },
+    "minimumTwo": true,
+    "timeskipLevels": 3
   },
   {
     "id": "fe16-claude",
@@ -1000,7 +1006,9 @@ export const FE16_UNITS: Fe16Unit[] = [
       "skill": "axe",
       "name": "Diamond Axe",
       "kind": "art"
-    }
+    },
+    "minimumTwo": true,
+    "timeskipLevels": 2
   },
   {
     "id": "fe16-hubert",
@@ -1193,6 +1201,12 @@ export const FE16_UNITS: Fe16Unit[] = [
     },
     "away": [
       "Silver Snow: leaves at the end of Part I, in Chapter 11 (Serenes Forest; not traced)."
+    ],
+    "minimumTwo": true,
+    "timeskipLevels": 2,
+    "recruitClasses": [
+      "5",
+      "14"
     ],
     "leavesAt": {
       "ss": 12
@@ -1400,7 +1414,13 @@ export const FE16_UNITS: Fe16Unit[] = [
         "skill": "armor",
         "rank": "C"
       }
-    }
+    },
+    "minimumTwo": true,
+    "timeskipLevels": 3,
+    "recruitClasses": [
+      "3",
+      "10"
+    ]
   },
   {
     "id": "fe16-linhardt",
@@ -1576,7 +1596,13 @@ export const FE16_UNITS: Fe16Unit[] = [
         "skill": "reason",
         "rank": "C"
       }
-    }
+    },
+    "minimumTwo": true,
+    "timeskipLevels": 1,
+    "recruitClasses": [
+      "5",
+      "16"
+    ]
   },
   {
     "id": "fe16-caspar",
@@ -1742,7 +1768,13 @@ export const FE16_UNITS: Fe16Unit[] = [
         "skill": "brawl",
         "rank": "C"
       }
-    }
+    },
+    "minimumTwo": true,
+    "timeskipLevels": 3,
+    "recruitClasses": [
+      "4",
+      "11"
+    ]
   },
   {
     "id": "fe16-bernadetta",
@@ -1931,7 +1963,12 @@ export const FE16_UNITS: Fe16Unit[] = [
         "skill": "bow",
         "rank": "C"
       }
-    }
+    },
+    "minimumTwo": true,
+    "recruitClasses": [
+      "4",
+      "12"
+    ]
   },
   {
     "id": "fe16-dorothea",
@@ -2108,7 +2145,13 @@ export const FE16_UNITS: Fe16Unit[] = [
         "skill": "authority",
         "rank": "B"
       }
-    }
+    },
+    "minimumTwo": true,
+    "timeskipLevels": 2,
+    "recruitClasses": [
+      "5",
+      "14"
+    ]
   },
   {
     "id": "fe16-petra",
@@ -2281,7 +2324,13 @@ export const FE16_UNITS: Fe16Unit[] = [
         "skill": "riding",
         "rank": "C"
       }
-    }
+    },
+    "minimumTwo": true,
+    "timeskipLevels": 3,
+    "recruitClasses": [
+      "2",
+      "8"
+    ]
   },
   {
     "id": "fe16-dedue",
@@ -2448,7 +2497,13 @@ export const FE16_UNITS: Fe16Unit[] = [
     "join": {
       "how": "house",
       "house": "Blue Lions"
-    }
+    },
+    "minimumTwo": true,
+    "timeskipLevels": 4,
+    "recruitClasses": [
+      "4",
+      "9"
+    ]
   },
   {
     "id": "fe16-felix",
@@ -2636,7 +2691,13 @@ export const FE16_UNITS: Fe16Unit[] = [
         "skill": "sword",
         "rank": "B+"
       }
-    }
+    },
+    "minimumTwo": true,
+    "timeskipLevels": 3,
+    "recruitClasses": [
+      "2",
+      "7"
+    ]
   },
   {
     "id": "fe16-ashe",
@@ -2802,6 +2863,12 @@ export const FE16_UNITS: Fe16Unit[] = [
     },
     "away": [
       "Recruited from another house, he leaves when Part II begins unless Edelgard or Dimitri leads; defeating him in Chapter 15 recruits him again (Serenes Forest; not traced)."
+    ],
+    "minimumTwo": true,
+    "timeskipLevels": 2,
+    "recruitClasses": [
+      "4",
+      "12"
     ]
   },
   {
@@ -2999,6 +3066,12 @@ export const FE16_UNITS: Fe16Unit[] = [
     },
     "notes": [
       "Joins a female Byleth with no requirements (the recruitment record's flag)."
+    ],
+    "minimumTwo": true,
+    "timeskipLevels": 2,
+    "recruitClasses": [
+      "3",
+      "10"
     ]
   },
   {
@@ -3176,7 +3249,13 @@ export const FE16_UNITS: Fe16Unit[] = [
         "skill": "bow",
         "rank": "C"
       }
-    }
+    },
+    "minimumTwo": true,
+    "timeskipLevels": 1,
+    "recruitClasses": [
+      "5",
+      "16"
+    ]
   },
   {
     "id": "fe16-annette",
@@ -3371,7 +3450,13 @@ export const FE16_UNITS: Fe16Unit[] = [
         "skill": "faith",
         "rank": "B"
       }
-    }
+    },
+    "minimumTwo": true,
+    "timeskipLevels": 3,
+    "recruitClasses": [
+      "5",
+      "14"
+    ]
   },
   {
     "id": "fe16-ingrid",
@@ -3552,7 +3637,13 @@ export const FE16_UNITS: Fe16Unit[] = [
         "skill": "flying",
         "rank": "D"
       }
-    }
+    },
+    "minimumTwo": true,
+    "timeskipLevels": 2,
+    "recruitClasses": [
+      "3",
+      "54"
+    ]
   },
   {
     "id": "fe16-lorenz",
@@ -3725,6 +3816,12 @@ export const FE16_UNITS: Fe16Unit[] = [
     },
     "away": [
       "Recruited from another house, he leaves when Part II begins unless Edelgard or Claude leads; defeating him in Chapter 16 recruits him again (Serenes Forest; not traced)."
+    ],
+    "minimumTwo": true,
+    "timeskipLevels": 2,
+    "recruitClasses": [
+      "3",
+      "10"
     ]
   },
   {
@@ -3892,7 +3989,13 @@ export const FE16_UNITS: Fe16Unit[] = [
         "skill": "armor",
         "rank": "C"
       }
-    }
+    },
+    "minimumTwo": true,
+    "timeskipLevels": 2,
+    "recruitClasses": [
+      "4",
+      "13"
+    ]
   },
   {
     "id": "fe16-ignatz",
@@ -4092,7 +4195,13 @@ export const FE16_UNITS: Fe16Unit[] = [
         "skill": "authority",
         "rank": "B"
       }
-    }
+    },
+    "minimumTwo": true,
+    "timeskipLevels": 2,
+    "recruitClasses": [
+      "4",
+      "12"
+    ]
   },
   {
     "id": "fe16-lysithea",
@@ -4283,6 +4392,12 @@ export const FE16_UNITS: Fe16Unit[] = [
     },
     "away": [
       "Crimson Flower: if she wasn't recruited, defeating her in Chapter 14 recruits her (Serenes Forest; not traced)."
+    ],
+    "minimumTwo": true,
+    "timeskipLevels": 3,
+    "recruitClasses": [
+      "5",
+      "14"
     ]
   },
   {
@@ -4466,7 +4581,13 @@ export const FE16_UNITS: Fe16Unit[] = [
         "skill": "riding",
         "rank": "C"
       }
-    }
+    },
+    "minimumTwo": true,
+    "timeskipLevels": 1,
+    "recruitClasses": [
+      "5",
+      "16"
+    ]
   },
   {
     "id": "fe16-hilda",
@@ -4647,7 +4768,13 @@ export const FE16_UNITS: Fe16Unit[] = [
     ],
     "joinsAt": {
       "be": 12
-    }
+    },
+    "minimumTwo": true,
+    "timeskipLevels": 1,
+    "recruitClasses": [
+      "4",
+      "11"
+    ]
   },
   {
     "id": "fe16-leonie",
@@ -4822,7 +4949,13 @@ export const FE16_UNITS: Fe16Unit[] = [
         "skill": "lance",
         "rank": "C"
       }
-    }
+    },
+    "minimumTwo": true,
+    "timeskipLevels": 3,
+    "recruitClasses": [
+      "3",
+      "10"
+    ]
   },
   {
     "id": "fe16-seteth",
@@ -5035,7 +5168,12 @@ export const FE16_UNITS: Fe16Unit[] = [
       "be": 12,
       "bl": 12,
       "gd": 12
-    }
+    },
+    "timeskipLevels": 1,
+    "recruitClasses": [
+      "24",
+      "24"
+    ]
   },
   {
     "id": "fe16-flayn",
@@ -5231,6 +5369,11 @@ export const FE16_UNITS: Fe16Unit[] = [
       "bl": 7,
       "gd": 7
     },
+    "minimumTwo": true,
+    "recruitClasses": [
+      "16",
+      "16"
+    ],
     "leavesAt": {
       "cf": 12
     }
@@ -5415,7 +5558,12 @@ export const FE16_UNITS: Fe16Unit[] = [
       "be": 8,
       "bl": 8,
       "gd": 8
-    }
+    },
+    "timeskipLevels": 1,
+    "recruitClasses": [
+      "14",
+      "14"
+    ]
   },
   {
     "id": "fe16-manuela",
@@ -5586,7 +5734,12 @@ export const FE16_UNITS: Fe16Unit[] = [
       "be": 8,
       "bl": 8,
       "gd": 8
-    }
+    },
+    "timeskipLevels": 1,
+    "recruitClasses": [
+      "16",
+      "16"
+    ]
   },
   {
     "id": "fe16-gilbert",
@@ -5746,7 +5899,12 @@ export const FE16_UNITS: Fe16Unit[] = [
     },
     "joinsAt": {
       "bl": 13
-    }
+    },
+    "timeskipLevels": 1,
+    "recruitClasses": [
+      "21",
+      "21"
+    ]
   },
   {
     "id": "fe16-alois",
@@ -5919,7 +6077,12 @@ export const FE16_UNITS: Fe16Unit[] = [
       "be": 11,
       "bl": 11,
       "gd": 11
-    }
+    },
+    "timeskipLevels": 1,
+    "recruitClasses": [
+      "25",
+      "25"
+    ]
   },
   {
     "id": "fe16-catherine",
@@ -6097,7 +6260,12 @@ export const FE16_UNITS: Fe16Unit[] = [
       "be": 12,
       "bl": 4,
       "gd": 4
-    }
+    },
+    "timeskipLevels": 1,
+    "recruitClasses": [
+      "19",
+      "19"
+    ]
   },
   {
     "id": "fe16-shamir",
@@ -6277,7 +6445,12 @@ export const FE16_UNITS: Fe16Unit[] = [
       "be": 5,
       "bl": 5,
       "gd": 5
-    }
+    },
+    "timeskipLevels": 1,
+    "recruitClasses": [
+      "26",
+      "26"
+    ]
   },
   {
     "id": "fe16-cyril",
@@ -6451,7 +6624,13 @@ export const FE16_UNITS: Fe16Unit[] = [
       "be": 12,
       "bl": 5,
       "gd": 5
-    }
+    },
+    "minimumTwo": true,
+    "timeskipLevels": 3,
+    "recruitClasses": [
+      "1",
+      "1"
+    ]
   },
   {
     "id": "fe16-yuri",
@@ -6651,6 +6830,12 @@ export const FE16_UNITS: Fe16Unit[] = [
     },
     "notes": [
       "Cindered Shadows (DLC). In the main story, once Cindered Shadows is cleared (the paralogue A Cursed Relic places him as your unit or a green one): the conditions aren't traced."
+    ],
+    "minimumTwo": true,
+    "timeskipLevels": 2,
+    "recruitClasses": [
+      "2",
+      "8"
     ],
     "dlc": true
   },
@@ -6859,6 +7044,12 @@ export const FE16_UNITS: Fe16Unit[] = [
     "notes": [
       "Cindered Shadows (DLC). In the main story, once Cindered Shadows is cleared (the paralogue Black Market Scheme): the conditions aren't traced."
     ],
+    "minimumTwo": true,
+    "timeskipLevels": 1,
+    "recruitClasses": [
+      "4",
+      "13"
+    ],
     "dlc": true
   },
   {
@@ -7064,6 +7255,12 @@ export const FE16_UNITS: Fe16Unit[] = [
     "notes": [
       "Cindered Shadows (DLC). In the main story, once Cindered Shadows is cleared (the paralogue A Cursed Relic): the conditions aren't traced."
     ],
+    "minimumTwo": true,
+    "timeskipLevels": 3,
+    "recruitClasses": [
+      "5",
+      "14"
+    ],
     "dlc": true
   },
   {
@@ -7256,6 +7453,12 @@ export const FE16_UNITS: Fe16Unit[] = [
     },
     "notes": [
       "Cindered Shadows (DLC). In the main story, once Cindered Shadows is cleared (the paralogue Black Market Scheme): the conditions aren't traced."
+    ],
+    "minimumTwo": true,
+    "timeskipLevels": 1,
+    "recruitClasses": [
+      "5",
+      "14"
     ],
     "dlc": true
   },
@@ -7463,6 +7666,11 @@ export const FE16_UNITS: Fe16Unit[] = [
     "notes": [
       "Expansion Pass (DLC). The paralogues The Secret Merchant and the next place him as your unit; the conditions aren't traced."
     ],
+    "minimumTwo": true,
+    "recruitClasses": [
+      "91",
+      "91"
+    ],
     "dlc": true
   },
   {
@@ -7667,6 +7875,12 @@ export const FE16_UNITS: Fe16Unit[] = [
     "notes": [
       "Expansion Pass (DLC). Joins after the paralogue The Secret Merchant, which places her as your unit; the conditions aren't traced."
     ],
+    "minimumTwo": true,
+    "timeskipLevels": 1,
+    "recruitClasses": [
+      "2",
+      "8"
+    ],
     "dlc": true
   }
 ]
@@ -7722,6 +7936,18 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
     "exam": {
       "seal": "Beginner Seal",
       "ranks": {}
+    },
+    "joinGrowths": {
+      "hp": 0,
+      "str": 0,
+      "mag": 0,
+      "dex": 0,
+      "spd": 0,
+      "lck": 0,
+      "def": 0,
+      "res": 0,
+      "mov": 0,
+      "cha": 5
     }
   },
   "1": {
@@ -7774,6 +8000,18 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
     "exam": {
       "seal": "Beginner Seal",
       "ranks": {}
+    },
+    "joinGrowths": {
+      "hp": 0,
+      "str": 0,
+      "mag": 0,
+      "dex": 0,
+      "spd": 0,
+      "lck": 0,
+      "def": 0,
+      "res": 0,
+      "mov": 0,
+      "cha": 0
     }
   },
   "2": {
@@ -7829,6 +8067,18 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "ranks": {
         "sword": "D"
       }
+    },
+    "joinGrowths": {
+      "hp": 10,
+      "str": 0,
+      "mag": 0,
+      "dex": 0,
+      "spd": 10,
+      "lck": 0,
+      "def": 0,
+      "res": -10,
+      "mov": 0,
+      "cha": 5
     }
   },
   "3": {
@@ -7884,6 +8134,18 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "ranks": {
         "lance": "D"
       }
+    },
+    "joinGrowths": {
+      "hp": 10,
+      "str": 0,
+      "mag": 0,
+      "dex": 10,
+      "spd": 0,
+      "lck": 0,
+      "def": 0,
+      "res": -10,
+      "mov": 0,
+      "cha": 5
     }
   },
   "4": {
@@ -7941,6 +8203,18 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
         "bow": "D",
         "brawl": "D"
       }
+    },
+    "joinGrowths": {
+      "hp": 10,
+      "str": 10,
+      "mag": 0,
+      "dex": 0,
+      "spd": 0,
+      "lck": 0,
+      "def": 0,
+      "res": -10,
+      "mov": 0,
+      "cha": 5
     }
   },
   "5": {
@@ -7997,6 +8271,18 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
         "reason": "D",
         "faith": "D"
       }
+    },
+    "joinGrowths": {
+      "hp": 10,
+      "str": 0,
+      "mag": 0,
+      "dex": 0,
+      "spd": 0,
+      "lck": 0,
+      "def": 0,
+      "res": 20,
+      "mov": 0,
+      "cha": 5
     }
   },
   "7": {
@@ -8051,6 +8337,18 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "ranks": {
         "sword": "C"
       }
+    },
+    "joinGrowths": {
+      "hp": 20,
+      "str": 15,
+      "mag": 0,
+      "dex": 0,
+      "spd": 10,
+      "lck": 0,
+      "def": 10,
+      "res": -10,
+      "mov": 0,
+      "cha": 5
     }
   },
   "8": {
@@ -8108,6 +8406,18 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "ranks": {
         "sword": "C"
       }
+    },
+    "joinGrowths": {
+      "hp": 20,
+      "str": 15,
+      "mag": 0,
+      "dex": 10,
+      "spd": 15,
+      "lck": 0,
+      "def": 10,
+      "res": 0,
+      "mov": 0,
+      "cha": 5
     }
   },
   "9": {
@@ -8163,6 +8473,18 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
         "axe": "C",
         "armor": "D"
       }
+    },
+    "joinGrowths": {
+      "hp": 20,
+      "str": 15,
+      "mag": 0,
+      "dex": 0,
+      "spd": -30,
+      "lck": 0,
+      "def": 40,
+      "res": -20,
+      "mov": 0,
+      "cha": 5
     }
   },
   "10": {
@@ -8224,6 +8546,18 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
         "lance": "C",
         "riding": "D"
       }
+    },
+    "joinGrowths": {
+      "hp": 20,
+      "str": 20,
+      "mag": 0,
+      "dex": 0,
+      "spd": 0,
+      "lck": 0,
+      "def": 15,
+      "res": 0,
+      "mov": 0,
+      "cha": 5
     }
   },
   "11": {
@@ -8278,6 +8612,18 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "ranks": {
         "axe": "C"
       }
+    },
+    "joinGrowths": {
+      "hp": 30,
+      "str": 25,
+      "mag": 0,
+      "dex": 0,
+      "spd": 0,
+      "lck": 0,
+      "def": 10,
+      "res": -10,
+      "mov": 0,
+      "cha": 5
     }
   },
   "12": {
@@ -8334,6 +8680,18 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "ranks": {
         "bow": "C"
       }
+    },
+    "joinGrowths": {
+      "hp": 10,
+      "str": 15,
+      "mag": 0,
+      "dex": 10,
+      "spd": 0,
+      "lck": 10,
+      "def": 0,
+      "res": 0,
+      "mov": 0,
+      "cha": 5
     }
   },
   "13": {
@@ -8390,6 +8748,18 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "ranks": {
         "brawl": "C"
       }
+    },
+    "joinGrowths": {
+      "hp": 30,
+      "str": 15,
+      "mag": -10,
+      "dex": 10,
+      "spd": 20,
+      "lck": 0,
+      "def": 10,
+      "res": -10,
+      "mov": 0,
+      "cha": 5
     }
   },
   "14": {
@@ -8446,6 +8816,18 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "ranks": {
         "reason": "C"
       }
+    },
+    "joinGrowths": {
+      "hp": 10,
+      "str": -5,
+      "mag": 10,
+      "dex": 0,
+      "spd": 0,
+      "lck": 0,
+      "def": -10,
+      "res": 35,
+      "mov": 0,
+      "cha": 5
     }
   },
   "15": {
@@ -8503,6 +8885,18 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "ranks": {
         "reason": "C"
       }
+    },
+    "joinGrowths": {
+      "hp": 10,
+      "str": -5,
+      "mag": 10,
+      "dex": 0,
+      "spd": 0,
+      "lck": 0,
+      "def": -10,
+      "res": 35,
+      "mov": 0,
+      "cha": 0
     }
   },
   "16": {
@@ -8560,6 +8954,18 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "ranks": {
         "faith": "C"
       }
+    },
+    "joinGrowths": {
+      "hp": 10,
+      "str": -5,
+      "mag": 5,
+      "dex": 0,
+      "spd": 0,
+      "lck": 10,
+      "def": -10,
+      "res": 35,
+      "mov": 0,
+      "cha": 10
     }
   },
   "18": {
@@ -8618,6 +9024,18 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
         "sword": "B",
         "axe": "C"
       }
+    },
+    "joinGrowths": {
+      "hp": 50,
+      "str": 22,
+      "mag": 0,
+      "dex": 5,
+      "spd": 15,
+      "lck": 0,
+      "def": 30,
+      "res": -5,
+      "mov": 0,
+      "cha": 5
     }
   },
   "19": {
@@ -8675,6 +9093,18 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "ranks": {
         "sword": "A"
       }
+    },
+    "joinGrowths": {
+      "hp": 40,
+      "str": 20,
+      "mag": 0,
+      "dex": 10,
+      "spd": 30,
+      "lck": 0,
+      "def": 25,
+      "res": -5,
+      "mov": 0,
+      "cha": 5
     }
   },
   "20": {
@@ -8735,6 +9165,18 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
         "sword": "B",
         "bow": "C"
       }
+    },
+    "joinGrowths": {
+      "hp": 30,
+      "str": 18,
+      "mag": 0,
+      "dex": 20,
+      "spd": 30,
+      "lck": 0,
+      "def": 25,
+      "res": 0,
+      "mov": 0,
+      "cha": 0
     }
   },
   "21": {
@@ -8793,6 +9235,18 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
         "axe": "B",
         "armor": "B"
       }
+    },
+    "joinGrowths": {
+      "hp": 50,
+      "str": 20,
+      "mag": 0,
+      "dex": 0,
+      "spd": -30,
+      "lck": 0,
+      "def": 60,
+      "res": -20,
+      "mov": 0,
+      "cha": 5
     }
   },
   "22": {
@@ -8856,6 +9310,18 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
         "lance": "B",
         "riding": "B"
       }
+    },
+    "joinGrowths": {
+      "hp": 40,
+      "str": 15,
+      "mag": 0,
+      "dex": 5,
+      "spd": 0,
+      "lck": 5,
+      "def": 40,
+      "res": 10,
+      "mov": 0,
+      "cha": 5
     }
   },
   "24": {
@@ -8919,6 +9385,18 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
         "axe": "B",
         "flying": "C"
       }
+    },
+    "joinGrowths": {
+      "hp": 40,
+      "str": 25,
+      "mag": -5,
+      "dex": 0,
+      "spd": 0,
+      "lck": 0,
+      "def": 35,
+      "res": -10,
+      "mov": 0,
+      "cha": 5
     }
   },
   "25": {
@@ -8976,6 +9454,18 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "ranks": {
         "axe": "A"
       }
+    },
+    "joinGrowths": {
+      "hp": 50,
+      "str": 30,
+      "mag": 0,
+      "dex": 0,
+      "spd": 0,
+      "lck": 0,
+      "def": 25,
+      "res": 0,
+      "mov": 0,
+      "cha": 5
     }
   },
   "26": {
@@ -9033,6 +9523,18 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "ranks": {
         "bow": "A"
       }
+    },
+    "joinGrowths": {
+      "hp": 30,
+      "str": 15,
+      "mag": 0,
+      "dex": 30,
+      "spd": 0,
+      "lck": 0,
+      "def": 20,
+      "res": 0,
+      "mov": 0,
+      "cha": 5
     }
   },
   "27": {
@@ -9091,6 +9593,18 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "ranks": {
         "brawl": "A"
       }
+    },
+    "joinGrowths": {
+      "hp": 50,
+      "str": 18,
+      "mag": 0,
+      "dex": 0,
+      "spd": 0,
+      "lck": 0,
+      "def": 25,
+      "res": 0,
+      "mov": 0,
+      "cha": 5
     }
   },
   "28": {
@@ -9148,6 +9662,18 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "ranks": {
         "reason": "A"
       }
+    },
+    "joinGrowths": {
+      "hp": 30,
+      "str": 0,
+      "mag": 10,
+      "dex": 0,
+      "spd": 0,
+      "lck": 0,
+      "def": -5,
+      "res": 50,
+      "mov": 0,
+      "cha": 5
     }
   },
   "29": {
@@ -9206,7 +9732,20 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "ranks": {
         "reason": "A"
       }
-    }
+    },
+    "joinGrowths": {
+      "hp": 30,
+      "str": 0,
+      "mag": 10,
+      "dex": 0,
+      "spd": 0,
+      "lck": 0,
+      "def": -5,
+      "res": 50,
+      "mov": 0,
+      "cha": 0
+    },
+    "requires": "15"
   },
   "30": {
     "id": "30",
@@ -9264,6 +9803,18 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "ranks": {
         "faith": "A"
       }
+    },
+    "joinGrowths": {
+      "hp": 30,
+      "str": 0,
+      "mag": 10,
+      "dex": 0,
+      "spd": 0,
+      "lck": 10,
+      "def": -5,
+      "res": 50,
+      "mov": 0,
+      "cha": 10
     }
   },
   "31": {
@@ -9329,6 +9880,18 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
         "lance": "A",
         "flying": "B+"
       }
+    },
+    "joinGrowths": {
+      "hp": 40,
+      "str": 23,
+      "mag": 0,
+      "dex": 0,
+      "spd": 20,
+      "lck": 0,
+      "def": 35,
+      "res": 35,
+      "mov": 0,
+      "cha": 10
     }
   },
   "32": {
@@ -9394,6 +9957,18 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
         "axe": "A",
         "flying": "A"
       }
+    },
+    "joinGrowths": {
+      "hp": 40,
+      "str": 28,
+      "mag": -5,
+      "dex": 0,
+      "spd": 10,
+      "lck": 0,
+      "def": 50,
+      "res": 0,
+      "mov": 0,
+      "cha": 5
     }
   },
   "33": {
@@ -9452,6 +10027,18 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
         "sword": "A",
         "reason": "B+"
       }
+    },
+    "joinGrowths": {
+      "hp": 40,
+      "str": 20,
+      "mag": 10,
+      "dex": 0,
+      "spd": -10,
+      "lck": 20,
+      "def": 20,
+      "res": 35,
+      "mov": 0,
+      "cha": 5
     }
   },
   "34": {
@@ -9518,6 +10105,18 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
         "armor": "A",
         "riding": "B+"
       }
+    },
+    "joinGrowths": {
+      "hp": 50,
+      "str": 22,
+      "mag": 0,
+      "dex": 0,
+      "spd": -20,
+      "lck": 0,
+      "def": 55,
+      "res": -10,
+      "mov": 0,
+      "cha": 5
     }
   },
   "35": {
@@ -9582,6 +10181,18 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
         "bow": "A",
         "riding": "A"
       }
+    },
+    "joinGrowths": {
+      "hp": 40,
+      "str": 15,
+      "mag": 0,
+      "dex": 10,
+      "spd": -5,
+      "lck": 0,
+      "def": 25,
+      "res": 5,
+      "mov": 0,
+      "cha": 5
     }
   },
   "36": {
@@ -9647,6 +10258,18 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
         "reason": "B+",
         "riding": "A"
       }
+    },
+    "joinGrowths": {
+      "hp": 40,
+      "str": 15,
+      "mag": 10,
+      "dex": 0,
+      "spd": 0,
+      "lck": 0,
+      "def": 20,
+      "res": 45,
+      "mov": 0,
+      "cha": 5
     }
   },
   "37": {
@@ -9712,6 +10335,18 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
         "faith": "B+",
         "riding": "A"
       }
+    },
+    "joinGrowths": {
+      "hp": 35,
+      "str": 0,
+      "mag": 20,
+      "dex": 0,
+      "spd": 0,
+      "lck": 10,
+      "def": 5,
+      "res": 50,
+      "mov": 0,
+      "cha": 10
     }
   },
   "38": {
@@ -9772,6 +10407,18 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
         "axe": "A",
         "brawl": "A"
       }
+    },
+    "joinGrowths": {
+      "hp": 60,
+      "str": 32,
+      "mag": 0,
+      "dex": 0,
+      "spd": 20,
+      "lck": 0,
+      "def": 35,
+      "res": 0,
+      "mov": 0,
+      "cha": 5
     }
   },
   "39": {
@@ -9831,6 +10478,18 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
         "reason": "A",
         "faith": "A"
       }
+    },
+    "joinGrowths": {
+      "hp": 30,
+      "str": 0,
+      "mag": 35,
+      "dex": 20,
+      "spd": 0,
+      "lck": 0,
+      "def": 5,
+      "res": 55,
+      "mov": 0,
+      "cha": 10
     }
   },
   "54": {
@@ -9894,6 +10553,18 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
         "lance": "C",
         "flying": "D"
       }
+    },
+    "joinGrowths": {
+      "hp": 30,
+      "str": 15,
+      "mag": 0,
+      "dex": 0,
+      "spd": 10,
+      "lck": 0,
+      "def": 25,
+      "res": 25,
+      "mov": 0,
+      "cha": 10
     }
   },
   "84": {
@@ -9954,6 +10625,18 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
         "sword": "B",
         "faith": "B"
       }
+    },
+    "joinGrowths": {
+      "hp": 30,
+      "str": 18,
+      "mag": 0,
+      "dex": 15,
+      "spd": 28,
+      "lck": 10,
+      "def": 25,
+      "res": 10,
+      "mov": 0,
+      "cha": 0
     },
     "dlc": true
   },
@@ -10016,6 +10699,18 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
         "brawl": "B+",
         "faith": "C+"
       }
+    },
+    "joinGrowths": {
+      "hp": 50,
+      "str": 18,
+      "mag": 0,
+      "dex": 0,
+      "spd": 0,
+      "lck": 0,
+      "def": 25,
+      "res": 15,
+      "mov": 0,
+      "cha": 5
     },
     "dlc": true
   },
@@ -10080,6 +10775,18 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
         "reason": "B+",
         "flying": "C"
       }
+    },
+    "joinGrowths": {
+      "hp": 30,
+      "str": 15,
+      "mag": 0,
+      "dex": 0,
+      "spd": 10,
+      "lck": 0,
+      "def": 25,
+      "res": 25,
+      "mov": 0,
+      "cha": 10
     },
     "dlc": true
   },
@@ -10146,6 +10853,18 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
         "riding": "B"
       }
     },
+    "joinGrowths": {
+      "hp": 20,
+      "str": 0,
+      "mag": 15,
+      "dex": 0,
+      "spd": 0,
+      "lck": 10,
+      "def": 5,
+      "res": 55,
+      "mov": 0,
+      "cha": 15
+    },
     "dlc": true
   },
   "6": {
@@ -10198,6 +10917,18 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
     "abilities": [
       "Charm"
     ],
+    "joinGrowths": {
+      "hp": 20,
+      "str": 15,
+      "mag": 0,
+      "dex": 10,
+      "spd": 0,
+      "lck": 0,
+      "def": 10,
+      "res": 0,
+      "mov": 0,
+      "cha": 10
+    },
     "who": [
       "fe16-edelgard",
       "fe16-dimitri",
@@ -10254,6 +10985,19 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "Charm",
       "Axefaire"
     ],
+    "joinGrowths": {
+      "hp": 20,
+      "str": 5,
+      "mag": 5,
+      "dex": 0,
+      "spd": 0,
+      "lck": 0,
+      "def": 5,
+      "res": 5,
+      "mov": 0,
+      "cha": 10
+    },
+    "given": "The story gives it at the time skip (0x3d91b0), with Aymr: Crimson Flower.",
     "who": [
       "fe16-edelgard"
     ]
@@ -10308,6 +11052,19 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "Charm",
       "Axefaire"
     ],
+    "joinGrowths": {
+      "hp": 30,
+      "str": 10,
+      "mag": 10,
+      "dex": 0,
+      "spd": 0,
+      "lck": 0,
+      "def": 5,
+      "res": 5,
+      "mov": 0,
+      "cha": 10
+    },
+    "given": "The story certifies it at the start of Crimson Flower's Chapter 16 (a ceremony, 0x253e50): no level or seal needed.",
     "who": [
       "fe16-edelgard"
     ]
@@ -10362,6 +11119,19 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "Charm",
       "Lancefaire"
     ],
+    "joinGrowths": {
+      "hp": 20,
+      "str": 5,
+      "mag": 0,
+      "dex": 5,
+      "spd": 0,
+      "lck": 0,
+      "def": 5,
+      "res": 0,
+      "mov": 0,
+      "cha": 10
+    },
+    "given": "The story gives it at the time skip (0x3d91b0): Azure Moon.",
     "who": [
       "fe16-dimitri"
     ]
@@ -10416,6 +11186,19 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "Charm",
       "Lancefaire"
     ],
+    "joinGrowths": {
+      "hp": 30,
+      "str": 10,
+      "mag": 0,
+      "dex": 10,
+      "spd": 0,
+      "lck": 0,
+      "def": 10,
+      "res": 0,
+      "mov": 0,
+      "cha": 10
+    },
+    "given": "The story certifies it at the start of Azure Moon's Chapter 16 (a ceremony, 0x253e50): no level or seal needed.",
     "who": [
       "fe16-dimitri"
     ]
@@ -10476,6 +11259,19 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "spd": 1,
       "mov": 3
     },
+    "joinGrowths": {
+      "hp": 20,
+      "str": 10,
+      "mag": 0,
+      "dex": 0,
+      "spd": 10,
+      "lck": 0,
+      "def": 5,
+      "res": 0,
+      "mov": 0,
+      "cha": 10
+    },
+    "given": "The story gives it at the time skip (0x3d91b0), with Failnaught: Verdant Wind.",
     "who": [
       "fe16-claude"
     ]
@@ -10535,6 +11331,19 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "spd": 2,
       "mov": 2
     },
+    "joinGrowths": {
+      "hp": 30,
+      "str": 15,
+      "mag": 0,
+      "dex": 0,
+      "spd": 20,
+      "lck": 0,
+      "def": 5,
+      "res": 0,
+      "mov": 0,
+      "cha": 10
+    },
+    "given": "The story certifies it at the start of Verdant Wind's Chapter 17 (a ceremony, 0x253e50): no level or seal needed.",
     "who": [
       "fe16-claude"
     ]
@@ -10589,6 +11398,19 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "Swordfaire",
       "Terrain Resistance"
     ],
+    "joinGrowths": {
+      "hp": 20,
+      "str": 10,
+      "mag": 10,
+      "dex": 0,
+      "spd": 0,
+      "lck": 0,
+      "def": 10,
+      "res": 0,
+      "mov": 0,
+      "cha": 5
+    },
+    "given": "The story certifies it in Chapter 11 (a ceremony, 0x1d5280).",
     "who": [
       "fe16-byleth-m",
       "fe16-byleth-f"
@@ -10650,6 +11472,19 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "def": 1,
       "mov": 2
     },
+    "joinGrowths": {
+      "hp": 20,
+      "str": 25,
+      "mag": 10,
+      "dex": 0,
+      "spd": 10,
+      "lck": 0,
+      "def": 15,
+      "res": 5,
+      "mov": 0,
+      "cha": 0
+    },
+    "given": "The class Jeritza joins in; no one else is offered it.",
     "who": [
       "fe16-jeritza"
     ]
@@ -10703,6 +11538,19 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
     "abilities": [
       "Dance"
     ],
+    "joinGrowths": {
+      "hp": 20,
+      "str": -5,
+      "mag": 0,
+      "dex": 0,
+      "spd": 0,
+      "lck": 0,
+      "def": -5,
+      "res": -5,
+      "mov": 0,
+      "cha": 10
+    },
+    "given": "Certified for the White Heron Cup's winner (0x1ffaf0), its only source: one unit a playthrough.",
     "unique": true
   }
 }
@@ -14615,3 +15463,9 @@ export const FE16_CRESTS: Record<string, string> = {
   "Mystery Crest": "It might be some kind of Crest, though it's\nunclear which one...",
   "Minor Mystery Crest": "It might be some kind of Crest, though it's\nunclear which one..."
 }
+
+/** The level a unit recruited (or joining by the story) gets in each chapter's month, by route: index = chapter (0 the Prologue). */
+export const FE16_JOIN_LEVELS: Record<string, (number | null)[]> = {"ss": [1, 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 35, 37, 38, 40, 42, null], "am": [1, 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35, 37, 39, 41, 42], "vw": [1, 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35, 37, 38, 40, 42], "cf": [1, 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 25, 27, 29, 31, 33, 35, 37, null, null, null, null]}
+
+/** The Saint Statues' raises to the maximums, by statue and its level (fixed_shopdata.bin section 5; only level 9 adds any). */
+export const FE16_STATUES: Record<string, Record<string, Partial<Record<string, number>>>> = {"0": {"9": {"lck": 5, "cha": 5}}, "1": {"9": {"str": 5, "spd": 5}}, "2": {"9": {"mag": 5, "dex": 5}}, "3": {"9": {"def": 5, "res": 5}}}
