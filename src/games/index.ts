@@ -107,4 +107,10 @@ export const GAMES: Game[] = [
     short: 'Shadow Dragon',
     load: () => import('./fe11').then((m) => m.default),
   },
+  {
+    id: 'fe1',
+    title: 'Fire Emblem: Shadow Dragon & the Blade of Light',
+    short: 'Blade of Light',
+    load: () => import('./fe1').then((m) => m.default),
+  },
 ]

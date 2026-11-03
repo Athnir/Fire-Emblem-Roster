@@ -58,6 +58,9 @@ export interface GbaData {
   rankedSupportText?: string
   /** How a class change works, in the planner's note (the GBA games' promotion item when unset). */
   promotionText?: string
+  /** The real chance per level of a listed growth, when the game's roll makes it differ (FE1: a random byte / 25 against the growth in
+   * tenths, so 25G/256 of G tenths: 0.977 of the listed rate), and what to say about it. */
+  growthScale?: { factor: number; text: string }
 }
 
 const statsOf = (data: GbaData) => data.stats ?? GBA_STATS
@@ -509,7 +512,7 @@ function project(data: GbaData, unit: GbaUnit, plan: GbaPlan): Stage[] {
   }
   const grow = (stats: GbaStats, levels: number, cls: GbaClass) => {
     const out = { ...stats }
-    for (const s of growingOf(data)) out[s] = (out[s] ?? 0) + (growthIn(unit, cls, s) / 100) * Math.max(0, levels)
+    for (const s of growingOf(data)) out[s] = (out[s] ?? 0) + ((growthIn(unit, cls, s) * (data.growthScale?.factor ?? 1)) / 100) * Math.max(0, levels)
     return capped(out, cls)
   }
   let cls = data.classes[unit.classId]
@@ -650,7 +653,8 @@ export function GbaPlanner({ data: game }: { data: GbaData }) {
           )}
         </div>
         <p className="text-xs text-neutral-500">
-          {data.catchUp ? 'Average stats, from the level-up rule below.' : 'Average stats: each level adds the growth rate.'} Stats stop at the{' '}
+          {data.catchUp ? 'Average stats, from the level-up rule below.' : 'Average stats: each level adds the growth rate.'}{' '}
+          {data.growthScale ? `${data.growthScale.text} ` : ''}Stats stop at the{' '}
           {unit.caps ? "unit's own maximums" : "class's caps"} (green).{' '}
           {data.promotionText ?? 'A promotion item works from Lv 10 and starts again at Lv 1 (Serenes Forest).'}{' '}
           {data.promotionText
