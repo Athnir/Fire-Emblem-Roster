@@ -104,7 +104,8 @@ function App() {
             <BackupControls />
             <SpoilerToggle />
             <EditModeToggle />
-            <UpdateButton />
+            {/* The desktop app's files are on disk and change only when it's rebuilt, so it has nothing to check. */}
+            {import.meta.env.MODE !== 'electron' && <UpdateButton />}
             {editModeEnabled && BulkUpload && (
               <button
                 type="button"

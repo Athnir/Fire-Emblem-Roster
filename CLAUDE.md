@@ -92,6 +92,9 @@ new rule, add it here.
   IndexedDB from when the app was the Fates Unit Planner. Renaming either would lose what people have saved and break their
   backups. A new game gets its own prefix.
 - **Every save is in the backup.** A new store must be picked up by Export Backup / Import (`src/logic/backup.ts`).
+- **The desktop app keeps one address and one data folder** (user, 2026-11-03): it loads from `app://roster/` and saves to
+  `%APPDATA%\Fire Emblem Roster`, both set in `electron/main.cjs`. Changing either strands what's saved and leaves a copy behind, as
+  the old random port did (a new address every launch: 34 copies, 517 MB). It has no service worker, since its files are on disk.
 
 ## Spoiler block
 

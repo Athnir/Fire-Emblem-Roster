@@ -4,12 +4,12 @@ import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
-export default defineConfig(() => ({
+export default defineConfig(({ mode }) => ({
   // GitHub Pages serves this project at a sub-path (github.io/<repo-name>/), not the domain root, so
   // every asset reference needs that prefix — but ONLY for that specific deploy target. Gated behind
   // an explicit env var (set by .github/workflows/deploy-pages.yml) rather than just "is this a
   // production build", because `npm run dist:win` ALSO runs `vite build` under the hood, and the
-  // Electron app's own local static server (electron/main.cjs) serves dist/ at its own root — it
+  // Electron app (electron/main.cjs) serves dist/ at the root of its own app://roster/ address — it
   // would 404 every asset if this same sub-path prefix leaked into that build too. The workflow
   // passes the repo's own name rather than this file hard-coding it, so renaming the repo on GitHub
   // (it was Fire-Emblem-Fates-Unit-Planner) can't leave the deploy pointing at a dead path.
@@ -39,6 +39,9 @@ export default defineConfig(() => ({
     react(),
     tailwindcss(),
     VitePWA({
+      // The desktop app (`npm run dist:win` builds with --mode electron) has its files on disk, so it gets no
+      // service worker: one would only keep a second copy of every file in its cache.
+      disable: mode === 'electron',
       registerType: 'autoUpdate',
       // Default globPatterns only picked up the JS/CSS/HTML bundle and the 4 manifest icons (10
       // entries, ~635KB) — none of public/art/'s portrait PNGs, since those are plain copied
