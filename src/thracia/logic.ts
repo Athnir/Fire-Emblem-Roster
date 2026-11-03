@@ -227,6 +227,28 @@ export function routeOf(data: Fe5Data, picks: Record<string, number>): 'A' | 'B'
   return undefined
 }
 
+/** The chapters the spoiler block walks with the picks so far: every chapter in order, the route picked's own, stopping where the
+ * route is still to be picked (that split comes back). */
+export function walkOf(data: Fe5Data, picks: Record<string, number>): { steps: Fe5Chapter[]; split?: Fe5Choice; routeChoice?: Fe5Choice } {
+  const routeChoice = data.choices.find((c) => c.options.some((o) => o.route))
+  const route = routeOf(data, picks)
+  const steps: Fe5Chapter[] = []
+  for (const ch of data.chapters) {
+    if (ch.route) {
+      if (!route) return { steps, split: routeChoice, routeChoice }
+      if (ch.route !== route) continue
+    }
+    steps.push(ch)
+  }
+  return { steps, routeChoice }
+}
+
+/** The chapters reached with the spoiler block on, at `at` along the walk. */
+export function reachedOf(data: Fe5Data, picks: Record<string, number>, at: number): Set<string> {
+  const { steps } = walkOf(data, picks)
+  return new Set(steps.slice(0, Math.min(at, Math.max(0, steps.length - 1)) + 1).map((c) => c.id))
+}
+
 /** Whether a chapter is played on the route picked (every chapter is, before the pick). */
 export function onRoute(data: Fe5Data, chapterId: string, picks: Record<string, number>): boolean {
   const route = routeOf(data, picks)

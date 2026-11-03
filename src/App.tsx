@@ -62,6 +62,7 @@ function App() {
   const tab = current?.tabs.find((t) => t.id === tabId) ?? current?.tabs[0]
   const Background = current?.background
   const Banner = current?.banner
+  const SpoilerBar = current?.spoilerBar
   const BulkUpload = current?.bulkUpload
   const ExportButton = current?.exportButton
   const TabComponent = tab?.component
@@ -140,6 +141,11 @@ function App() {
       </header>
 
       {Banner && <Banner />}
+      {spoilerBlock && SpoilerBar && (
+        <div className="px-6 pt-4">
+          <SpoilerBar />
+        </div>
+      )}
 
       {bulkUploadOpen && BulkUpload && <BulkUpload onClose={() => setBulkUploadOpen(false)} />}
 

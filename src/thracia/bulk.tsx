@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { armyWith, plansWith, selectClass } from './hooks'
+import { armyWith, plansWith, selectClass, useReached } from './hooks'
 import { manualClashes, project, ranksOf, ranksText, shownStats, skillsAt, type Fe5Data, type Fe5Plan } from './logic'
 import { useFe5Builds, useFe5Store } from './store'
 import { StatGrid, UnitPortrait } from './ui'
@@ -18,7 +18,8 @@ export function Fe5BulkViewer({ data }: { data: Fe5Data }) {
   const set = sets.find((s) => s.id === source)
   const { plans, picks } = set ?? current
   const planOf = plansWith(plans)
-  const { units } = armyWith(data, picks)
+  const reached = useReached(data, picks)
+  const { units } = armyWith(data, picks, reached)
   const clashes = manualClashes(units, planOf)
   const rows = units.map((u) => {
     const stages = project(data, u, planOf(u))

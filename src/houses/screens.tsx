@@ -156,8 +156,10 @@ function UnitDetail({ data, unit, picks, chapter }: { data: Fe16Data; unit: Fe16
   )
 }
 
-/** The spoiler block's bar for Three Houses: the chapter you're on, back and on, and at the split the Black Eagles' route. */
-function ChapterBar({ data, picks, chapter }: { data: Fe16Data; picks: Fe16Picks; chapter: number }) {
+/** The spoiler block's bar for Three Houses, under the header on every tab: the chapter you're on, back and on, and at the split the
+ * Black Eagles' route. */
+export function Fe16SpoilerBar({ data }: { data: Fe16Data }) {
+  const { picks, chapter = 0 } = useArmy(data)
   const setProgress = useSpoilerStore((s) => s.setProgress)
   const setPick = useFe16Store((s) => s.setPick)
   const route = routeOf(picks)
@@ -167,7 +169,7 @@ function ChapterBar({ data, picks, chapter }: { data: Fe16Data; picks: Fe16Picks
     if (ch < SPLIT_CHAPTER && picks.house === 'be' && picks.route) setPick('route', null)
     setProgress(data.gameId, ch)
   }
-  if (!picks.house) return <p className="text-xs text-emerald-400">Pick the house you teach to start at Chapter 1.</p>
+  if (!picks.house) return <p className="text-xs text-emerald-400">Pick the house you teach in the Roster to start at Chapter 1.</p>
   const atSplit = chapter === SPLIT_CHAPTER - 1 && !route
   const button = 'rounded border px-3 py-1 text-sm disabled:cursor-default disabled:opacity-40'
   const proceed = `${button} border-emerald-600 bg-emerald-900/60 text-emerald-100 hover:bg-emerald-800/60`
@@ -233,7 +235,6 @@ function Picks({ data, picks, chapter }: { data: Fe16Data; picks: Fe16Picks; cha
       {chapter === undefined && route && picks.house !== 'be' && (
         <p className="text-xs text-neutral-400">Their route from Chapter {SPLIT_CHAPTER}: {ROUTE_NAMES[route]}.</p>
       )}
-      {chapter !== undefined && <ChapterBar data={data} picks={picks} chapter={chapter} />}
       <p className="text-xs text-neutral-500">
         {chapter === undefined
           ? 'The units your picks rule out drop out of every tab.'

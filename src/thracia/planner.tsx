@@ -144,6 +144,7 @@ function ManualEditor({
   plan,
   others,
   picks,
+  reached,
   onChange,
 }: {
   data: Fe5Data
@@ -151,10 +152,12 @@ function ManualEditor({
   plan: Fe5Plan
   others: Map<string, Fe5Unit[]>
   picks: Record<string, number>
+  reached?: Set<string>
   onChange: (patch: Partial<Fe5Plan>) => void
 }) {
   const chosen = plan.manuals ?? []
-  const manuals = data.manuals.filter((m) => chosen.includes(m.id) || onRoute(data, m.chapter, picks))
+  // With the spoiler block on, a manual shows once its chapter is reached.
+  const manuals = data.manuals.filter((m) => chosen.includes(m.id) || (onRoute(data, m.chapter, picks) && (!reached || reached.has(m.chapter))))
   return (
     <div className="space-y-2">
       <h4 className="text-sm font-semibold text-neutral-200">Skill manuals</h4>
@@ -214,7 +217,7 @@ function ManualEditor({
 
 /** One unit's average stats through their class changes, with the scrolls, rings and manuals they use. Saved per unit. */
 export function Fe5Planner({ data }: { data: Fe5Data }) {
-  const { units, chapterOf, picks } = useArmy(data)
+  const { units, chapterOf, picks, reached } = useArmy(data)
   const [unitId, setUnitId] = useState(units[0]?.id ?? '')
   const unit = units.find((u) => u.id === unitId) ?? units[0]
   useScreenshotUnit(unit)
@@ -326,7 +329,7 @@ export function Fe5Planner({ data }: { data: Fe5Data }) {
         </div>
         <ScrollEditor data={data} unit={unit} total={levelUps(unit, plan)} stretches={plan.scrolls ?? []} onChange={(scrolls) => update({ scrolls })} />
         <RingEditor data={data} rings={plan.rings ?? {}} onChange={(rings) => update({ rings })} />
-        <ManualEditor data={data} unit={unit} plan={plan} others={clashes} picks={picks} onChange={update} />
+        <ManualEditor data={data} unit={unit} plan={plan} others={clashes} picks={picks} reached={reached} onChange={update} />
       </div>
     </div>
   )

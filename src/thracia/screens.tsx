@@ -35,7 +35,7 @@ function Stars({ unit }: { unit: Fe5Unit }) {
   )
 }
 
-function UnitDetail({ data, unit, picks }: { data: Fe5Data; unit: Fe5Unit; picks: Record<string, number> }) {
+function UnitDetail({ data, unit, picks, reached }: { data: Fe5Data; unit: Fe5Unit; picks: Record<string, number>; reached?: Set<string> }) {
   const cls = data.classes[unit.classId]
   const { joinChapter, join } = joinOf(unit, picks)
   const { gets, gives } = supportLines(data, unit.id)
@@ -81,7 +81,7 @@ function UnitDetail({ data, unit, picks }: { data: Fe5Data; unit: Fe5Unit; picks
       </div>
       {/* When the unit leaves and comes back. These are spoilers: under the spoiler block, once the Roster has one, they stay blank
           (the user's rule, 2026-11-02). */}
-      {unit.away && (
+      {unit.away && !reached && (
         <div className="space-y-1 text-sm">
           <h4 className="text-sm font-semibold text-neutral-200">Time away</h4>
           <ul className="list-disc space-y-0.5 pl-5 text-neutral-400">
@@ -136,7 +136,7 @@ function UnitDetail({ data, unit, picks }: { data: Fe5Data; unit: Fe5Unit; picks
 /** Every unit of the army by the chapter they join; tapping one shows their data below the list. The story's picks sit under their
  * chapters; the units of an option not picked drop out of every tab. */
 export function Fe5Roster({ data }: { data: Fe5Data }) {
-  const { units, chapterOf, picks } = useArmy(data)
+  const { units, chapterOf, picks, reached } = useArmy(data)
   const [selectedId, setSelectedId] = useState(units[0]?.id ?? '')
   const detailRef = useRef<HTMLDivElement>(null)
   const selected = units.find((u) => u.id === selectedId) ?? units[0]
@@ -148,9 +148,10 @@ export function Fe5Roster({ data }: { data: Fe5Data }) {
       </p>
       <div className="space-y-3">
         {data.chapters.map((ch) => {
-          if (!onRoute(data, ch.id, picks)) return null
+          if (!onRoute(data, ch.id, picks) || (reached && !reached.has(ch.id))) return null
           const here = units.filter((u) => chapterOf(u) === ch.id)
-          const choices = data.choices.filter((c) => c.chapter === ch.id)
+          // With the spoiler block on, the route is asked by the chapter bar at the split.
+          const choices = data.choices.filter((c) => c.chapter === ch.id && !(reached && c.options.some((o) => o.route)))
           if (here.length === 0 && choices.length === 0) return null
           return (
             <div key={ch.id}>
@@ -181,7 +182,7 @@ export function Fe5Roster({ data }: { data: Fe5Data }) {
         })}
       </div>
       <div ref={detailRef} className="scroll-mt-4">
-        {selected && <UnitDetail data={data} unit={selected} picks={picks} />}
+        {selected && <UnitDetail data={data} unit={selected} picks={picks} reached={reached} />}
       </div>
     </div>
   )

@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useScreenshotContextStore } from '../state/screenshotContextStore'
-import { excludedUnits, joinOf, normalizePlan, type Fe5Data, type Fe5Plan } from './logic'
+import { useSpoilerStore } from '../state/spoilerStore'
+import { excludedUnits, joinOf, normalizePlan, reachedOf, type Fe5Data, type Fe5Plan } from './logic'
 import { useFe5Store } from './store'
 import type { Fe5Unit } from './types'
 
@@ -31,17 +32,27 @@ export function plansWith(plans: Record<string, unknown>) {
   return (u: Fe5Unit): Fe5Plan => normalizePlan(u, plans[u.id])
 }
 
-/** The units in your army by the story's picks, each with the chapter they join in under those picks. */
-export function armyWith(data: Fe5Data, picks: Record<string, number>) {
+/** The units in your army by the story's picks, each with the chapter they join in under those picks; with the spoiler block on
+ * (`reached`), only those whose chapter has been reached. */
+export function armyWith(data: Fe5Data, picks: Record<string, number>, reached?: Set<string>) {
   const left = excludedUnits(data, picks)
-  const units = data.units.filter((u) => !left.has(u.id))
   const chapterOf = (u: Fe5Unit) => joinOf(u, picks).joinChapter
+  const units = data.units.filter((u) => !left.has(u.id) && (!reached || reached.has(chapterOf(u))))
   return { units, left, chapterOf }
+}
+
+/** The chapters reached with the spoiler block on (undefined with it off), for the picks given (the store's by default). */
+export function useReached(data: Fe5Data, picks?: Record<string, number>): Set<string> | undefined {
+  const block = useSpoilerStore((s) => s.block)
+  const at = useSpoilerStore((s) => s.progress[data.gameId] ?? 0)
+  const current = useFe5Store((s) => s.picks)
+  return block ? reachedOf(data, picks ?? current, at) : undefined
 }
 
 export function useArmy(data: Fe5Data) {
   const picks = useFe5Store((s) => s.picks)
-  return { ...armyWith(data, picks), picks }
+  const reached = useReached(data)
+  return { ...armyWith(data, picks, reached), picks, reached }
 }
 
 /** One unit's plan, and a setter that saves the whole plan. */

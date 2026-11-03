@@ -15,6 +15,7 @@ import { Fe5BulkViewer } from '../thracia/bulk'
 import type { Fe5Data } from '../thracia/logic'
 import { Fe5Planner } from '../thracia/planner'
 import { Fe5Info, Fe5Roster, Fe5Supports } from '../thracia/screens'
+import { Fe5SpoilerBar } from '../thracia/spoiler'
 import type { GameParts } from './index'
 
 export const FE5_DATA: Fe5Data = {
@@ -41,6 +42,8 @@ const fe5: GameParts = {
     { id: 'viewer', label: 'Bulk Viewer', component: () => <Fe5BulkViewer data={FE5_DATA} /> },
     { id: 'info', label: 'Info', component: () => <Fe5Info /> },
   ],
+  spoiler: "Every tab follows the chapter you're on: units show once they join, the route is asked where Leif leaves Chapter 15, the other picks under their chapters once reached, and when units leave stays blank.",
+  spoilerBar: () => <Fe5SpoilerBar data={FE5_DATA} />,
   bulkUpload: ({ onClose }) => <TelliusBulkUpload data={UPLOAD_DATA} title="Thracia 776" onClose={onClose} />,
 }
 
