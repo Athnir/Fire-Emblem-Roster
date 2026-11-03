@@ -103,6 +103,8 @@ reveals it. What that means for each tab is settled with the user as each game i
   block off, the route is picked straight away.
 - **Every game gets the block** (user, 2026-11-03): its chapter bar, units shown once they can have joined, picks asked at their
   chapter, time-away lines blank.
+- **Felicia and Jakob both stay listed** (user, 2026-11-03, Fates): a note says you get the one of the opposite gender to Corrin,
+  and nothing says if or when the other comes.
 
 ## Build and offline
 

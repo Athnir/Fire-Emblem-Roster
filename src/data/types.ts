@@ -59,6 +59,8 @@ export interface Character {
   /** Join stats on the routes where the unit joins at another level than baseStats is for: the game keeps a separate join record
    * for that route (Person/*_HANDOVER.bin), e.g. Silas's Lv 18 Revelation stats. Read through getBaseStats. */
   baseStatsByRoute?: Partial<Record<Route, StatBlock>>
+  /** A line the Roster shows under the unit. Kept free of spoilers: it shows with the spoiler block on too. */
+  note?: string
   growthRates: StatBlock
   statCaps: StatBlock
   /** Max-stat modifiers relative to class base caps (used in child max-stat formula). */

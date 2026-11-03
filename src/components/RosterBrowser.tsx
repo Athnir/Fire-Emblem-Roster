@@ -126,6 +126,7 @@ function CharacterDetail({ character: rawCharacter, activeRoute }: { character: 
               ? `Variable, Min Lvl ${getStartingLevel(character.startingLevel, activeRoute)}`
               : getStartingLevel(character.startingLevel, activeRoute)}
         </div>
+        {character.note && <div className="text-neutral-400">{character.note}</div>}
         <div>
           <div className="flex items-center gap-1.5">
             <span className="text-neutral-500">Personal skill: </span>

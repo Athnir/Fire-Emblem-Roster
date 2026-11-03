@@ -7,6 +7,9 @@ function s(hp: number, str: number, mag: number, skl: number, spd: number, lck: 
 
 const ZERO_MOD = s(0, 0, 0, 0, 0, 0, 0, 0)
 
+/** Felicia and Jakob (the user's rule, 2026-11-03): which one Corrin's gender gives you, and nothing about if or when the other comes. */
+const RETAINER_NOTE = "You get the one of Felicia and Jakob who's the opposite gender to Corrin: Felicia with a male Corrin, Jakob with a female Corrin."
+
 /**
  * Data sourced/verified against Serenes Forest base-stats, growth-rates, maximum-stats, and
  * class-sets pages (see build-plan Phase 1 notes). `startingClass`/`secondaryClass` reflect each
@@ -130,6 +133,7 @@ export const characters: Character[] = [
     baseStats: s(21, 8, 6, 12, 9, 10, 7, 6), growthRates: s(50, 30, 15, 40, 35, 45, 25, 25),
     statCaps: s(50, 28, 31, 33, 33, 32, 29, 29), maxStatModifiers: s(0, 2, -2, 2, 0, -1, 0, -1),
     personalSkill: 'Evasive Partner', supportOptions: [], canMarry: [], isChild: false,
+    note: RETAINER_NOTE,
   },
   {
     id: 'felicia', name: 'Felicia', gender: 'F', route: ['all'], startingLevel: {Birthright: 1, Conquest: 1, Revelation: 1},
@@ -137,6 +141,7 @@ export const characters: Character[] = [
     baseStats: s(19, 5, 9, 10, 10, 12, 5, 9), growthRates: s(40, 10, 35, 30, 40, 55, 15, 35),
     statCaps: s(50, 28, 31, 33, 33, 32, 29, 29), maxStatModifiers: s(0, -2, 2, 0, 1, 0, -1, 1),
     personalSkill: 'Devoted Partner', supportOptions: [], canMarry: [], isChild: false,
+    note: RETAINER_NOTE,
   },
   {
     id: 'laslow', name: 'Laslow', gender: 'M', route: ['Conquest', 'Revelation'], startingLevel: {Conquest: 12, Revelation: 16},
