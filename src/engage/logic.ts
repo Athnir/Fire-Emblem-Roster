@@ -1,4 +1,4 @@
-import { FE17_STATS, type Fe17Booster, type Fe17Chapter, type Fe17Class, type Fe17Emblem, type Fe17Stat, type Fe17Stats, type Fe17StatsMov, type Fe17Support, type Fe17Unit } from './types'
+import { FE17_STATS, type Fe17BondRingSet, type Fe17Booster, type Fe17Chapter, type Fe17Class, type Fe17Emblem, type Fe17Stat, type Fe17Stats, type Fe17StatsMov, type Fe17Support, type Fe17Unit } from './types'
 
 // Fire Emblem Engage's units, as the program works them out (methods and addresses in data-raw/fe17/README.md).
 
@@ -8,6 +8,7 @@ export interface Fe17Data {
   units: Fe17Unit[]
   classes: Record<string, Fe17Class>
   emblems: Fe17Emblem[]
+  bondRings: Fe17BondRingSet[]
   supports: Fe17Support[]
   skills: Record<string, string>
   boosters: Fe17Booster[]

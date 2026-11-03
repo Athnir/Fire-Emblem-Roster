@@ -117,6 +117,29 @@ export interface Fe17Emblem {
   levels: Fe17BondLevel[]
 }
 
+/** A bond ring at one rank: what it adds while worn, and the skill an S rank can carry. */
+export interface Fe17RingRank {
+  rank: 'C' | 'B' | 'A' | 'S'
+  stats: Partial<Fe17StatsMov>
+  skills?: string[]
+}
+
+/** A bond ring: one hero of an Emblem's world, at each rank it comes in (the Expansion Pass's at S alone). */
+export interface Fe17BondRing {
+  name: string
+  ranks: Fe17RingRank[]
+}
+
+/** One game's bond rings (ring.xml names each set by the game's own short title). */
+export interface Fe17BondRingSet {
+  game: string
+  /** The Emblem whose pedestal forges them, and Engage's name for its world (the Expansion Pass's three have neither). */
+  emblem?: string
+  world?: string
+  expansionPass?: true
+  rings: Fe17BondRing[]
+}
+
 export interface Fe17Support {
   a: string
   b: string

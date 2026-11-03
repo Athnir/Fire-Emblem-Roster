@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { selectClass, useArmy, useScreenshotUnit } from './hooks'
 import { capsOf, chapterLabel, supportsOf, type Fe17Data } from './logic'
-import { FE17_STAT_LABELS, type Fe17Unit } from './types'
+import { FE17_STAT_LABELS, type Fe17BondRingSet, type Fe17StatsMov, type Fe17Unit } from './types'
 import { AlearPicker, SkillList, StatTable, UnitPortrait, UnitSelect } from './ui'
 
 function UnitDetail({ data, unit, reached }: { data: Fe17Data; unit: Fe17Unit; reached?: Set<string> }) {
@@ -188,7 +188,115 @@ export function Fe17Supports({ data }: { data: Fe17Data }) {
 }
 
 /** Each emblem's bond levels: what syncing adds, the skills to inherit and their SP, and the proficiency each level grants. */
+/** The tab's two kinds of ring: the Emblems' own (major) and the bond rings (minor), a set for each game. */
 export function Fe17Emblems({ data }: { data: Fe17Data }) {
+  return (
+    <div className="space-y-6">
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold text-neutral-100">Major rings: Emblem Rings</h2>
+        <EmblemRings data={data} />
+      </section>
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold text-neutral-100">Minor rings: Bond Rings</h2>
+        <BondRings sets={data.bondRings} skills={data.skills} />
+      </section>
+    </div>
+  )
+}
+
+const RING_RANKS = ['C', 'B', 'A', 'S'] as const
+
+/** A rank's stats, each kept on one line ("Spd +1"), the line breaking only between them. */
+function RingStats({ stats }: { stats: Partial<Fe17StatsMov> }) {
+  const parts = Object.entries(stats).map(([s, v]) => `${FE17_STAT_LABELS[s as keyof typeof FE17_STAT_LABELS]} +${v}`)
+  return (
+    <>
+      {parts.map((p, i) => (
+        <span key={p}>
+          <span className="whitespace-nowrap">
+            {p}
+            {i < parts.length - 1 ? ',' : ''}
+          </span>
+          {i < parts.length - 1 ? ' ' : ''}
+        </span>
+      ))}
+    </>
+  )
+}
+
+/** The bond rings by game, each game's set folded away until opened. The rules are the program's (data-raw/fe17/README.md, "Bond
+ * rings"): forging RefineRingExecute.Do, merging SynthesisRingExecute.Do with RingMenuItem's costs, SP ExpToSkillPoint. */
+function BondRings({ sets, skills }: { sets: Fe17BondRingSet[]; skills: Record<string, string> }) {
+  return (
+    <div className="space-y-3">
+      <p className="text-xs text-neutral-500">
+        A unit wears one ring, an Emblem Ring or a Bond Ring. A Bond Ring's stats and skill count while it's worn, and it earns SP at
+        half an Emblem Ring's rate. They're forged at an Emblem's pedestal in the Somniel's Ring Chamber: 100 Bond Fragments for one of
+        that Emblem's ten at random, at S 3%, A 7%, B 30% or C 60%. Merging raises a rank: 2 C rings of the same hero and 100 fragments
+        make a B, 3 B and 1,000 an A, 4 A and 10,000 an S. Only S ranks carry a skill.
+      </p>
+      {sets.map((set) => (
+        <details key={set.game} className="rounded-lg border border-neutral-800 bg-neutral-900">
+          <summary className="cursor-pointer px-4 py-2 text-sm">
+            <span className="font-medium text-neutral-100">{set.game}</span>
+            <span className="text-neutral-500">
+              {' · '}
+              {set.emblem ? `${set.world} (${set.emblem})` : 'Expansion Pass, S rank only, not forged'}
+            </span>
+          </summary>
+          <div className="overflow-x-auto px-4 pb-3">
+            <table className="w-full min-w-[40rem] text-sm">
+              <thead>
+                <tr className="text-xs text-neutral-500">
+                  <th className="py-1 pr-2 text-left font-normal">Ring</th>
+                  {RING_RANKS.map((r) => (
+                    <th key={r} className="px-1 py-1 text-left font-normal">
+                      {r}
+                    </th>
+                  ))}
+                  <th className="px-1 py-1 text-left font-normal">Skill (S)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {set.rings.map((ring) => {
+                  const ringSkills = ring.ranks.flatMap((r) => r.skills ?? [])
+                  return (
+                    <tr key={ring.name} className="border-t border-neutral-800 align-top">
+                      <td className="py-1 pr-2 text-neutral-100">{ring.name}</td>
+                      {RING_RANKS.map((rank) => {
+                        const r = ring.ranks.find((x) => x.rank === rank)
+                        return (
+                          <td key={rank} className="px-1 py-1 text-neutral-300 sm:whitespace-nowrap">
+                            {r ? <RingStats stats={r.stats} /> : <span className="text-neutral-600">—</span>}
+                          </td>
+                        )
+                      })}
+                      <td className="px-1 py-1 text-neutral-300">
+                        {ringSkills.length === 0 ? (
+                          <span className="text-neutral-600">—</span>
+                        ) : (
+                          ringSkills.map((s) => (
+                            <div key={s}>
+                              <span className="text-neutral-100">{s}</span>
+                              {skills[s] && <span className="text-xs text-neutral-500">: {skills[s]}</span>}
+                            </div>
+                          ))
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </details>
+      ))}
+    </div>
+  )
+}
+
+/** Each Emblem's ring: pick one, and its bond levels show. */
+function EmblemRings({ data }: { data: Fe17Data }) {
   const emblems = data.emblems.filter((e) => e.levels.some((l) => l.inherit.length || l.sync.length))
   const [id, setId] = useState(emblems[0]?.id ?? '')
   const e = emblems.find((x) => x.id === id) ?? emblems[0]

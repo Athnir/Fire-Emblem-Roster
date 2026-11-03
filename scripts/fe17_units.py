@@ -902,8 +902,13 @@ def build_supports():
 # ---------------------------------------------------------------------------------------------------------------------------------
 # Bond rings, stat boosters, chapters.
 
-def build_bond_rings():
+def build_bond_rings(skills):
+    """Each bond ring by its Rnid without the rank (RNID_<series>_<hero>), its ranks in the table's order. <series> is the game's
+    own short title for the set (紋章 Mystery of the Emblem, 聖戦 Genealogy, ...; DLC1コモン the Expansion Pass's three); Gid is
+    the emblem whose pedestal forges it (RefineRingExecute.Do 0x2952990 picks among the rings with that Gid), and Engage names that
+    emblem's world (MGID_World_<the emblem's Mid>, bondsring.msbt). The 金属カラー rows have no English name: not rings."""
     rows = D.rows('ring')
+    gods = {g['Gid']: g for g in D.rows('god')}
     rank = {'0': 'C', '1': 'B', '2': 'A', '3': 'S'}
     rings = {}
     for r in rows:
@@ -913,11 +918,16 @@ def build_bond_rings():
         if not name:
             continue
         key = r['Rnid'].rsplit('_', 1)[0]
-        e = rings.setdefault(key, {'name': name, 'gid': r['Gid'] or None, 'ranks': {}})
+        god = gods.get(r['Gid'])
+        e = rings.setdefault(key, {
+            'name': name, 'series': key.split('_')[1], 'gid': r['Gid'] or None,
+            'emblem': text(god['Mid']) if god else None,
+            'world': text('MGID_World_' + god['Mid'][len('MGID_'):]) if god else None,
+            'ranks': {}})
         e['ranks'][rank[r['Rank']]] = {
             'rnid': r['Rnid'],
-            'stat_bonus': {EN[k]: int(r['Enhance.' + k] or 0) for k in CAP if k != 'Sight' and int(r['Enhance.' + k] or 0)},
-            'skills': lst(r['EquipSids']),
+            'stat_bonus': {EN[k]: int(r['Enhance.' + k] or 0) for k in SHOWN if int(r['Enhance.' + k] or 0)},
+            'skills': skills.refs(lst(r['EquipSids'])),
             'single_rank': r['IsSingleRank'] == 'true'}
     return {
         'format': 'ring.xml 指輪: Rnid (RNID_<series>_<hero>_<rank>), Name, Gid (the emblem whose rings these are), Rank '
@@ -988,7 +998,7 @@ def build(romfs_dir=None):
         'emblems': emblems,
         'bond_levels': bond_levels,
         'supports': build_supports(),
-        'bond_rings': build_bond_rings(),
+        'bond_rings': build_bond_rings(skills),
         'stat_boosters': boosters,
         'sp_books': sp_books,
         'chapters': build_chapters(),

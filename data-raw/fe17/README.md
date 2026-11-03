@@ -43,7 +43,11 @@ offsets in the update's program (`main.bin`, IL2CPP; `global-metadata.dat` names
   n > 0 = the pair supports with pattern n; lower-triangular, symmetric. **必要経験値**: REXID_パターンn, cumulative C/B/A points.
   **支援効果**: what supports give (the Armory's).
 - **ring.xml 指輪** (487): Rnid (RNID_<series>_<hero>_<rank>), Gid (10 heroes per base emblem + 3 DLC rings: Alfonse, Sharena,
-  Anna), Rank 0 C .. 3 S, Enhance.*, EquipSids, IsSingleRank.
+  Anna), Rank 0 C .. 3 S, Enhance.*, EquipSids, IsSingleRank. <series> is the game's own short title for the set: 紋章 (紋章の謎,
+  Mystery of the Emblem; Kris, Katarina and Legion are New Mystery's), 聖戦, トラキア, 封印, 烈火, 聖魔, 蒼炎, 暁, 覚醒, IF, 外伝
+  (the rings' help says Shadows of Valentia), 風花, and DLC1コモン (the Expansion Pass's three, S only, no Gid). The 金属カラー rows
+  (4) have no English name and aren't rings. A Gid's world is MGID_World_<the emblem's Mid> (bondsring.msbt: "World of the
+  Hero-King"); each ring's help ends "Appears in <game>". Only S ranks carry skills (28 of them).
 - **item.xml**: UseType 21 GrowUp (boosters, Enhance.*), 23 Master Seal, 24 Second Seal, 40 Mystic Satchel, 41 Mage Cannon, 42 SP
   books.
 - dispos Force 0 player, 1 enemy, 2 green; scripts: UnitJoin; <map>_kizuna.lua post-battle; hub_* the Somniel; calculator.xml
@@ -113,6 +117,13 @@ offsets in the update's program (`main.bin`, IL2CPP; `global-metadata.dat` names
 - **2.11 Permadeath protection** (Unit.IsExistDie 0x1a22540 -> GetDieType 0x1c78890 returns Exist): always Vander, Alfred,
   Diamant, Ivy, Timerra, Veyle; until Ch 3 ends Clanne, Framme; Ch 5 ends Céline; Ch 11 ends Alcryst; Ch 13 ends Fogado; Ch 16
   begins Hortensia; Ch 22 begins Mauvier.
+- **2.12 Bond rings**: forging (RefineRingExecute.Do 0x2952990), per ring, takes 指輪精製コスト (100) Bond Fragments and rolls
+  Random.Game 0-99: under 指輪精製確率S (3) S, under S + A (7) A, under that + B (30) B, else C; then one of the rings with the
+  pedestal's Gid at that rank (so the DLC rings, with none, are never forged). Merging (SynthesisRingExecute.Do 0x20b2ae0) adds one
+  ring of the next rank (RingData.GetNextRankData 0x2424120) and takes the cost in rings of the same Rnid and in fragments, which
+  RingMenuItem's constructor (0x24268a0) reads by the ring's own rank: C 指輪合成指輪コストB / 絆のかけらコストB (2, 100), B the A
+  pair (3, 1,000), A the S pair (4, 10,000); an S ring gets 99 and 9,999,999, so it never merges. (The names are the IL2CPP string
+  literals behind its metadata-usage slots: 0x5fce088 by rank, 0x62a4560-0x62a4570.) A bond ring earns SP at EXP / 2 (2.4).
 
 ## 3. Joins (UnitJoin calls; the reader asserts each site)
 
@@ -149,7 +160,9 @@ Pass units' supports (Serenes lists cumulative totals for them, increments elsew
 40-level classes (25, not 5: program 0x2056ca0; the wiki says 25 for Thief and Dancer); 4 Xenologue units' join proficiencies
 (+ starting-class weapons: creation code 0x1a0bf10; unverified in game); Mage Cannoneer Mov 4 (Serenes 5; the wiki 4); Edelgard's
 Assembly Gambit / Str/Dex +1 at bond 1 / 2 (Serenes 2 / 3; the wiki agrees with the game); Alear's recruitment Ch 1 (Serenes:
-Prologue: a separate person); "Nil" not playable.
+Prologue: a separate person); "Nil" not playable. All 123 bond rings' stats and skills at every rank match Serenes Forest's Bond
+Rings page, which also gives the forging chances (60/30/7/3); its heading spells Eirika "Erika"
+(src/data/fe17/__tests__/fe17BondRings.test.ts).
 
 ## Unconfirmed
 
