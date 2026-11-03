@@ -186,3 +186,23 @@ Taken from Serenes Forest, not the program:
 
 - What a script leaves to the player (Donnel's level, Gangrel's three talks, Walhart, Emmeryn and Aversa surviving), as above.
 - The SpotPass characters aren't listed (by choice).
+
+## Portraits and icons: the rest (`scripts/fe13_portraits_extra.py`)
+
+Beside `scripts/fe13_portraits.py` (whose files it leaves alone), into the same git-ignored `data-raw/fe13/art/`:
+
+- **The DLC recruits.** The program picks a unit's face at 0x2ce758 from its appearance (the unit's +0x74, filled from the episode's
+  ユニットデータ record at 0x2707cc: +0xb the gender, +0xc and +0xd the asset and flaw, +0xe the build, +0xf the face, +0x10 the hairstyle,
+  +0x11 the voice, +0x13 the reservation number, +0x14 the hair colour). A reservation number (the appearance's +0x1e, bits 3-7) gives
+  `FID_予約<NN>`; without one, the record's +0x12 = 0 marks a SpotPass unit, whose face is `FID_配信<name>`, the name from OtherData's
+  SpotPass table (after its 12-byte header, 36 bytes a person, +8 the id) at the record's +8 (0x2bac84). Eldigan is the one recruit made
+  that way (`配信エルトシャン`, on the cartridge); the others' faces are in their episode's global archive (`face/予約<NN>_bu_通常.arc`
+  in `E0xx_GLB.arc`). The portrait is the face's bust-up `通常`: the card the game shows on the status screen. Written as
+  `pr_marth.png`, `roy.png`... (17).
+- **The Avatar's plain portraits**, `avatar_m.png` and `avatar_f.png`: as a new game sets them up (0x1ef6b8): Build 02 (青年, 少女), face
+  A, Hair 01 (`髪0`) and the palette's first colour (#f6f4ef), tinted as `fe13_portraits.py` tints.
+- **Skill icons**: `systems/icon_E.ctpk`'s `skill.tga` (256x512, RGBA4, decoded by `scripts/ctr_formats.py`), 24x24 icons ten to a row;
+  a skill's is the one at RemovableSkillData +0x13. Written as `skills/<name>.png` (98). The enemies' Luna+, Vantage+, Pavise+ and Aegis+
+  have icons of their own but the same file name as the skills they improve; the player's are kept.
+
+`python scripts/fe13_portraits_extra.py` writes them.

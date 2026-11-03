@@ -129,3 +129,17 @@ placed, $84:C6BA), which change on a reload; checked by running the routine on c
 - When the 4-bit wrap first applies (on the next save and load; whether every chapter start loads from the save isn't traced).
 - Whether a dead father's items still pass.
 - What class +0x1E means; Steal's exact effect.
+
+## Portraits (`scripts/snes_portraits.py`)
+
+For the user's own copy of the art only: the PNGs go to `data-raw/fe4/art/` (git-ignored) and are loaded through Bulk Upload.
+
+- **Which face** (`$84:861C`): the u16 at `$8B:9A88` + 2 x (character id - 1); 0xF3 means a generic, picked by class (`$8A:B3E8`,
+  the u16 at `$8B:9FF8` + 2 x class), which no playable unit has. The children and substitutes each have their own.
+- **Table** (`$8A:B3FE`, `$8A:B452`, `$8A:B49A`): the graphics pointer is the 3 bytes at `$8A:B4F9` + 3 x id, unpacked by the game's
+  decompressor (`$80:AA02`, through `$95:A3FB`) to 2048 bytes; the palette pointer is the 3 bytes at `$8A:B7E1` + 3 x id (16 BGR555
+  colours, colour 0 the backdrop, transparent).
+- **Layout:** the block is DMA'd to OBJ VRAM 16 tiles wide (`$80:A58C`), and the face is twelve 16x16 sprites, 48x64: the block's
+  columns 0-5 (top half) over columns 6-11 (bottom half); columns 12-15 are the mouth and eye frames. Read from the OAM in the Ch.1
+  opening talk (Mesen: sprite rows at tiles B+0/2/4, B+0x20/22/24, B+6/8/A, B+0x26/28/2A).
+- **Run:** `python scripts/snes_portraits.py fe4` (add `--sheet` for a labelled contact sheet, `data-raw/fe4/portraits-sheet.png`).

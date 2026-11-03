@@ -123,3 +123,21 @@ Jeritza's personal ability is Murderous Intent, and he learns Mastermind at Swor
 - What ends recruiting after Part I; the odds of a student's request at B; the Ashen Wolves', Anna's and Jeritza's flags.
 - Which saint each statue is; what clears the riding bit; Ashe's and Lorenz's levels when they come back.
 - The support flag at +6, the value at +8, bit 10; the budding talent's parameter; the classes at section 3 +31..+33.
+
+## Portraits (`scripts/fe16_portraits.py`)
+
+For the user's own copy of the art only: the PNGs go to `data-raw/fe16/art/` (git-ignored) and are loaded through Bulk Upload. Read
+straight from the NSPs (the files aren't copied into `romfs/`). Each unit's portrait is its Part I card: the 512x512 bust from
+`nx/ui/still`.
+
+- **Files:** the program's still loader (`0x69f000`) loads 22 still files: slot 1 is archive file 6127 (face_school_card: 39
+  entries, persons 0-37 and a silhouette), slot 19 the update's `/patch4/nx/ui/still/face_school_card_DLC.bin` (file 31524, INFO1
+  entry 364; 7 entries). Slots 2 / 20 are the Part II cards (6128, `face_war_card_DLC.bin`); 3 / 21 the 256x256 battle faces
+  (6125, `face_btl_l_cmn_DLC.bin`); 4 / 18 the expressions (6126, `face_school_normal_DLC.bin`).
+- **Which card** (`0x69fd60`, `0x3e6450`): a person below 1040 is its own number in the base file; persons 1040-1046 go to the DLC
+  file at person − 1040, one less from 1044 on (Aelfric has none): Yuri 0, Balthus 1, Constance 2, Hapi 3, Jeritza 4, Anna 5. Entry
+  6 is Constance's shade look, used only under a flag (the default, 2, is written). Byleth is persons 0 (male) and 1 (female).
+- **Format:** a still file is u32 count, then (u32 offset, u32 size) per entry; each entry is Koei's chunked zlib around a G1T
+  (`scripts/g1t.py`) holding one 512x512 BC3 texture, stored linear (not block-linear swizzled), decoded with texture2ddecoder.
+- **Run:** `python scripts/fe16_portraits.py` (41 portraits, scaled to 256x256; `--sheet <png>` for a labelled contact sheet).
+  Needs `pip install texture2ddecoder` (it comes with UnityPy).

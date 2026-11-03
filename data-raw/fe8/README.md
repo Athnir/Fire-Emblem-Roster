@@ -53,3 +53,20 @@ Each route's chapters played in order, on Normal, as in The Blazing Blade's find
 
 - When the postgame's units are added (the game's code): taken from Serenes Forest's recruitment page.
 - Hard mode's and Easy mode's changes; the promotion item level (taken as Serenes Forest's: from Lv 10).
+
+## Portraits (`scripts/gba_portraits.py`)
+
+For the user's own copy of the art only: the PNGs go to `data-raw/fe8/art/` (git-ignored) and are loaded through Bulk Upload.
+The layout is The Blazing Blade's (see its README); what differs:
+
+- **Which face:** the character's +6 (u16) is its portrait id (GetUnitPortraitId: the class's default only when it's 0; the FE8
+  decomp shows it swapping face 0x4A for 0x46 in chapter 0x22, which no playable record uses).
+- **Table:** `0x8ACBC4`, 28 bytes per portrait id, indexed directly (GetPortraitData, 0x08005514: table + id × 28; id 0 is empty).
+  Fields as FE7's. The sheet is stored plain: a 4-byte header whose first byte is 0, then the 128 tiles; the mini portrait is
+  LZ77 and the mouth frames plain (0x600 bytes).
+- **Sheet:** as FE7's, built by the face sprite at 0x591040.
+- **As the status screen draws it:** StatScreen_Display (0x080886AE) calls PutFace80x72 (0x08005E98), which uses the tilemap at
+  0x5A0838 (0x5A08F0, a tile row higher, for Lute, Amelia, Ewan, Dozla and Myrrh) and puts the slot's mouth (columns 28-31,
+  rows 0-1) at the mouth position (0x08005B78, 0x08005BCC), as FE7 does: mostly the smile's closed mouth over the face's plain one
+  (mouth frame 5 for every unit). The script writes the 96x80 face with the status screen's mouth; `--neutral` keeps frame 5.
+- **Run:** `python scripts/gba_portraits.py fe8` (add `--contact DIR` for a labelled contact sheet).

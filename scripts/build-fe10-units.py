@@ -533,7 +533,7 @@ def main():
     shown = {s['sid'] for s in sk.values() if scroll_of(s) and s['name'] != 'dummy'}
     shown |= {s for u in units for s in u['skills']} | {s for c in out_classes.values() for s in c['skills']}
     shown |= {c['mastery'] for c in out_classes.values() if c.get('mastery')}
-    for sid in sorted(shown, key=lambda s: sk[s]['order']):
+    for sid in sorted(shown, key=lambda s: sk[s]['icon']):
         s = sk[sid]
         deny = [e for f, e in s['rules'] if f == 1 and e and e != sid]
         need = [e for f, e in s['rules'] if f == 0 and e]

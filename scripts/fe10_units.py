@@ -128,8 +128,9 @@ def items(t):
 
 
 def skills(t):
-    """The SID_ tables (44 bytes each): 0 SID, 4 name, 8 and 12 help, 16 and 20 effects, 24 the scroll (IID), 28 icon,
-    29 kind (3: the game's own markers, never shown), 30 capacity, 31 order, 32 and 33 the lengths of two lists, at the
+    """The SID_ tables (44 bytes each): 0 SID, 4 name, 8 and 12 help, 16 and 20 effects, 24 the scroll (IID), 28 a running
+    number, 29 kind (3: the game's own markers, never shown), 30 capacity, 31 the icon's place in window/icon.cms plus one (0 none;
+    the "skill learned" message, 0x80031b64, draws icon byte 31 - 1), 32 and 33 the lengths of two lists, at the
     pointers 36 and 40. Each list entry is 8 bytes: a flag (byte 0) and a pointer to a SID_, PID_, JID_ or SFXC_ string.
     {SID: dict}."""
     out = {}
@@ -145,7 +146,7 @@ def skills(t):
         out[name] = {
             'sid': name, 'label': t.ptr_string(o + 4), 'name': t.name(t.ptr_string(o + 4)),
             'help': t.name(t.ptr_string(o + 8)), 'scroll': t.ptr_string(o + 24),
-            'icon': r[28], 'kind': r[29], 'capacity': r[30], 'order': r[31],
+            'number': r[28], 'kind': r[29], 'capacity': r[30], 'icon': r[31],
             'rules': entries(r[32], 36), 'allowed': entries(r[33], 40),
         }
     return out

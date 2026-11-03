@@ -118,3 +118,15 @@ the start of 12x, Misha at the end of 17A, Sara in 17A or (route B) 16B, and so 
 - How much HP Sol drains.
 - Whether capturing needs a weapon in hand at 1 range (the Fire Emblem Wiki says so).
 - Whether fatigued units deploy when too few units are left (the wiki says so).
+
+## Portraits (`scripts/snes_portraits.py`)
+
+For the user's own copy of the art only: the PNGs go to `data-raw/fe5/art/` (git-ignored) and are loaded through Bulk Upload.
+
+- **Which face:** byte +0x2F of the character record (`$86:9A2D`). Shiva's is 119 and Galzus's 23, as the records say.
+- **Table** (`$8C:BFB1`, `$8C:BFC7`): 4 bytes per portrait id at `$8C:D12A`: the graphics pointer (unpacked by the game's
+  decompressor, `$80:B574`, to 2048 bytes), then a palette number; the palette is 16 BGR555 colours at `$EA:C000` + 32 x that number
+  (colour 0 the backdrop, transparent). Generic faces share graphics under several ids with different palettes.
+- **Layout:** as Genealogy's: a VRAM block 16 tiles wide, the 48x64 face its columns 0-5 over columns 6-11, columns 12-15 the mouth
+  and eye frames. Checked pixel for pixel against Mesen in Ch.1's opening talk.
+- **Run:** `python scripts/snes_portraits.py fe5` (add `--sheet` for a labelled contact sheet, `data-raw/fe5/portraits-sheet.png`).

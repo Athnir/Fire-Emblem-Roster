@@ -34,3 +34,22 @@ earliest) and Dayan's level (12, Serenes').
 
 - The trial maps' bonus units (Hector, Eliwood...): the game's code adds them once it has been cleared.
 - Hard mode's bonus stats; the promotion item level and gains (taken as Serenes': from Lv 10, the difference in bases).
+
+## Portraits (`scripts/gba_portraits.py`)
+
+For the user's own copy of the art only: the PNGs go to `data-raw/fe6/art/` (git-ignored) and are loaded through Bulk Upload.
+
+- **Which face:** the character's +6 (u16) is its portrait id (the status screen's GetUnitPortraitId, 0x080184F0, falls back to
+  the class's +8 only when it's 0, which no playable unit's is).
+- **Table:** `0x66074C`, 16 bytes per portrait id, indexed directly (GetPortraitData, 0x08007FC0: table + id × 16; id 0 is
+  unused). +0 the sheet (LZ77, 136 tiles), +4 the 32x32 mini portrait (stored plain, 0x200 bytes), +8 the palette (16 BGR555
+  colours, colour 0 transparent), +0xC mouth x, +0xD mouth y (in 8-pixel tiles from the 96x80 face's top left), +0xE unknown (0 or
+  1). A record with mouth x or y 0 is a class card, drawn as an 80x72 bitmap instead.
+- **Sheet:** 4bpp tiles, 32 to a row as they sit in OBJ VRAM. The face sprite (0x5C3A94) builds the 96x80 face from it: columns 0-7
+  (the top 64x32, at x 16), 8-15 (the next 64x32 below it), 16-19 rows 0-1 and 2-3 (the bottom 32x16 halves, at y 64), 20-21 and
+  22-23 (the side strips, 16x32 each at y 48, left and right); the top 48 pixels of the side strips are always empty. Columns 24-31
+  hold the talking mouth frames (tiles 0x18, 0x58, 0x1C, 0x5C) and row 4 (tiles 0x80-0x87) the closed mouth in two 32x8 halves.
+- **As the status screen draws it:** PutFace80x72 (0x08008BE0, called by the status screen at 0x08070036) lays the sheet out with a
+  fixed tilemap (0x101974: the 96x80 face less 8 pixels at each side and the bottom; Fae's, 0x101A2C, a tile row higher) and adds no
+  mouth: the face's own closed mouth (the same as row 4's) and open eyes are what it shows. The script writes the whole 96x80 face.
+- **Run:** `python scripts/gba_portraits.py fe6` (add `--contact DIR` for a labelled contact sheet).

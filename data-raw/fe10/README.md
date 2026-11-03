@@ -42,8 +42,9 @@ end exactly where the next table starts, which the reader checks.
 
 ## SkillData (`SID_` tables, 44 bytes)
 
-0 SID, 4 name, 8 and 12 help, 16 and 20 effects, 24 the scroll (IID), 28 icon, 29 kind (3: the game's markers, never shown),
-30 capacity, 31 order, 32 and 33 two list lengths, 36 and 40 the lists. Each list entry is 8 bytes: a flag (byte 0) and a
+0 SID, 4 name, 8 and 12 help, 16 and 20 effects, 24 the scroll (IID), 28 a running number, 29 kind (3: the game's markers, never
+shown), 30 capacity, 31 the icon (its place in the icon sheet plus one; see "Portraits and icons"), 32 and 33 two list lengths, 36
+and 40 the lists. Each list entry is 8 bytes: a flag (byte 0) and a
 pointer to a `SID_`, `PID_`, `JID_` or `SFXC_` string.
 
 Who can learn a scroll (0x80119dc8; matching 0x80127650): never if byte 31 is 0 or the first list is empty; every entry of
@@ -142,3 +143,24 @@ unless the class has `SID_EVENT_CC` and a promotion.
 - Nothing above is checked in-game yet (the user's spot checks: an Archer's capacity, two bonus EXP level-ups).
 - Two flags that switch bonds off (global 0x804cb700 bit 0x20000, battle +0x108 bit 0x800) aren't understood.
 - Whether a Path of Radiance save keeps dead units' records (Path of Radiance's own code isn't read for it).
+
+## Portraits and icons (`Face/`, `window/icon.cms`; `scripts/tellius_art.py`)
+
+`python scripts/tellius_art.py fe10` writes every unit's portrait (`art/<name>.png`, 256x256) and every skill's icon
+(`art/skills/<name>.png`, 32x32) for the app's Bulk Upload, and a labelled `contact_sheet.png` (all git-ignored). The names are
+the app's (`artId`), read from the generated `src/data/fe10/fe10Units.ts`. Path of Radiance's README has the shared parts.
+
+- `Face/facedata.bin`: 48-byte records, `FID_`, `FID_L_`, `MPID_`, the file, then 16-bit numbers: eye 1 x, y; eye 2 x, y;
+  mouth x, y (in the big portrait; -1 when missing: Oscar's eyes, Volke's mouth, all three for the Black Knight); then where
+  the 192x128 bust sits in the big portrait; the rest not decoded. PersonData +16 is the unit's `FID_`.
+- `Face/<name>.cms`: LZ10, then a TPL of C8 textures: the 192x128 bust, the big conversation portrait (232x296, 336x296 or
+  336x336) it's cut from, the mouth and eye frames (as Path of Radiance's), the 64x64 face. The bust is the same pixels as the
+  big portrait at that place, except that a winged laguz's (Tibarn, Naesala, Janaff, Ulki, Vika, the herons, Nealuchi) leaves
+  the wings out. `Face/wide/` holds the 16:9 versions, the frames squeezed to 4/5 of the width; `window/icon_wide.cms` the
+  same for the icons (24x32). The 4:3 ones are used here.
+- A portrait is the bust with both eyes open and the mouth closed, cut to a 128x128 square centred on the face, scaled up 2x.
+- `window/icon.cms`: LZ10, a TPL whose second texture (1024x96) holds the skill icons, 32x32 in rows of 32. The icon is the
+  SkillData byte at +31, its place plus one (0: none): the "skill learned" message (0x80031b64) puts
+  byte 31 - 1 in its icon code (`#K#P%03X#k`). Byte 28 is only a running number: byte 28 - 60 equals
+  byte 31 from Canto to Maelstrom, but the two Wildheart records (`SID_HALFBEAST_DUMMY` and `SID_HALFBEAST`) share an icon,
+  so from Blessing on it's one ahead.

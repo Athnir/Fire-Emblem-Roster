@@ -67,3 +67,23 @@ Rickard talk with Marth (no talk exists: they come to him).
 - Foe byte +22 bit 0 (it blocks a recruit coming to Marth) and unit byte +14.
 - Whether the Switch side changes anything in the cartridge as it runs (no option for difficulty or stats; the tables match 1990's).
 - Which phase Catria and Palla's "turn 5" arrival is.
+
+## Portraits (`scripts/fe1_portraits.py`)
+
+For the user's own copy of the art only: the PNGs go to `data-raw/fe1/art/` (git-ignored) and are loaded through Bulk Upload. The
+Switch release has no art of its own (the Program NCA has no RomFS; the Control NCA holds only the icon, the Manual NCA the legal
+pages): the portraits are the cartridge's, drawn as 8x8 sprites from its CHR ROM. Bank 10 holds them:
+
+- **Which face:** `$BD70` + character − 1 is the portrait P (`$BDA5` the foes'), read at 10:$8730; 10:$8762 draws it. Some share
+  one: Bord and Cord, Gordin and Tomas, Matthis and Vyland, Dolph and Macellan.
+- **Graphics:** `$8A14[P]` is the 4 KB CHR bank, put at pattern table $0000 (10:$817C, through 15:$C9AE / $C9B6). **Palette:**
+  `$B71C[$8A63[P]]` points to a PPU write: $3F10, 16 bytes (the four sprite palettes), 0. Its first byte also sets the universal
+  background ($3F10 mirrors $3F00): black ($0F) in every portrait, which is what shows through a sprite's colour 0 (the outlines).
+- **Sprites:** `$89C5[P]` is the face's metasprite; `$8795[P]` points to its frame list, whose first entry (the mouth, mostly) is
+  drawn with it at rest (10:$8784). A metasprite (bank 10's `$BFD0` → the u16 pointers at `$8AB3`; drawn by 15:$E759) is a u16
+  template pointer then a tile per sprite; the template is (attribute, y, x) per sprite until a byte F0-FF (attribute bits 0-1 the
+  palette, 6 and 7 the flips). The face goes into OAM first, so it is in front where the two overlap. 48x48, six sprites square.
+- **Colours:** a standard NES (2C02) palette; the Switch emulator's own table wasn't found in the program.
+- **Backdrop:** the sprites paint it in (an orange in most), so it's cleared where it touches the edge (the top-left corner's
+  colour), as `snes_portraits.py` does for Mystery of the Emblem; `--keep-box` keeps it as the game shows it.
+- **Run:** `python scripts/fe1_portraits.py` (52 portraits, native size; `--sheet <png>` for a labelled contact sheet).

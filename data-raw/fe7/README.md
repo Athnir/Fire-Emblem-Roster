@@ -68,3 +68,25 @@ and says so.
 
 - Hard mode's bonus stats.
 - The promotion item level (taken as Serenes Forest's: from Lv 10).
+
+## Portraits (`scripts/gba_portraits.py`)
+
+For the user's own copy of the art only: the PNGs go to `data-raw/fe7/art/` (git-ignored) and are loaded through Bulk Upload.
+Lyn's-story and later records of the same person share one portrait id, so each name has one file.
+
+- **Which face:** the character's +6 (u16) is its portrait id (GetUnitPortraitId, 0x08018BD8: the class's +8 only when it's 0).
+- **Table:** `0xC96584`, 28 bytes per portrait id, indexed directly (GetPortraitData, 0x08006B20: table + id × 28; id 0 is unused).
+  +0 the sheet (LZ77, 128 tiles), +4 the mini portrait (LZ77), +8 the palette (16 BGR555 colours, colour 0 transparent), +0xC the
+  mouth frames (stored plain, 0x600 bytes: six 32x16 frames, 4 tiles across; 0-2 smiling, 3-5 not, the third of each the closed
+  mouth a face rests on), +0x10 a class card (0 for a face), +0x14 mouth x, +0x15 mouth y, +0x16 eyes x, +0x17 eyes y (in 8-pixel
+  tiles from the 96x80 face's top left), +0x18 the blink kind.
+- **Sheet:** 4bpp tiles, 32 to a row as they sit in OBJ VRAM. The face sprite (0xB906AC) builds the 96x80 face: columns 0-7 (the
+  top 64x32, at x 16), 8-15 (the next 64x32 below it), 16-19 rows 0-1 and 2-3 (the bottom 32x16 halves, at y 64), 20-21 and 22-23
+  (the side strips, 16x32 each at y 48); the top 48 pixels of the side strips are always empty. Columns 24-27 hold the blink frames
+  (rows 0-1 half shut, rows 2-3 shut) and columns 28-31 rows 0-1 a mouth (the mouth sprite's slot).
+- **As the status screen draws it:** PutFace80x72 (0x080074C4, called by the status screen at 0x080811DA) lays the sheet out with a
+  fixed tilemap (0x195680; a tile row higher for some faces, 0x195738) and puts the slot's tiles (0x1C-0x1F, 0x3C-0x3F) over the
+  face at the mouth position (0x08007170, 0x080071C4). That mouth is closed but mostly the smile's (it matches mouth frame 2 more
+  often than not); the face under it is mouth frame 5, the plain closed mouth a face rests on in dialogue, for every unit. The eyes
+  are the sheet's own, open. The script writes the whole 96x80 face with the status screen's mouth; `--neutral` keeps frame 5.
+- **Run:** `python scripts/gba_portraits.py fe7` (add `--contact DIR` for a labelled contact sheet).

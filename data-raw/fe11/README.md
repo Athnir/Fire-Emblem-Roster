@@ -71,3 +71,19 @@ Serenes Forest lists a unit joining at a chapter's end under the next chapter; t
 - Norne's condition (4 or fewer units after the prologue) and Minerva needing Maria first.
 - The faceless replacement units (`PID_REP_*`, arm9 0xd5154) aren't listed.
 - No supports in this game.
+
+## Portraits and icons (`scripts/fe11_portraits.py`)
+
+For the app's Bulk Upload only: the images are the user's, written to `data-raw/fe11/art/` (git-ignored) and never committed. The game
+has no skills, so no icons.
+
+- A person's face (Person +4, `FID_...`) is a record of `f/face.bin` (the database's container, 36 bytes a face): +8 the portrait's
+  file in `f/`, +12 and +16 the small face's and its palette's in `sf/`, +20 the eyes' and mouth's places.
+- The program loads `f/<+8>` (arm9 0x2007ca8) through its decompressor table (0x20ceaf8, by the first byte's top nibble): 0x10 is LZ10,
+  and 0x40, which most portraits use, a code for runs of zeros (0x2004070: the output starts as zeros; a byte other than 0 is copied,
+  and a 0 is followed by a count of zeros to leave, plus one: one byte, or 15 bits in two when the first's top bit is set).
+- Decompressed: 0x200 bytes of palette (256 BGR555 colours, the first transparent), then 0x6400 of 8bpp 8x8 tiles. The first 256
+  tiles are the portrait, four 64x64 blocks (each block's 64 tiles left to right, top to bottom) for its top left, top right, bottom
+  left and bottom right: 128x128. The rest are the eyes' and mouths' frames drawn over it to blink and talk.
+
+`python scripts/fe11_portraits.py` writes `<name>.png` (128x128, the native size) for each of the 59 units that join.

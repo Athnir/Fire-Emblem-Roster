@@ -58,3 +58,21 @@ bytecode, `scripts/fates_cmb.py`):
 Every act matches Serenes Forest's recruitment page, and so does the way but Clair's (there "automatically"; the file's cell scene is a
 talk with a choice). The conditions a join's variables carry (survived the battle, Sonya or Deen, after Clive joins) are Serenes Forest's
 words (`scripts/fe15_recruitment.py`). The DLC's Cipher Legends units aren't in the user's dump.
+
+## Portraits and icons (`scripts/fe15_portraits.py`)
+
+For the app's Bulk Upload only: read from the cartridge image directly (the face files aren't copied into `romfs/`), written to
+`data-raw/fe15/art/` (git-ignored) and never committed. No skill icons are written.
+
+- A person's face is Person.bin +12 (`FID_<name>`). `face/FaceData.bin` (88 bytes a record) has one per use: `FSID_BU_<name>` is the
+  bust-up (the program builds `FSID_BU_%s`, and `FSID_BU_%s%s` for a variant: `上級`, Alm's and Celica's once promoted, and `下画面`,
+  the lower screen's); its +12 names the archive, `face/face/<+12>.arc` (`player/アルム_bu`).
+- The archive is Awakening's container: its Info table has [name, index, size, offset] per expression, offsets counted from the Data
+  label; each is an LZ11 BCH (`通常.bch.lz` the normal one).
+- The BCH has one texture. Its GPU commands set texture unit 0's size (register 0x82, width << 16 | height), its address in the data
+  section (0x85) and its format (0x8e: 13, ETC1A4): 256x256, decoded by `scripts/ctr_texture.py` (`scripts/ctr_formats.py` takes the
+  other formats).
+
+`python scripts/fe15_portraits.py` writes `<name>.png` for each of the 34 units, as they join (Alm and Celica unpromoted).
+The texture is the figure down to the waist; the file is cut to the head and shoulders (a 136-pixel square from just above the
+head, centred on it, scaled to 256), as the app's square portrait boxes show the other games'. `--full` keeps the whole texture.

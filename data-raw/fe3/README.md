@@ -52,3 +52,20 @@ for Minerva).
 
 - The promotion items' level (taken as Serenes Forest's: from Lv 10); Merric's own Bishop class (27), which Serenes Forest gives other
   gains, isn't the one the promotion table names.
+
+## Portraits (`scripts/snes_portraits.py`)
+
+For the user's own copy of the art only: the PNGs go to `data-raw/fe3/art/` (git-ignored) and are loaded through Bulk Upload.
+
+- **Which face:** byte +7 of the unit record that makes the character join (`fe3_joins.joins`; the game keeps it at `$7F:4417`,
+  `$83:AF80`). A name in both books takes Book 1's; Book 2's records for Marth, Caeda, Linde, Merric and Tiki name portraits of
+  their own (139, 140, 141, 142, 143), written to `data-raw/fe3/art-book2/`.
+- **Table** (`$81:D12B`, `$81:D14D`): the graphics pointer is the 3 bytes at `$88:8EB0` + 3 x id, unpacked by the game's
+  decompressor (`$80:8F18`, through `$81:D920`) to 2048 bytes; the palette is 16 BGR555 colours at `$D7:E800` + 32 x id.
+- **Layout:** the 64 4bpp tiles go to VRAM as a block 16 tiles wide; the 48x64 face is its columns 0-5 (top half) over columns 6-11
+  (bottom half); columns 12-15 are the mouth and eye frames. Checked pixel for pixel against Mesen in Ch.1's opening talk (Marth on
+  the left is drawn flipped; the file keeps the stored way round).
+- **Backdrop:** these portraits never use colour 0: the backdrop is painted in (colour 14, the talk window's blue, in most), so it
+  would stay opaque. The script clears it where it touches the edge, so the portraits sit in the app like the other games';
+  `--fe3-keep-box` keeps it as the game shows it.
+- **Run:** `python scripts/snes_portraits.py fe3` (add `--sheet` for a labelled contact sheet, `data-raw/fe3/portraits-sheet.png`).

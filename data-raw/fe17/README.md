@@ -165,3 +165,20 @@ Prologue: a separate person); "Nil" not playable.
 9. What DieType.Exist does in Classic.
 10. Emblem Alear's bond cap (LevelCap 11, no unlock variable; Serenes lists 20/21).
 
+
+## Portraits (`scripts/fe17_portraits.py`)
+
+For the user's own copy of the art only: the PNGs go to `data-raw/fe17/art/` (git-ignored) and are loaded through Bulk Upload. Read
+straight from the NSPs (the bundles aren't copied into `romfs/`).
+
+- **Which art:** the status screen draws the units in 3D; the 2D art every unit has is the face the level-up shows: Addressables
+  key `Telop/LevelUp/FaceThumb/<name>` (the catalog, `aa/catalog.bundle`), bundle `fe_assets_telop/levelup/facethumb/<name>.bundle`,
+  where `<name>` is the person's Name label less `MPID_` (person.xml), which matches all 41 (Rafal is `Rafale`, though his
+  UnitIconID is `049Il`). Alear's record is male (Gender 1): `Lueur`; the female look is `LueurW` (`--alear-female` writes it too).
+- **Format:** one Texture2D, 640x340, ASTC 4x4, Tegra block-linear swizzled; read and decoded with UnityPy (texture2ddecoder).
+- **Crop:** a square of the full height, centred on the opaque columns' middle, scaled to 256x256 (Lanczos on premultiplied alpha).
+- **Other 2D art found, not used:** the unit list's 188x74 strips (`fe_assets_ui/common/unitlist/facethumb`), the Somniel
+  notebook's photos (3D renders with backgrounds, `fe_assets_ui/hub/notebook/pictures`); the emblem room's faces are the bond-ring
+  heroes'.
+- **Run:** `python scripts/fe17_portraits.py` (41 portraits; `--sheet <png>` for a labelled contact sheet). Needs
+  `pip install UnityPy`.

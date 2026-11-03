@@ -158,3 +158,24 @@ Lv 10), Petrine (Paladin, Lv 18), Bryce (General, Lv 20) and Ashnard (King Daein
 maps once the game has been cleared that many times from beginning to end, Oliver, Shiharam and Ashnard with their Normal mode
 stats and Petrine and Bryce with their Hard mode ones. Only Ashnard's are his class's bases plus his own; the others include the
 game's enemy level-ups, which aren't decoded, so their stats are Serenes Forest's boss tables (`TRIAL_STATS` in the generator).
+
+## Portraits and icons (`Face/`, `window/icon.tpl`; `scripts/tellius_art.py`)
+
+`python scripts/tellius_art.py fe9` writes every unit's portrait (`art/<name>.png`, 256x256) and every skill's icon
+(`art/skills/<name>.png`, 32x32) for the app's Bulk Upload, and a labelled `contact_sheet.png` to check them by eye (all
+git-ignored). The names are the app's (`artId`), read from the generated `src/data/fe9/fe9Units.ts`. `scripts/gc_texture.py`
+decodes the GameCube textures (TPL: magic 0x0020AF30, then (image header, palette header) offset pairs; the formats' 4x4/8x4/8x8
+tiles, CMPR, and the palettes).
+
+- `Face/facedata.bin` (pointer-relocated like `FE8Data.bin`): a count and a pointer to 32-byte records, `FID_`, `MPID_`, the
+  file, then 16-bit numbers: eye 1 x, y; eye 2 x, y; mouth x, y (-1 when the face has none: Oscar's eyes); the rest not
+  decoded. PersonData +0x0C is the unit's `FID_` (a laguz's is the untransformed face). `FID_L_<name>` records name the
+  conversation portraits (`L_<name>.cms`, 232x296 or 336x336, the same scale).
+- `Face/<name>.cms`: LZ10, then a TPL of C8 (8-bit paletted, RGB5A3 palette) textures: the status screen's 192x128 bust, six
+  mouth frames (open, half, closed, then the same again), three frames per eye (open, half, closed; when both eyes share one
+  position the frames cover both and the two sets are the same), and the 64x64 face for the map and lists. The bust has
+  transparent holes where the frames go; each frame's top-left is the record's x, y.
+- A portrait is the bust with both eyes open and the mouth closed (the third mouth frame), cut to a 128x128 square (its full
+  height, centred on the eyes and mouth) and scaled up 2x with Lanczos.
+- `window/icon.tpl`: two C8 textures; the second (1024x96) holds the skill icons, 32x32 in rows of 32. A skill's icon byte
+  (+0x19) is its place plus one; 0 is none. Shove (`SID_TACKLE`) has none, so the app's Shove icon has no file.
