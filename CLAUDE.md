@@ -25,6 +25,8 @@ new rule, add it here.
 - **Fates is finished** and is the model for the most any game will need (no other game has a web as complex). It's only
   touched to fix bugs.
 - **Only what the user owns.** Missing DLC is left out (or taken from wikis later), never obtained.
+- **Mainline games only** (user, 2026-11-03): the spin-offs (the Warriors games, Heroes, Tokyo Mirage Sessions, BS Archanea War
+  Chronicles) stay out. ROM hacks may come later, each only with its author's permission.
 
 ## Art: the game's own, never shipped
 
