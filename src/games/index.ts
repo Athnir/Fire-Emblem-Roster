@@ -123,4 +123,10 @@ export const GAMES: Game[] = [
     short: 'Three Houses',
     load: () => import('./fe16').then((m) => m.default),
   },
+  {
+    id: 'fe17',
+    title: 'Fire Emblem Engage',
+    short: 'Engage',
+    load: () => import('./fe17').then((m) => m.default),
+  },
 ]
