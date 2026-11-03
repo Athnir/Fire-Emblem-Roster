@@ -124,6 +124,9 @@ offsets in the update's program (`main.bin`, IL2CPP; `global-metadata.dat` names
   RingMenuItem's constructor (0x24268a0) reads by the ring's own rank: C 指輪合成指輪コストB / 絆のかけらコストB (2, 100), B the A
   pair (3, 1,000), A the S pair (4, 10,000); an S ring gets 99 and 9,999,999, so it never merges. (The names are the IL2CPP string
   literals behind its metadata-usage slots: 0x5fce088 by rank, 0x62a4560-0x62a4570.) A bond ring earns SP at EXP / 2 (2.4).
+  The Expansion Pass's three (DLC1コモン) are given by ContentsRewardSequence.RewordAll (0x253d8d0), which HubSequence.ContentsEvent
+  (0x23f41c0) starts only while GameUserData.Sequence is Hub (4): the first visit to the Somniel, after the first chapter whose
+  chapter.xml Flag has Hub (16; App.ChapterData.Flags, Kizuna 8 the exploration after the battle): Chapter 3.
 
 ## 3. Joins (UnitJoin calls; the reader asserts each site)
 
@@ -150,6 +153,17 @@ Edelgard/Dimitri/Claude (EP) 20 Houses Unite, Axe 6 Lance 9 Bow 13; Tiki (EP) Di
 17; Chrom (EP; Robin shares the bond) Giga Levin Sword, Sword 6 Tome 16. Per bond level the JSON lists the new inheritable skills
 with SP, new sync and engage skills (with forms and commands), the cumulative skills, the sync stat bonus, the proficiency granted,
 new engage weapons by style, and the flags.
+
+**When each ring first comes** (fe17_units.build_emblem_joins; the spoiler block shows a ring, and its world's bond rings, from
+there): Marth Ch 1 (m001); Sigurd after Ch 3 (m003_kizuna, the exploration after the battle); Celica Ch 4 (Céline joins wearing it:
+UnitCreateGodUnit); Micaiah Ch 6 (Yunaka); Roy Ch 8 (Diamant, placed green wearing it: dispos m008 Ally); Leif after Ch 8
+(m008_kizuna); Lucina and Lyn Ch 11 (Lyn with Ivy; MapEnding repeats both for a cleared-by-debug map); Ike Ch 13 (Timerra); Byleth
+after Ch 14 (m014_kizuna); Corrin Ch 15 (Seadall); Eirika Ch 16 (Rosado); Alear Ch 22 (m022); Edelgard in the Somniel once Ch 6 is
+cleared (hub_solanelcommon_p0 ScriptStartGod, allowed by CanStartGod: HasContent E0 and HubIsCompleteChapter M006); Tiki, Hector,
+Veronica, Soren, Camilla, Chrom at the Ending of Divine Paralogues 1-6 (g001-g006, 神竜の章_紋章士加入). Ephraim, Dimitri, Claude and
+Robin share their pair's bond (god.xml Gbid) and come with it. The story's and the enemies' copies have GIDs of their own
+(GID_M002_シグルド, GID_M011_敵マルス...), so the six rings taken after Ch 10 and won back later (Ch 17-22) never count. The 13
+story rings match Serenes Forest's How to Obtain page.
 
 ## 5. Cross-check (Serenes Forest; Fire Emblem Wiki on disputed points)
 

@@ -39,7 +39,7 @@ const fe17: GameParts = {
     { id: 'viewer', label: 'Bulk Viewer', component: () => <Fe17BulkViewer data={FE17_DATA} /> },
     { id: 'info', label: 'Info', component: () => <Fe17Info /> },
   ],
-  spoiler: "Every tab follows the chapter you're on: units show once they join (the paralogues after the chapters that open them, the Expansion Pass's after Chapter 6). The Emblems tab (its Emblem and Bond Rings) isn't set up for it yet.",
+  spoiler: "Every tab follows the chapter you're on: units show once they join (the paralogues after the chapters that open them, the Expansion Pass's after Chapter 6). The Emblems tab shows each Emblem's ring, and its world's Bond Rings, from the chapter the ring first comes in.",
   spoilerBar: () => <LinearSpoilerBar gameId="fe17" chapters={FE17_CHAPTERS} />,
   bulkUpload: ({ onClose }) => <TelliusBulkUpload data={UPLOAD_DATA} title="Engage" onClose={onClose} />,
   // Engage's screens show no skill icons, so its folder holds the portraits alone.

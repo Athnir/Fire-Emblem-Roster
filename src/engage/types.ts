@@ -109,6 +109,8 @@ export interface Fe17BondLevel {
 export interface Fe17Emblem {
   id: string
   name: string
+  /** The chapter its ring first comes in (a switch half or Robin: their pair's); the spoiler block shows it from there. */
+  joinChapter: string
   /** The ring's name (a switch half or a shared bond has none of its own). */
   ring?: string
   expansionPass?: true
@@ -136,6 +138,9 @@ export interface Fe17BondRingSet {
   /** The Emblem whose pedestal forges them, and Engage's name for its world (the Expansion Pass's three have neither). */
   emblem?: string
   world?: string
+  /** Shown from here with the spoiler block on: the chapter the Emblem's ring first comes in (the Expansion Pass's three: the first
+   * visit to the Somniel, where they're given). */
+  joinChapter: string
   expansionPass?: true
   rings: Fe17BondRing[]
 }

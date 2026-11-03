@@ -124,6 +124,12 @@ def build():
 
     order = chapter_order(d['chapters'])
     chapters = [{'id': cid, 'label': chapter_label(d['chapters'][cid])} for cid in order]
+    place = {cid: i for i, cid in enumerate(order)}
+    # Each emblem's ring from the first chapter that gives it (fe17_units.build_emblem_joins: every site; the earliest counts).
+    emblem_join = {gid: min(sites, key=lambda s: place[s['cid']])['cid'] for gid, sites in d['emblem_joins'].items()}
+    # The Somniel first follows the first chapter flagged Hub; the Expansion Pass's rings from Heroes come there
+    # (HubSequence.ContentsEvent -> ContentsRewardSequence.RewordAll, data-raw/fe17/README.md 2.12).
+    first_hub = next(cid for cid in order if d['chapters'][cid]['hub'])
 
     units = []
     for u in d['units']:
@@ -184,6 +190,7 @@ def build():
         emblems.append({
             'id': 'fe17-' + slug(e['name']),
             'name': e['name'],
+            'joinChapter': emblem_join[e['gid']],
             **({'ring': e['ring_name']} if e['ring_name'] else {}),
             **({'expansionPass': True} if e['expansion_pass'] else {}),
             **({'engageAttack': e['engage_attack']['name']} if (e['engage_attack'] or {}).get('name') else {}),
@@ -211,6 +218,7 @@ def build():
         bond_rings.append({
             'game': game,
             **({'emblem': first['emblem'], 'world': first['world']} if first['emblem'] else {}),
+            'joinChapter': emblem_join[first['gid']] if first['gid'] else first_hub,
             **({'expansionPass': True} if series.startswith('DLC') else {}),
             'rings': [{
                 'name': r['name'],

@@ -27,6 +27,9 @@ export default defineConfig(({ mode }) => ({
     host: true,
     port: process.env.PORT ? Number(process.env.PORT) : 5173,
     allowedHosts: ['grantpc.tailaa1e6c.ts.net'],
+    // The desktop build (release/) and the game dumps (data-raw/) aren't the app's source: watching them only costs time, and
+    // electron-builder locking release/'s files while it packs crashed the dev server (EBUSY).
+    watch: { ignored: ['**/release/**', '**/data-raw/**'] },
   },
   // Same reasoning as `server` above, but for `vite preview` — needed to actually test the PWA's
   // offline/install behavior, since the dev server (`vite dev`) doesn't generate a real service

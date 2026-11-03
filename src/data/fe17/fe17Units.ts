@@ -7564,6 +7564,7 @@ export const FE17_EMBLEMS: Fe17Emblem[] = [
   {
     "id": "fe17-marth",
     "name": "Marth",
+    "joinChapter": "CID_M001",
     "ring": "Ring of the Hero-King",
     "engageAttack": "Lodestar Rush",
     "bondCap": 11,
@@ -8090,6 +8091,7 @@ export const FE17_EMBLEMS: Fe17Emblem[] = [
   {
     "id": "fe17-sigurd",
     "name": "Sigurd",
+    "joinChapter": "CID_M003",
     "ring": "Ring of the Holy Knight",
     "engageAttack": "Override",
     "bondCap": 11,
@@ -8638,6 +8640,7 @@ export const FE17_EMBLEMS: Fe17Emblem[] = [
   {
     "id": "fe17-celica",
     "name": "Celica",
+    "joinChapter": "CID_M004",
     "ring": "Ring of the Caring Princess",
     "engageAttack": "Warp Ragnarok",
     "bondCap": 11,
@@ -9157,6 +9160,7 @@ export const FE17_EMBLEMS: Fe17Emblem[] = [
   {
     "id": "fe17-micaiah",
     "name": "Micaiah",
+    "joinChapter": "CID_M006",
     "ring": "Ring of the Dawn Maiden",
     "engageAttack": "Great Sacrifice",
     "bondCap": 11,
@@ -9662,6 +9666,7 @@ export const FE17_EMBLEMS: Fe17Emblem[] = [
   {
     "id": "fe17-roy",
     "name": "Roy",
+    "joinChapter": "CID_M008",
     "ring": "Ring of the Young Lion",
     "engageAttack": "Blazing Lion",
     "bondCap": 11,
@@ -10167,6 +10172,7 @@ export const FE17_EMBLEMS: Fe17Emblem[] = [
   {
     "id": "fe17-leif",
     "name": "Leif",
+    "joinChapter": "CID_M008",
     "ring": "Ring of the Sage Lord",
     "engageAttack": "Quadruple Hit",
     "bondCap": 11,
@@ -10671,6 +10677,7 @@ export const FE17_EMBLEMS: Fe17Emblem[] = [
   {
     "id": "fe17-lucina",
     "name": "Lucina",
+    "joinChapter": "CID_M011",
     "ring": "Ring of the Princess Exalt",
     "engageAttack": "All for One",
     "bondCap": 11,
@@ -11179,6 +11186,7 @@ export const FE17_EMBLEMS: Fe17Emblem[] = [
   {
     "id": "fe17-lyn",
     "name": "Lyn",
+    "joinChapter": "CID_M011",
     "ring": "Ring of the Lady of the Plains",
     "engageAttack": "Astra Storm",
     "bondCap": 11,
@@ -11677,6 +11685,7 @@ export const FE17_EMBLEMS: Fe17Emblem[] = [
   {
     "id": "fe17-ike",
     "name": "Ike",
+    "joinChapter": "CID_M013",
     "ring": "Ring of the Radiant Hero",
     "engageAttack": "Great Aether",
     "bondCap": 11,
@@ -12207,6 +12216,7 @@ export const FE17_EMBLEMS: Fe17Emblem[] = [
   {
     "id": "fe17-byleth",
     "name": "Byleth",
+    "joinChapter": "CID_M014",
     "ring": "Ring of the Instructor",
     "engageAttack": "Goddess Dance",
     "bondCap": 11,
@@ -12761,6 +12771,7 @@ export const FE17_EMBLEMS: Fe17Emblem[] = [
   {
     "id": "fe17-corrin",
     "name": "Corrin",
+    "joinChapter": "CID_M015",
     "ring": "Ring of the Crux of Fate",
     "engageAttack": "Torrential Roar",
     "bondCap": 11,
@@ -13276,6 +13287,7 @@ export const FE17_EMBLEMS: Fe17Emblem[] = [
   {
     "id": "fe17-eirika",
     "name": "Eirika",
+    "joinChapter": "CID_M016",
     "ring": "Ring of the Azure Twins",
     "engageAttack": "Twin Strike",
     "bondCap": 11,
@@ -13794,6 +13806,7 @@ export const FE17_EMBLEMS: Fe17Emblem[] = [
   {
     "id": "fe17-ephraim",
     "name": "Ephraim",
+    "joinChapter": "CID_M016",
     "engageAttack": "Twin Strike",
     "bondCap": 11,
     "levels": [
@@ -14311,6 +14324,7 @@ export const FE17_EMBLEMS: Fe17Emblem[] = [
   {
     "id": "fe17-alear",
     "name": "Alear",
+    "joinChapter": "CID_M022",
     "ring": "Ring of the Connector",
     "engageAttack": "Dragon Blast",
     "bondCap": 11,
@@ -14766,6 +14780,7 @@ export const FE17_EMBLEMS: Fe17Emblem[] = [
   {
     "id": "fe17-edelgard",
     "name": "Edelgard",
+    "joinChapter": "CID_M006",
     "ring": "Bracelet of the Three Houses",
     "expansionPass": true,
     "engageAttack": "Houses Unite",
@@ -15301,6 +15316,7 @@ export const FE17_EMBLEMS: Fe17Emblem[] = [
   {
     "id": "fe17-dimitri",
     "name": "Dimitri",
+    "joinChapter": "CID_M006",
     "ring": "Bracelet of the Three Houses",
     "expansionPass": true,
     "engageAttack": "Houses Unite",
@@ -15836,6 +15852,7 @@ export const FE17_EMBLEMS: Fe17Emblem[] = [
   {
     "id": "fe17-claude",
     "name": "Claude",
+    "joinChapter": "CID_M006",
     "ring": "Bracelet of the Three Houses",
     "expansionPass": true,
     "engageAttack": "Houses Unite",
@@ -16371,6 +16388,7 @@ export const FE17_EMBLEMS: Fe17Emblem[] = [
   {
     "id": "fe17-tiki",
     "name": "Tiki",
+    "joinChapter": "CID_G001",
     "ring": "Bracelet of the Ancestor",
     "expansionPass": true,
     "engageAttack": "Divine Blessing",
@@ -16949,6 +16967,7 @@ export const FE17_EMBLEMS: Fe17Emblem[] = [
   {
     "id": "fe17-hector",
     "name": "Hector",
+    "joinChapter": "CID_G002",
     "ring": "Bracelet of the Brash General",
     "expansionPass": true,
     "engageAttack": "Storm's Eye",
@@ -17463,6 +17482,7 @@ export const FE17_EMBLEMS: Fe17Emblem[] = [
   {
     "id": "fe17-veronica",
     "name": "Veronica",
+    "joinChapter": "CID_G003",
     "ring": "Bracelet of the Lonely Heir",
     "expansionPass": true,
     "engageAttack": "Summon Hero",
@@ -17992,6 +18012,7 @@ export const FE17_EMBLEMS: Fe17Emblem[] = [
   {
     "id": "fe17-soren",
     "name": "Soren",
+    "joinChapter": "CID_G004",
     "ring": "Bracelet of the Strategist",
     "expansionPass": true,
     "engageAttack": "Cataclysm",
@@ -18521,6 +18542,7 @@ export const FE17_EMBLEMS: Fe17Emblem[] = [
   {
     "id": "fe17-camilla",
     "name": "Camilla",
+    "joinChapter": "CID_G005",
     "ring": "Bracelet of the Doting Sister",
     "expansionPass": true,
     "engageAttack": "Dark Inferno",
@@ -19044,6 +19066,7 @@ export const FE17_EMBLEMS: Fe17Emblem[] = [
   {
     "id": "fe17-chrom",
     "name": "Chrom",
+    "joinChapter": "CID_G006",
     "ring": "Bracelet of the Shepherd Exalt",
     "expansionPass": true,
     "engageAttack": "Giga Levin Sword",
@@ -19573,6 +19596,7 @@ export const FE17_EMBLEMS: Fe17Emblem[] = [
   {
     "id": "fe17-robin",
     "name": "Robin",
+    "joinChapter": "CID_G006",
     "ring": "Bracelet of the Shepherd Exalt",
     "expansionPass": true,
     "engageAttack": "Giga Levin Sword",
@@ -20107,6 +20131,7 @@ export const FE17_BOND_RINGS: Fe17BondRingSet[] = [
     "game": "Mystery of the Emblem",
     "emblem": "Marth",
     "world": "World of the Hero-King",
+    "joinChapter": "CID_M001",
     "rings": [
       {
         "name": "Caeda",
@@ -20460,6 +20485,7 @@ export const FE17_BOND_RINGS: Fe17BondRingSet[] = [
     "game": "Genealogy of the Holy War",
     "emblem": "Sigurd",
     "world": "World of the Holy Knight",
+    "joinChapter": "CID_M003",
     "rings": [
       {
         "name": "Deirdre",
@@ -20813,6 +20839,7 @@ export const FE17_BOND_RINGS: Fe17BondRingSet[] = [
     "game": "Thracia 776",
     "emblem": "Leif",
     "world": "World of the Sage Lord",
+    "joinChapter": "CID_M008",
     "rings": [
       {
         "name": "Nanna",
@@ -21166,6 +21193,7 @@ export const FE17_BOND_RINGS: Fe17BondRingSet[] = [
     "game": "The Binding Blade",
     "emblem": "Roy",
     "world": "World of the Young Lion",
+    "joinChapter": "CID_M008",
     "rings": [
       {
         "name": "Lilina",
@@ -21519,6 +21547,7 @@ export const FE17_BOND_RINGS: Fe17BondRingSet[] = [
     "game": "The Blazing Blade",
     "emblem": "Lyn",
     "world": "World of the Lady of the Plains",
+    "joinChapter": "CID_M011",
     "rings": [
       {
         "name": "Eliwood",
@@ -21872,6 +21901,7 @@ export const FE17_BOND_RINGS: Fe17BondRingSet[] = [
     "game": "The Sacred Stones",
     "emblem": "Eirika",
     "world": "World of the Azure Twins",
+    "joinChapter": "CID_M016",
     "rings": [
       {
         "name": "Seth",
@@ -22225,6 +22255,7 @@ export const FE17_BOND_RINGS: Fe17BondRingSet[] = [
     "game": "Path of Radiance",
     "emblem": "Ike",
     "world": "World of the Radiant Hero",
+    "joinChapter": "CID_M013",
     "rings": [
       {
         "name": "Mist",
@@ -22578,6 +22609,7 @@ export const FE17_BOND_RINGS: Fe17BondRingSet[] = [
     "game": "Radiant Dawn",
     "emblem": "Micaiah",
     "world": "World of the Dawn Maiden",
+    "joinChapter": "CID_M006",
     "rings": [
       {
         "name": "Sothe",
@@ -22931,6 +22963,7 @@ export const FE17_BOND_RINGS: Fe17BondRingSet[] = [
     "game": "Awakening",
     "emblem": "Lucina",
     "world": "World of the Princess Exalt",
+    "joinChapter": "CID_M011",
     "rings": [
       {
         "name": "Chrom",
@@ -23284,6 +23317,7 @@ export const FE17_BOND_RINGS: Fe17BondRingSet[] = [
     "game": "Fates",
     "emblem": "Corrin",
     "world": "World of the Crux of Fate",
+    "joinChapter": "CID_M015",
     "rings": [
       {
         "name": "Azura",
@@ -23637,6 +23671,7 @@ export const FE17_BOND_RINGS: Fe17BondRingSet[] = [
     "game": "Shadows of Valentia",
     "emblem": "Celica",
     "world": "World of the Caring Princess",
+    "joinChapter": "CID_M004",
     "rings": [
       {
         "name": "Alm",
@@ -23990,6 +24025,7 @@ export const FE17_BOND_RINGS: Fe17BondRingSet[] = [
     "game": "Three Houses",
     "emblem": "Byleth",
     "world": "World of the Instructor",
+    "joinChapter": "CID_M014",
     "rings": [
       {
         "name": "Edelgard",
@@ -24344,6 +24380,7 @@ export const FE17_BOND_RINGS: Fe17BondRingSet[] = [
   },
   {
     "game": "Heroes",
+    "joinChapter": "CID_M003",
     "expansionPass": true,
     "rings": [
       {

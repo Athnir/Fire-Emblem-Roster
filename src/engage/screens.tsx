@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
-import { selectClass, useArmy, useScreenshotUnit } from './hooks'
+import { useReached } from '../state/spoilerStore'
+import { chip, selectClass, useArmy, useScreenshotUnit } from './hooks'
 import { capsOf, chapterLabel, supportsOf, type Fe17Data } from './logic'
 import { FE17_STAT_LABELS, type Fe17BondRingSet, type Fe17StatsMov, type Fe17Unit } from './types'
 import { AlearPicker, SkillList, StatTable, UnitPortrait, UnitSelect } from './ui'
@@ -188,18 +189,22 @@ export function Fe17Supports({ data }: { data: Fe17Data }) {
 }
 
 /** Each emblem's bond levels: what syncing adds, the skills to inherit and their SP, and the proficiency each level grants. */
-/** The tab's two kinds of ring: the Emblems' own (major) and the bond rings (minor), a set for each game. */
+/** The tab's two kinds of ring, one at a time: the Emblems' own (major) and the bond rings (minor), a set for each game. With the
+ * spoiler block on (user, 2026-11-03), an Emblem's ring and its world's bond rings show from the chapter the ring first comes in. */
 export function Fe17Emblems({ data }: { data: Fe17Data }) {
+  const [kind, setKind] = useState<'major' | 'minor'>('major')
+  const reached = useReached(data.gameId, data.chapters)
   return (
-    <div className="space-y-6">
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold text-neutral-100">Major rings: Emblem Rings</h2>
-        <EmblemRings data={data} />
-      </section>
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold text-neutral-100">Minor rings: Bond Rings</h2>
-        <BondRings sets={data.bondRings} skills={data.skills} />
-      </section>
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-2">
+        <button type="button" onClick={() => setKind('major')} className={chip(kind === 'major')}>
+          Major rings: Emblem Rings
+        </button>
+        <button type="button" onClick={() => setKind('minor')} className={chip(kind === 'minor')}>
+          Minor rings: Bond Rings
+        </button>
+      </div>
+      {kind === 'major' ? <EmblemRings data={data} reached={reached} /> : <BondRings data={data} reached={reached} />}
     </div>
   )
 }
@@ -226,7 +231,9 @@ function RingStats({ stats }: { stats: Partial<Fe17StatsMov> }) {
 
 /** The bond rings by game, each game's set folded away until opened. The rules are the program's (data-raw/fe17/README.md, "Bond
  * rings"): forging RefineRingExecute.Do, merging SynthesisRingExecute.Do with RingMenuItem's costs, SP ExpToSkillPoint. */
-function BondRings({ sets, skills }: { sets: Fe17BondRingSet[]; skills: Record<string, string> }) {
+function BondRings({ data, reached }: { data: Fe17Data; reached?: Set<string> }) {
+  const sets: Fe17BondRingSet[] = data.bondRings.filter((s) => !reached || reached.has(s.joinChapter))
+  const skills = data.skills
   return (
     <div className="space-y-3">
       <p className="text-xs text-neutral-500">
@@ -235,6 +242,12 @@ function BondRings({ sets, skills }: { sets: Fe17BondRingSet[]; skills: Record<s
         that Emblem's ten at random, at S 3%, A 7%, B 30% or C 60%. Merging raises a rank: 2 C rings of the same hero and 100 fragments
         make a B, 3 B and 1,000 an A, 4 A and 10,000 an S. Only S ranks carry a skill.
       </p>
+      {reached && sets.length < data.bondRings.length && (
+        <p className="text-xs text-emerald-400">
+          {sets.length === 0 ? 'None yet: a' : 'More sets show as the story goes: a'} game's set shows from the chapter its Emblem's ring
+          first comes in.
+        </p>
+      )}
       {sets.map((set) => (
         <details key={set.game} className="rounded-lg border border-neutral-800 bg-neutral-900">
           <summary className="cursor-pointer px-4 py-2 text-sm">
@@ -295,12 +308,14 @@ function BondRings({ sets, skills }: { sets: Fe17BondRingSet[]; skills: Record<s
   )
 }
 
-/** Each Emblem's ring: pick one, and its bond levels show. */
-function EmblemRings({ data }: { data: Fe17Data }) {
-  const emblems = data.emblems.filter((e) => e.levels.some((l) => l.inherit.length || l.sync.length))
+/** Each Emblem's ring: pick one, and its bond levels show. With the spoiler block on, those whose ring has come. */
+function EmblemRings({ data, reached }: { data: Fe17Data; reached?: Set<string> }) {
+  const emblems = data.emblems.filter(
+    (e) => e.levels.some((l) => l.inherit.length || l.sync.length) && (!reached || reached.has(e.joinChapter)),
+  )
   const [id, setId] = useState(emblems[0]?.id ?? '')
   const e = emblems.find((x) => x.id === id) ?? emblems[0]
-  if (!e) return null
+  if (!e) return <p className="text-sm text-neutral-500">No Emblem Ring has come yet at this chapter.</p>
   return (
     <div className="space-y-4">
       <select value={e.id} onChange={(ev) => setId(ev.target.value)} className={`${selectClass} w-full max-w-xs`}>
@@ -314,6 +329,7 @@ function EmblemRings({ data }: { data: Fe17Data }) {
       <div className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
         <div className="text-sm text-neutral-300">
           {e.ring && <div>{e.ring}</div>}
+          <div className="text-neutral-500">From {chapterLabel(data, e.joinChapter)}</div>
           {e.engageAttack && (
             <div>
               <span className="text-neutral-500">Engage attack: </span>

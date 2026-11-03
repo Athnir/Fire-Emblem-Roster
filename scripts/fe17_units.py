@@ -900,6 +900,69 @@ def build_supports():
 
 
 # ---------------------------------------------------------------------------------------------------------------------------------
+# When each emblem's ring first comes to the player.
+
+EMBLEM_GIVEN = re.compile(r'\b(?:GodUnitCreate|神竜の章_紋章士加入)\(\s*"(GID_[^"]+)"\s*\)')
+EMBLEM_BROUGHT = re.compile(r'\bUnitCreateGodUnit\(\s*([^,()]+?)\s*,\s*"(GID_[^"]+)"\s*\)')
+CHAPTER_FILE = re.compile(r'([mgse])(\d{3})(?:_\w+)?$')
+
+
+def build_emblem_joins():
+    """Every place a player emblem's ring comes to the player, {GID: [{'cid', 'how'}]}; the generator takes the earliest in the
+    story's order (the rings the Corrupted take in Chapter 11 and that are won back later come again, which doesn't count):
+    - a chapter's scripts (m001.lua; m003_kizuna.lua, the exploration after the battle; g001.lua, a Divine Paralogue's Ending)
+      create it (GodUnitCreate, 神竜の章_紋章士加入) or a unit joins wearing it (UnitCreateGodUnit(pid, gid): Céline brings Celica);
+    - a unit on your side or green (Force 0 or 2) is placed wearing it (gamedata/dispos: Diamant brings Roy in Chapter 8);
+    - the Somniel's start of the Divine Dragon's story (hub_solanelcommon_p0 ScriptStartGod: Edelgard), which CanStartGod allows
+      once HubIsCompleteChapter names a chapter cleared;
+    - an emblem with none of its own (a switch half, Robin) takes those of the emblems it shares a bond with (god.xml Gbid).
+    The story-only and enemy copies have GIDs of their own (GID_M002_シグルド, GID_M011_敵マルス), so they're never counted."""
+    real = set(PLAYER_EMBLEMS)
+    sites = {gid: [] for gid in PLAYER_EMBLEMS}
+    folder = os.path.join(D.ROMFS, 'scripts')
+    for f in sorted(os.listdir(folder)):
+        stem = f[:-len('.lua')] if f.endswith('.lua') else None
+        if not stem:
+            continue
+        src = strip_comments(D.script(stem))
+        m = CHAPTER_FILE.match(stem)
+        if stem.startswith('hub_'):
+            for gid in EMBLEM_GIVEN.findall(src):
+                if gid in real:
+                    cleared = set(re.findall(r'HubIsCompleteChapter\(\s*"([MSGE]\d{3})"\s*\)', src))
+                    assert len(cleared) == 1, (stem, gid, cleared)
+                    sites[gid].append({'cid': 'CID_' + cleared.pop(), 'how': f'{stem}: the Somniel, once that chapter is cleared'})
+            continue
+        if not m:
+            continue
+        cid = f'CID_{m.group(1).upper()}{m.group(2)}'
+        for gid in EMBLEM_GIVEN.findall(src):
+            if gid in real:
+                sites[gid].append({'cid': cid, 'how': f'{stem}: given'})
+        for pid, gid in EMBLEM_BROUGHT.findall(src):
+            if gid in real:
+                sites[gid].append({'cid': cid, 'how': f'{stem}: {pid.strip()} joins wearing it'})
+    for f in sorted(os.listdir(os.path.join(D.ROMFS, 'gamedata', 'dispos'))):
+        stem = f.rsplit('.', 1)[0]
+        m = CHAPTER_FILE.match(stem)
+        if not m:
+            continue
+        for group, rows in D.dispos(stem):
+            for r in rows:
+                if r['Gid'] in real and r['Force'] in ('0', '2'):
+                    sites[r['Gid']].append({'cid': f'CID_{m.group(1).upper()}{m.group(2)}',
+                                            'how': f'dispos {stem} {group}: {r["Pid"]} placed wearing it'})
+    gods = {r['Gid']: r for r in D.rows('god', '神将')}
+    own = {gid: list(v) for gid, v in sites.items()}
+    for gid in PLAYER_EMBLEMS:
+        if not own[gid]:
+            pairs = [g for g in PLAYER_EMBLEMS if g != gid and gods[g]['Gbid'] == gods[gid]['Gbid'] and own[g]]
+            sites[gid] = [dict(s, how=f'shares a bond with {g}: ' + s['how']) for g in pairs for s in own[g]]
+        assert sites[gid], gid
+    return sites
+
+
+# ---------------------------------------------------------------------------------------------------------------------------------
 # Bond rings, stat boosters, chapters.
 
 def build_bond_rings(skills):
@@ -959,7 +1022,9 @@ def build_chapters():
             continue
         out[r['Cid']] = {'prefix': text('MCID_' + c + '_PREFIX'), 'name': text('MCID_' + c),
                          'opens_after': r['GmapSpotOpenCondition'] or None, 'next': r['NextChapter'] or None,
-                         'recommended_level': int(r['RecommendedLevel'] or 0)}
+                         'recommended_level': int(r['RecommendedLevel'] or 0),
+                         # App.ChapterData.Flags: Kizuna 8 (the exploration after the battle), Hub 16 (the Somniel after it).
+                         'hub': bool(int(r['Flag'] or 0) & 16)}
     return out
 
 
@@ -999,6 +1064,7 @@ def build(romfs_dir=None):
         'bond_levels': bond_levels,
         'supports': build_supports(),
         'bond_rings': build_bond_rings(skills),
+        'emblem_joins': build_emblem_joins(),
         'stat_boosters': boosters,
         'sp_books': sp_books,
         'chapters': build_chapters(),
