@@ -1,5 +1,6 @@
 import { FE3_CHAPTERS, FE3_CLASSES, FE3_STORIES, FE3_SUPPORT_BONUSES, FE3_UNITS } from '../data/fe3/fe3Units'
 import { GbaPlanner, GbaRoster, GbaSupports, type GbaData } from '../gba/screens'
+import { telliusArt } from '../tellius/art'
 import { TelliusBulkUpload } from '../tellius/TelliusBulkUpload'
 import type { TelliusData } from '../tellius/types'
 import type { GameParts } from './index'
@@ -36,6 +37,7 @@ const fe3: GameParts = {
   ],
   spoiler: "Each tab follows the chapter you're on in the Book picked (each keeping its own place): units show once they join.",
   bulkUpload: ({ onClose }) => <TelliusBulkUpload data={UPLOAD_DATA} title="Mystery of the Emblem" onClose={onClose} />,
+  art: telliusArt(UPLOAD_DATA),
 }
 
 export default fe3

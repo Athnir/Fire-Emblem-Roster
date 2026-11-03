@@ -15,6 +15,7 @@ import { Fe16BulkViewer } from '../houses/bulk'
 import { Fe16Planner } from '../houses/planner'
 import { Fe16Info, Fe16Roster, Fe16SpoilerBar, Fe16Supports } from '../houses/screens'
 import { Fe16SkillPlanner } from '../houses/skills'
+import { telliusArt } from '../tellius/art'
 import { TelliusBulkUpload } from '../tellius/TelliusBulkUpload'
 import type { TelliusData } from '../tellius/types'
 import type { GameParts } from './index'
@@ -48,6 +49,7 @@ const fe16: GameParts = {
   spoiler: "The Roster follows the chapter you're on: units show once they can be yours, the Black Eagles' route is asked at the split (Chapter 12), and when units leave stays blank.",
   spoilerBar: () => <Fe16SpoilerBar data={FE16_DATA} />,
   bulkUpload: ({ onClose }) => <TelliusBulkUpload data={UPLOAD_DATA} title="Three Houses" onClose={onClose} />,
+  art: telliusArt(UPLOAD_DATA),
 }
 
 export default fe16

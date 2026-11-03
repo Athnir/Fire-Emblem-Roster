@@ -4,6 +4,7 @@ import { Fe13MarriagePlanner, Fe13Planner, Fe13Roster, Fe13Supports } from '../a
 import { Fe13SkillPlanner } from '../awakening/skills'
 import type { Fe13Data } from '../awakening/logic'
 import { FE13_ASSETS, FE13_AVATAR_HAIR, FE13_CHAPTERS, FE13_CLASSES, FE13_MAIDEN, FE13_SKILLS, FE13_UNITS, FE13_WEAPON_BONUS } from '../data/fe13/fe13Units'
+import { telliusArt } from '../tellius/art'
 import { TelliusBulkUpload } from '../tellius/TelliusBulkUpload'
 import type { TelliusData } from '../tellius/types'
 import { useReached } from '../state/spoilerStore'
@@ -20,6 +21,14 @@ function useFe13Data(): Fe13Data {
 }
 
 // The bulk upload matches portraits by unit name, and skill icons (in a "skills" folder) by skill name.
+/** The layers scripts/fe13_portraits.py writes: each child whose hair the game tints (all but Lucina), and the Avatar's builds. */
+const FE13_LAYERS = [
+  ...FE13_UNITS.filter((u) => u.parent && u.name !== 'Lucina').flatMap((u) => {
+    const name = u.name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '')
+    return [`children/${name}/base.png`, `children/${name}/raw.png`]
+  }),
+  ...['m', 'f'].flatMap((g) => [1, 2, 3].flatMap((n) => ['base', 'hair1', 'hair2', 'hair3', 'hair4', 'hair5'].map((l) => `avatar/${g}_${n}/${l}.png`))),
+]
 const UPLOAD_DATA = { gameId: 'fe13', units: FE13_UNITS, skills: FE13_SKILLS } as unknown as TelliusData
 
 const fe13: GameParts = {
@@ -35,6 +44,7 @@ const fe13: GameParts = {
   spoiler: "Every tab follows the chapter you're on: units show once they join, the children with their paralogues.",
   spoilerBar: () => <LinearSpoilerBar gameId="fe13" chapters={FE13_DATA.chapters} />,
   bulkUpload: ({ onClose }) => <TelliusBulkUpload data={UPLOAD_DATA} title="Awakening" onClose={onClose} />,
+  art: telliusArt(UPLOAD_DATA, FE13_LAYERS),
 }
 
 export default fe13

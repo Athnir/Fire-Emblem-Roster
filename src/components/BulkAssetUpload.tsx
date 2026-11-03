@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { characters } from '../data/characters'
 import {
+  expandZips,
   matchAdultPortraitFiles,
   matchChildPortraitFiles,
   matchCorrinPortraitFiles,
@@ -41,21 +42,28 @@ export function UploadSection({
   directory?: boolean
 }) {
   const [result, setResult] = useState<MatchResult | null>(null)
-  const [status, setStatus] = useState<'idle' | 'uploading' | 'done'>('idle')
+  const [status, setStatus] = useState<'idle' | 'reading' | 'failed' | 'uploading' | 'done'>('idle')
   const [progress, setProgress] = useState({ done: 0, total: 0 })
   const bumpAssetEpoch = useEditSessionStore((state) => state.bumpAssetEpoch)
   const inputRef = useRef<HTMLInputElement>(null)
+  const zipRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (directory) inputRef.current?.setAttribute('webkitdirectory', '')
   }, [directory])
 
-  function handleFiles(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(e.target.files ?? [])
+  async function handleFiles(e: React.ChangeEvent<HTMLInputElement>) {
+    const picked = Array.from(e.target.files ?? [])
     e.target.value = ''
-    if (files.length === 0) return
-    setResult(match(files))
-    setStatus('idle')
+    if (picked.length === 0) return
+    setStatus('reading')
+    try {
+      setResult(match(await expandZips(picked)))
+      setStatus('idle')
+    } catch {
+      setResult(null)
+      setStatus('failed')
+    }
   }
 
   async function handleUpload() {
@@ -85,6 +93,19 @@ export function UploadSection({
         onChange={handleFiles}
         className="block w-full text-sm text-neutral-300 file:mr-3 file:rounded-md file:border-0 file:bg-neutral-800 file:px-3 file:py-1.5 file:text-neutral-200"
       />
+      {directory && (
+        // A folder's .zip, read as the folder: easier to carry to a phone than a folder, and some phones can't pick folders.
+        <button
+          type="button"
+          onClick={() => zipRef.current?.click()}
+          className="rounded-md bg-neutral-800 px-3 py-1.5 text-sm text-neutral-200 hover:bg-neutral-700"
+        >
+          Or pick a .zip of the folder
+        </button>
+      )}
+      <input ref={zipRef} type="file" onChange={handleFiles} className="hidden" />
+      {status === 'reading' && <p className="text-xs text-neutral-400">Reading…</p>}
+      {status === 'failed' && <p className="text-xs text-red-400">That file couldn't be read. Is it a .zip?</p>}
       {result && (
         <div className="space-y-2 text-xs">
           <p className="text-emerald-400">{result.matched.length} file{result.matched.length === 1 ? '' : 's'} matched.</p>

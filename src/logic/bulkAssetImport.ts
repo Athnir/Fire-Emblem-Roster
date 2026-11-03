@@ -2,6 +2,7 @@ import { characters } from '../data/characters'
 import { corrinBodyKey } from '../data/portraitAssets'
 import { CORRIN_HAIRSTYLES } from '../data/corrinHairstyles'
 import { skills } from '../data/skills'
+import { unzip } from 'fflate'
 import { assetKeys, fileToDataUrl, setAsset } from '../data/assetStorage'
 
 export interface MatchedFile {
@@ -9,6 +10,13 @@ export interface MatchedFile {
   key: string
   /** Human-readable label for the review list, e.g. "Aegis" or "Xander" or "f_tall — base". */
   label: string
+}
+
+/** A game's art for Bulk Upload: how a folder of images is matched to where each is kept, and the files that folder can hold
+ * (paths inside the game's folder, as "ike.png" or "skills/sol.png"), so an upload can say what's still missing. */
+export interface GameArt {
+  match: (files: File[]) => MatchResult
+  expected: string[]
 }
 
 export interface MatchResult {
@@ -136,6 +144,44 @@ export function matchFilesByPath(files: File[]): MatchResult {
   }
 
   return { matched, unmatched }
+}
+
+/** Fates' art: its folder as matchFilesByPath reads it (Shigure has no hair layer: his hair is always Azura's). */
+export const FATES_ART: GameArt = {
+  match: matchFilesByPath,
+  expected: [
+    ...[...ADULT_NAMES.keys()].map((id) => `adults/${id}.png`),
+    ...[...CHILD_IDS].flatMap((id) => [`children/${id}/base.png`, ...(id === 'shigure' ? [] : [`children/${id}/raw.png`])]),
+    ...[...CORRIN_BODY_KEYS].flatMap((body) => [`corrin/${body}/base.png`, ...[...HAIRSTYLE_IDS].map((h) => `corrin/${body}/hair_raw/${h}.png`)]),
+    ...[...SKILL_IDS].map((id) => `skills/${id}.png`),
+  ],
+}
+
+const IMAGE_TYPES: Record<string, string> = { png: 'image/png', webp: 'image/webp', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif' }
+
+/** A picked .zip's files in its place, each carrying its path inside the zip as its webkitRelativePath: a zip of a folder then
+ * matches exactly as the folder does. Other files pass through. */
+export async function expandZips(files: File[]): Promise<File[]> {
+  const out: File[] = []
+  for (const file of files) {
+    if (!/\.zip$/i.test(file.name)) {
+      out.push(file)
+      continue
+    }
+    const bytes = new Uint8Array(await file.arrayBuffer())
+    const entries = await new Promise<Record<string, Uint8Array>>((resolve, reject) =>
+      unzip(bytes, (error, result) => (error ? reject(error) : resolve(result))),
+    )
+    for (const [path, data] of Object.entries(entries)) {
+      if (path.endsWith('/')) continue
+      const name = path.split('/').pop() ?? path
+      const type = IMAGE_TYPES[name.split('.').pop()?.toLowerCase() ?? ''] ?? ''
+      const entry = new File([data as Uint8Array<ArrayBuffer>], name, { type })
+      Object.defineProperty(entry, 'webkitRelativePath', { value: path })
+      out.push(entry)
+    }
+  }
+  return out
 }
 
 /** Writes every matched file to IndexedDB, calling onProgress after each one (bulk sets can be 200+

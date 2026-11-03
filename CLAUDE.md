@@ -35,6 +35,11 @@ new rule, add it here.
   Bulk Upload, stored on that device only). See `ART_ASSETS.md`.
 - **Placeholders are plain blanks** (a silhouette, an empty icon), never drawn icons: the pixel sprites are the Armory's look.
 - **Never commit or push game art, dumped game files, or ROMs.**
+- **Every game's art can be loaded at once** (user, 2026-11-03): the home screen's Bulk Upload takes one folder or .zip with a
+  folder per game named by its id (`fates`, `fe9`...), each laid out as that game's own Bulk Upload takes it, so a name two games
+  share (Ike, Marth) can't land in the wrong one. A game's `art` (GameParts) says how its folder is matched and what it can hold.
+  Each game's portraits come from a script reading the user's dump into `data-raw/<game>/art/`; `scripts/pack_art.py` packs them
+  into the user's personal zip (`Documents\FE Games\FE Roster Art.zip`), never into the repo.
 
 ## Data sources
 
@@ -100,6 +105,10 @@ new rule, add it here.
 
 A global switch, as in the Armory: on, a game is played along chapter by chapter, and nothing is shown before the chapter that
 reveals it. What that means for each tab is settled with the user as each game is built.
+
+- **On by default, and the app opens on the home screen while it's on** (user, 2026-11-03, as the Armory does): no game picked,
+  a few notes on what the app is and the games it covers, and the Bulk Upload for every game. With the block off it opens on the
+  last game. Saves from before the default changed were switched on once (the store's version 1).
 
 - **A story split is picked when you reach it** (user, 2026-11-03, Three Houses): with the block on, the Roster asks for what's known
   at the start (Three Houses: the house) and asks for the route only once the chapter bar reaches the split (Chapter 12). With the

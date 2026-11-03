@@ -9,6 +9,7 @@ import { RosterBrowser } from '../components/RosterBrowser'
 import { RouteBackground } from '../components/RouteBackground'
 import { SkillPlanner } from '../components/SkillPlanner'
 import { UnitPlanner } from '../components/UnitPlanner'
+import { FATES_ART } from '../logic/bulkAssetImport'
 import { usePlannerStore } from '../state/plannerStore'
 import type { GameParts } from './index'
 
@@ -47,6 +48,7 @@ const fates: GameParts = {
   spoilerBar: FatesSpoilerBar,
   background: FatesBackground,
   bulkUpload: BulkAssetUpload,
+  art: FATES_ART,
   exportButton: FatesExportButton,
 }
 

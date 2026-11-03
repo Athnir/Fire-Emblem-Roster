@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
+import { AllGamesBulkUpload } from './components/AllGamesBulkUpload'
 import { BackupControls } from './components/BackupControls'
 import { EditModeToggle } from './components/EditModeToggle'
 import { SpoilerToggle } from './components/SpoilerToggle'
 import { UpdateButton } from './components/UpdateButton'
 import { ExportImageButton } from './components/ExportImageButton'
+import { Home } from './components/Home'
 import { IosInstallBanner } from './components/IosInstallBanner'
 import { LocalDataWarningBanner } from './components/LocalDataWarningBanner'
 import { GAMES, type GameParts } from './games'
@@ -24,14 +26,15 @@ function storedGameId(): string {
 }
 
 function App() {
-  const [gameId, setGameId] = useState(storedGameId)
+  // With the spoiler block on, the app opens on the home screen rather than on a game, as the Armory does ('' is home).
+  const [gameId, setGameId] = useState(() => (useSpoilerStore.getState().block ? '' : storedGameId()))
   const [parts, setParts] = useState<{ id: string; parts: GameParts } | null>(null)
   const [tabId, setTabId] = useState('roster')
   const editModeEnabled = usePlannerStore((state) => state.editModeEnabled)
   const spoilerBlock = useSpoilerStore((state) => state.block)
   const mainRef = useRef<HTMLElement>(null)
   const [bulkUploadOpen, setBulkUploadOpen] = useState(false)
-  const game = GAMES.find((g) => g.id === gameId) ?? GAMES[0]
+  const game = GAMES.find((g) => g.id === gameId)
 
   useEffect(() => {
     // Best-effort request not to have this site's storage evicted under disk pressure — Chrome
@@ -41,6 +44,7 @@ function App() {
   }, [])
 
   useEffect(() => {
+    if (!game) return
     let cancelled = false
     game.load().then((loaded) => {
       if (!cancelled) setParts({ id: game.id, parts: loaded })
@@ -52,6 +56,8 @@ function App() {
 
   function pickGame(id: string) {
     setGameId(id)
+    // Home isn't kept: with the block off, the app opens on the last game.
+    if (!id) return
     try {
       localStorage.setItem(GAME_KEY, id)
     } catch {
@@ -59,7 +65,7 @@ function App() {
     }
   }
 
-  const current = parts?.id === game.id ? parts.parts : undefined
+  const current = game && parts?.id === game.id ? parts.parts : undefined
   const tab = current?.tabs.find((t) => t.id === tabId) ?? current?.tabs[0]
   const Background = current?.background
   const Banner = current?.banner
@@ -82,11 +88,12 @@ function App() {
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-2xl font-semibold">Fire Emblem Roster</h1>
             <select
-              value={game.id}
+              value={gameId}
               onChange={(e) => pickGame(e.target.value)}
               aria-label="Game"
               className="rounded-md border border-neutral-700 bg-neutral-800 px-2 py-1.5 text-sm text-neutral-200"
             >
+              <option value="">Home</option>
               {GAMES.map((g) => (
                 <option key={g.id} value={g.id}>
                   {g.title}
@@ -95,7 +102,7 @@ function App() {
             </select>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            {tab &&
+            {game && tab &&
               (ExportButton ? (
                 <ExportButton targetRef={mainRef} tabLabel={tab.label} />
               ) : (
@@ -106,7 +113,7 @@ function App() {
             <EditModeToggle />
             {/* The desktop app's files are on disk and change only when it's rebuilt, so it has nothing to check. */}
             {import.meta.env.MODE !== 'electron' && <UpdateButton />}
-            {editModeEnabled && BulkUpload && (
+            {editModeEnabled && (BulkUpload || !game) && (
               <button
                 type="button"
                 onClick={() => setBulkUploadOpen(true)}
@@ -133,7 +140,7 @@ function App() {
         </nav>
         {spoilerBlock && current && (
           <p className="mt-2 text-xs text-emerald-400">
-            {current.spoiler ?? `The spoiler block isn't set up for ${game.short} yet, so everything shows.`}
+            {current.spoiler ?? `The spoiler block isn't set up for ${game?.short} yet, so everything shows.`}
           </p>
         )}
         {editModeEnabled && (
@@ -150,10 +157,17 @@ function App() {
         </div>
       )}
 
-      {bulkUploadOpen && BulkUpload && <BulkUpload onClose={() => setBulkUploadOpen(false)} />}
+      {bulkUploadOpen && !game && <AllGamesBulkUpload onClose={() => setBulkUploadOpen(false)} />}
+      {bulkUploadOpen && game && BulkUpload && <BulkUpload onClose={() => setBulkUploadOpen(false)} />}
 
       <main ref={mainRef} className="p-6">
-        {TabComponent ? <TabComponent key={`${game.id}-${tab?.id}`} /> : <p className="text-sm text-neutral-500">Loading…</p>}
+        {!game ? (
+          <Home onPick={pickGame} onUpload={() => setBulkUploadOpen(true)} />
+        ) : TabComponent ? (
+          <TabComponent key={`${game.id}-${tab?.id}`} />
+        ) : (
+          <p className="text-sm text-neutral-500">Loading…</p>
+        )}
       </main>
     </div>
   )

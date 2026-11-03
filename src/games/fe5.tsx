@@ -9,6 +9,7 @@ import {
   FE5_SUPPORTS,
   FE5_UNITS,
 } from '../data/fe5/fe5Units'
+import { telliusArt } from '../tellius/art'
 import { TelliusBulkUpload } from '../tellius/TelliusBulkUpload'
 import type { TelliusData } from '../tellius/types'
 import { Fe5BulkViewer } from '../thracia/bulk'
@@ -45,6 +46,7 @@ const fe5: GameParts = {
   spoiler: "Every tab follows the chapter you're on: units show once they join, the route is asked where Leif leaves Chapter 15, the other picks under their chapters once reached, and when units leave stays blank.",
   spoilerBar: () => <Fe5SpoilerBar data={FE5_DATA} />,
   bulkUpload: ({ onClose }) => <TelliusBulkUpload data={UPLOAD_DATA} title="Thracia 776" onClose={onClose} />,
+  art: telliusArt(UPLOAD_DATA),
 }
 
 export default fe5

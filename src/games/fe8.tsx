@@ -1,5 +1,6 @@
 import { FE8_AFFINITIES, FE8_CHAPTERS, FE8_CLASSES, FE8_STORIES, FE8_SUPPORT_LEVELS, FE8_SUPPORTS, FE8_UNITS } from '../data/fe8/fe8Units'
 import { GbaPlanner, GbaRoster, GbaSupports, type GbaData } from '../gba/screens'
+import { telliusArt } from '../tellius/art'
 import { TelliusBulkUpload } from '../tellius/TelliusBulkUpload'
 import type { TelliusData } from '../tellius/types'
 import type { GameParts } from './index'
@@ -29,6 +30,7 @@ const fe8: GameParts = {
   ],
   spoiler: "Each tab follows the chapter you're on: units show once they join, and the bar asks for Eirika's or Ephraim's route when you reach the split after Chapter 8.",
   bulkUpload: ({ onClose }) => <TelliusBulkUpload data={UPLOAD_DATA} title="The Sacred Stones" onClose={onClose} />,
+  art: telliusArt(UPLOAD_DATA),
 }
 
 export default fe8

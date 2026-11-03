@@ -1,5 +1,6 @@
 import { FE7_AFFINITIES, FE7_CHAPTERS, FE7_CLASSES, FE7_STORIES, FE7_SUPPORT_LEVELS, FE7_SUPPORTS, FE7_UNITS } from '../data/fe7/fe7Units'
 import { GbaPlanner, GbaRoster, GbaSupports, type GbaData } from '../gba/screens'
+import { telliusArt } from '../tellius/art'
 import { TelliusBulkUpload } from '../tellius/TelliusBulkUpload'
 import type { TelliusData } from '../tellius/types'
 import type { GameParts } from './index'
@@ -31,6 +32,7 @@ const fe7: GameParts = {
   ],
   spoiler: "Each tab follows the chapter you're on in the story picked (Lyn's, Eliwood's or Hector's, each keeping its own place): units show once they join.",
   bulkUpload: ({ onClose }) => <TelliusBulkUpload data={UPLOAD_DATA} title="The Blazing Blade" onClose={onClose} />,
+  art: telliusArt(UPLOAD_DATA),
 }
 
 export default fe7

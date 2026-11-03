@@ -1,5 +1,6 @@
 import { FE1_CHAPTERS, FE1_CLASSES, FE1_UNITS } from '../data/fe1/fe1Units'
 import { GbaPlanner, GbaRoster, type GbaData } from '../gba/screens'
+import { telliusArt } from '../tellius/art'
 import { TelliusBulkUpload } from '../tellius/TelliusBulkUpload'
 import type { TelliusData } from '../tellius/types'
 import type { GameParts } from './index'
@@ -36,6 +37,7 @@ const fe1: GameParts = {
   ],
   spoiler: "Each tab follows the chapter you're on: units show once they join.",
   bulkUpload: ({ onClose }) => <TelliusBulkUpload data={UPLOAD_DATA} title="Shadow Dragon & the Blade of Light" onClose={onClose} />,
+  art: telliusArt(UPLOAD_DATA),
 }
 
 export default fe1

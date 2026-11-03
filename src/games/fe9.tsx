@@ -1,5 +1,6 @@
 import { FE9_BANDS, FE9_CHAPTERS, FE9_CHOICES, FE9_CLASSES, FE9_SKILLS, FE9_SUPPORTS, FE9_UNITS } from '../data/fe9/fe9Units'
 import { LinearSpoilerBar } from '../components/LinearSpoilerBar'
+import { telliusArt } from '../tellius/art'
 import { TelliusBulkUpload } from '../tellius/TelliusBulkUpload'
 import { TelliusBulkViewer } from '../tellius/TelliusBulkViewer'
 import { TelliusPlanner } from '../tellius/TelliusPlanner'
@@ -41,6 +42,7 @@ const fe9: GameParts = {
   spoiler: "Every tab follows the chapter you're on: units show once they join, and the picks once their chapter is reached.",
   spoilerBar: () => <LinearSpoilerBar gameId={FE9_DATA.gameId} chapters={FE9_DATA.chapters} />,
   bulkUpload: ({ onClose }) => <TelliusBulkUpload data={FE9_DATA} title="Path of Radiance" onClose={onClose} />,
+  art: telliusArt(FE9_DATA),
 }
 
 export default fe9

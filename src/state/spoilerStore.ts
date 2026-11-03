@@ -18,7 +18,7 @@ interface SpoilerState {
 export const useSpoilerStore = create<SpoilerState>()(
   persist(
     (set) => ({
-      block: false,
+      block: true,
       progress: {},
       branches: {},
       setBlock: (on) => set({ block: on }),
@@ -31,7 +31,12 @@ export const useSpoilerStore = create<SpoilerState>()(
           return { branches }
         }),
     }),
-    { name: 'fe-roster-spoiler' },
+    {
+      name: 'fe-roster-spoiler',
+      // Version 1 (user, 2026-11-03): the block is on by default, so it's switched on once for those saved with the old default.
+      version: 1,
+      migrate: (state, version) => (version < 1 ? { ...(state as SpoilerState), block: true } : (state as SpoilerState)),
+    },
   ),
 )
 

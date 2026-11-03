@@ -1,5 +1,6 @@
 import { FE6_AFFINITIES, FE6_CHAPTERS, FE6_CLASSES, FE6_SUPPORT_LEVELS, FE6_SUPPORTS, FE6_UNITS } from '../data/fe6/fe6Units'
 import { GbaPlanner, GbaRoster, GbaSupports, type GbaData } from '../gba/screens'
+import { telliusArt } from '../tellius/art'
 import { TelliusBulkUpload } from '../tellius/TelliusBulkUpload'
 import type { TelliusData } from '../tellius/types'
 import type { GameParts } from './index'
@@ -47,6 +48,7 @@ const fe6: GameParts = {
   ],
   spoiler: "Each tab follows the chapter you're on: units show once they join, and the bar asks for 10A or 10B, then Ilia or Sacae, when you reach them.",
   bulkUpload: ({ onClose }) => <TelliusBulkUpload data={UPLOAD_DATA} title="The Binding Blade" onClose={onClose} />,
+  art: telliusArt(UPLOAD_DATA),
 }
 
 export default fe6

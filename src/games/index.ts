@@ -1,4 +1,5 @@
 import type { ComponentType, RefObject } from 'react'
+import type { GameArt } from '../logic/bulkAssetImport'
 
 export interface GameTab {
   id: string
@@ -16,6 +17,8 @@ export interface GameParts {
   background?: ComponentType
   /** Edit Mode's Bulk Upload for this game's art. */
   bulkUpload: ComponentType<{ onClose: () => void }>
+  /** The game's art as a folder, for the home screen's Bulk Upload of every game at once (each game's folder in its own). */
+  art: GameArt
   /** What the spoiler block hides in this game, said under the header while it's on. A game without one isn't set up yet. */
   spoiler?: string
   /** The spoiler block's chapter bar, under the header on every tab while the block is on (a game whose tabs carry their own has none). */

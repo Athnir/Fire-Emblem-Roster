@@ -5,6 +5,7 @@ import type { Fe17Data } from '../engage/logic'
 import { Fe17Planner } from '../engage/planner'
 import { Fe17Emblems, Fe17Info, Fe17Roster, Fe17Supports } from '../engage/screens'
 import { Fe17SkillPlanner } from '../engage/skills'
+import { telliusArt } from '../tellius/art'
 import { TelliusBulkUpload } from '../tellius/TelliusBulkUpload'
 import type { TelliusData } from '../tellius/types'
 import type { GameParts } from './index'
@@ -40,6 +41,8 @@ const fe17: GameParts = {
   spoiler: "Every tab follows the chapter you're on: units show once they join (the paralogues after the chapters that open them, the Expansion Pass's after Chapter 6). The Emblems tab isn't set up for it yet.",
   spoilerBar: () => <LinearSpoilerBar gameId="fe17" chapters={FE17_CHAPTERS} />,
   bulkUpload: ({ onClose }) => <TelliusBulkUpload data={UPLOAD_DATA} title="Engage" onClose={onClose} />,
+  // Engage's screens show no skill icons, so its folder holds the portraits alone.
+  art: telliusArt({ ...UPLOAD_DATA, skills: {} } as TelliusData),
 }
 
 export default fe17

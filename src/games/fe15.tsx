@@ -1,5 +1,6 @@
 import { FE15_CHAPTERS, FE15_CLASSES, FE15_STORIES, FE15_SUPPORTS, FE15_UNITS } from '../data/fe15/fe15Units'
 import { GbaPlanner, GbaRoster, GbaSupports, type GbaData } from '../gba/screens'
+import { telliusArt } from '../tellius/art'
 import { TelliusBulkUpload } from '../tellius/TelliusBulkUpload'
 import type { TelliusData } from '../tellius/types'
 import type { GameParts } from './index'
@@ -37,6 +38,7 @@ const fe15: GameParts = {
   ],
   spoiler: "Each tab follows the act you're on with the army picked (Alm's or Celica's, each keeping its own place): units show once they join.",
   bulkUpload: ({ onClose }) => <TelliusBulkUpload data={UPLOAD_DATA} title="Shadows of Valentia" onClose={onClose} />,
+  art: telliusArt(UPLOAD_DATA),
 }
 
 export default fe15

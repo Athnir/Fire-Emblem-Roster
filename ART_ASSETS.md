@@ -149,3 +149,18 @@ the children's hair then recolours with the parent it comes from, and the Avatar
 colour (the Roster's Avatar pages). `--public` writes the same into `public/art/` instead, for running the app from this folder.
 The DLC recruits aren't made by it.
 
+## Every game at once (a phone, or any device without the files)
+
+Each game's portraits (and skill icons, where its screens show them) come from a script reading your own dump into
+`data-raw/<game>/art/` (the "Portraits" section of each `data-raw/<game>/README.md` names it; Fates' are the `public/` files above).
+Then:
+
+```bash
+python scripts/pack_art.py
+```
+
+packs them into `Documents\FE Games\FE Roster Art.zip`: a folder per game named by its id (`fates`, `fe9`, ...), each laid out as
+that game's own Bulk Upload takes it. Copy the zip to the device, open the app's home screen (pick "Home" in the game list), tap
+**Bulk Upload: every game**, then **Pick a .zip**. It lists each game's matches and what's missing before storing anything. A name
+two games share (Ike, Marth, Anna) goes to the game whose folder it's in. Pixel-art portraits are scaled up by a whole number in
+the zip so they stay sharp.

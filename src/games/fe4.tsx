@@ -3,6 +3,7 @@ import { FE4_BLOODS, FE4_CHAPTERS, FE4_CHOICES, FE4_CLASSES, FE4_LOVE, FE4_RINGS
 import { Fe4BulkViewer } from '../genealogy/bulk'
 import type { Fe4Data } from '../genealogy/logic'
 import { Fe4Pairings, Fe4Planner, Fe4Roster } from '../genealogy/screens'
+import { telliusArt } from '../tellius/art'
 import { TelliusBulkUpload } from '../tellius/TelliusBulkUpload'
 import type { TelliusData } from '../tellius/types'
 import { useReached } from '../state/spoilerStore'
@@ -45,6 +46,7 @@ const fe4: GameParts = {
   spoiler: "Every tab follows the chapter you're on: units show once they join (the children with their chapter), and the picks once their chapter is reached.",
   spoilerBar: () => <LinearSpoilerBar gameId={FE4_DATA.gameId} chapters={FE4_DATA.chapters} />,
   bulkUpload: ({ onClose }) => <TelliusBulkUpload data={UPLOAD_DATA} title="Genealogy of the Holy War" onClose={onClose} />,
+  art: telliusArt(UPLOAD_DATA),
 }
 
 export default fe4
