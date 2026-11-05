@@ -68,9 +68,10 @@ describe('the certification exams', () => {
 describe('the Skill Planner\'s stars', () => {
   it('stars a skill by how many units can learn it, personal abilities aside: ★ half or fewer, ★★ three or fewer', () => {
     const stars = (name: string) => starsOf(FE16_DATA, name)
-    // Every unit's, or nearly (36 of the 40 learn Black Tomefaire; the dark mages Dark Tomefaire instead).
+    // Every unit's: 36 of the 40 learn Black Tomefaire and the dark mages Dark Tomefaire, which works the same, so they count as one.
     expect([stars('Sword Prowess Lv 5'), stars('Black Tomefaire'), stars('Black Magic Range +1')]).toEqual([0, 0, 0])
-    expect([stars('Dark Tomefaire'), stars('Battalion Desperation')]).toEqual([1, 1])
+    expect([stars('Dark Tomefaire'), stars('Dark Magic Range +1')]).toEqual([0, 0])
+    expect(stars('Battalion Desperation')).toBe(1)
     // Annette's and Byleth's Rally Movement, Annette's Rally Speed; Jeritza's Mastermind (Lysithea's personal one isn't counted).
     expect([stars('Rally Movement'), stars('Rally Speed'), stars('Mastermind')]).toEqual([2, 2, 2])
   })

@@ -221,13 +221,26 @@ export function helpOf(data: Fe16Data, l: Pick<Fe16Learn, 'kind' | 'name'>): str
 /** The game's limits: five abilities and three combat arts equipped (the personal ability and the class's own come on their own). */
 const learnerCache = new WeakMap<Fe16Data, { counts: Map<string, number>; units: number }>()
 
+/** The name a skill is counted under: a dark magic one as its black magic twin, as they work the same (Dark Tomefaire as Black
+ * Tomefaire, Dark Magic Range +1 as Black Magic Range +1; user, 2026-11-05). */
+function countedAs(data: Fe16Data, name: string): string {
+  const twin = name.startsWith('Dark ') ? `Black ${name.slice(5)}` : name
+  return data.abilities[twin] !== undefined ? twin : name
+}
+
 /** How many units can learn each ability and combat art, any way but as a personal ability (user, 2026-11-05): at the ranks, as a
- * budding talent, by mastering a class or winning the White Heron Cup. Both Byleths count as one. */
+ * budding talent, by mastering a class or winning the White Heron Cup. Both Byleths count as one; a dark magic skill and its black
+ * magic twin count as one skill. */
 export function learners(data: Fe16Data): { counts: Map<string, number>; units: number } {
   const had = learnerCache.get(data)
   if (had) return had
   const who = new Map<string, Set<string>>()
-  for (const u of data.units) for (const s of learnable(data, u)) who.set(s.name, (who.get(s.name) ?? new Set()).add(u.name))
+  for (const u of data.units) {
+    for (const s of learnable(data, u)) {
+      const key = countedAs(data, s.name)
+      who.set(key, (who.get(key) ?? new Set()).add(u.name))
+    }
+  }
   const out = { counts: new Map([...who].map(([name, set]) => [name, set.size])), units: new Set(data.units.map((u) => u.name)).size }
   learnerCache.set(data, out)
   return out
@@ -237,7 +250,7 @@ export function learners(data: Fe16Data): { counts: Map<string, number>; units: 
  * or fewer can (user, 2026-11-05). */
 export function starsOf(data: Fe16Data, name: string): number {
   const { counts, units } = learners(data)
-  const n = counts.get(name) ?? 0
+  const n = counts.get(countedAs(data, name)) ?? 0
   return n * 2 > units ? 0 : n <= 3 ? 2 : 1
 }
 

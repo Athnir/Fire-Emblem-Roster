@@ -112,8 +112,8 @@ new rule, add it here.
 - **Three Houses' Roster keeps to who the unit is** (user, 2026-11-04): no supports, growths, skill levels or skills there (the
   planners and the Supports tab have them). Each unit is a Noble or a Commoner, never both. In the Skill Planner a skill's ranks are
   tiers and the classes are grouped by tier. What the ranks (or a budding talent) teach is starred by how many units can learn it,
-  any way but as a personal ability (user, 2026-11-05): ★ half the units or fewer (not standard: not Black Tomefaire, which 36 of
-  40 learn), ★★ three or fewer.
+  any way but as a personal ability (user, 2026-11-05): ★ half the units or fewer, ★★ three or fewer. A dark magic skill and its
+  black magic twin work the same and count as one (Black and Dark Tomefaire, Magic Range +1: every unit learns one, no star).
 - **A class only some can be in keeps its skills to them** (user, 2026-11-04): Three Houses' Dancer and its dances, Sword Avo +20
   and Sword Dance only for the White Heron Cup's candidates (the 24 students and Flayn); Engage's Dancer is Seadall's.
 - **Skill Planners don't work out which skill a child inherits** (user, 2026-11-02): the skills are picked, and the general pool
