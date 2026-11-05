@@ -1,8 +1,9 @@
 import type { TelliusBioCurve, TelliusBioState, TelliusData, TelliusUnit } from './types'
 
 // The biorhythm, in the Roster where Fates shows a personal skill (user, 2026-11-05): the unit's wave with a point for each step it
-// moves (Radiant Dawn: each turn; Path of Radiance: each of its 30 points), coloured by state, and what each state adds or takes,
-// with the turns (or chapters) the unit is in it. Read from the game's code (scripts/tellius_biorhythm.py).
+// moves (Radiant Dawn: each turn; Path of Radiance: each of its 30 points), coloured by state, and what each state adds or takes at
+// those points; Path of Radiance's with a note on Tempest and Serenity, not the chapters. Read from the game's code
+// (scripts/tellius_biorhythm.py).
 
 const STATE_COLOR: Record<TelliusBioState, string> = {
   Best: '#34d399',
@@ -34,7 +35,7 @@ function runs(nums: number[]): string {
   return out.join(', ')
 }
 
-function Chart({ curve, top, mark, axis }: { curve: TelliusBioCurve; top: number; mark?: number; axis: string }) {
+function Chart({ curve, top, axis }: { curve: TelliusBioCurve; top: number; axis: string }) {
   const W = 320
   const H = 150
   const left = 40
@@ -66,7 +67,7 @@ function Chart({ curve, top, mark, axis }: { curve: TelliusBioCurve; top: number
       })}
       <path d={line} fill="none" stroke="#d4d4d4" strokeWidth={1.5} />
       {curve.points.map((p, i) => (
-        <circle key={i} cx={x(i)} cy={y(p.value)} r={i === mark ? 4.5 : 3} fill={STATE_COLOR[p.state]} stroke={i === mark ? '#fafafa' : '#171717'} strokeWidth={i === mark ? 1.5 : 1}>
+        <circle key={i} cx={x(i)} cy={y(p.value)} r={3} fill={STATE_COLOR[p.state]} stroke="#171717" strokeWidth={1}>
           <title>{`${axis} ${i + 1}: ${p.state} (${p.value >= 0 ? '+' : ''}${p.value.toFixed(2)})`}</title>
         </circle>
       ))}
@@ -86,38 +87,25 @@ export function Biorhythm({ data, unit }: { data: TelliusData; unit: TelliusUnit
   // The highest any wave of the game reaches, so every unit's chart has the same scale.
   const top = Math.max(1, ...Object.values(bio.curves).map((c) => Math.abs(c.amplitude) + Math.abs(c.offset))) * 1.1
   const byChapter = bio.moves === 'chapter'
-  const phase = unit.biorhythm.phase
-  const period = curve.points.length
-  // Path of Radiance with a phase of its own: the point each chapter puts them on, from the chapter they join (no battles).
-  const join = data.chapters.findIndex((c) => c.id === unit.joinChapter)
-  const chapters =
-    byChapter && phase !== null && bio.chapterShift
-      ? data.chapters
-          .slice(Math.max(0, join))
-          .filter((c) => bio.chapterShift![c.id] !== undefined)
-          .map((c) => ({ chapter: c, point: (((bio.chapterShift![c.id] - phase) % period) + period) % period }))
-      : []
-  const tempest = unit.skills.includes('SID_TEMPER')
-  const serenity = unit.skills.includes('SID_CALM')
-  // Tempest doubles, then Serenity halves toward zero (0x80165fbc, 0x8016600c).
-  const scale = (v: number) => (serenity ? Math.trunc((tempest ? v * 2 : v) / 2) : tempest ? v * 2 : v)
-  const effectText = (e: (typeof bio.effects)[number]) =>
+  const effectText = (e: (typeof bio.effects)[number], scale = (v: number) => v) =>
     (Object.keys(EFFECT_LABELS) as (keyof typeof EFFECT_LABELS)[])
       .filter((k) => e[k])
       .map((k) => `${EFFECT_LABELS[k]} ${signed(scale(e[k]!))}`)
       .join(', ') || 'nothing'
   const when = (state: TelliusBioState) => {
-    if (chapters.length) {
-      const here = chapters.filter((c) => curve.points[c.point].state === state).map((c) => c.chapter.label)
-      return here.length ? `In ${here.join(', ')}` : ''
-    }
     const steps = curve.points.flatMap((p, i) => (p.state === state ? [i + 1] : []))
     return steps.length ? `${byChapter ? 'Points' : 'Turns'} ${runs(steps)}` : ''
   }
+  // Path of Radiance: Tempest doubles every effect, then Serenity halves it toward zero (0x80165fbc, 0x8016600c).
+  const best = bio.effects.find((e) => e.state === 'Best')
+  const tempestNote =
+    byChapter && best
+      ? ` Tempest doubles every effect (±${(best.hit ?? 0) * 2}) and Serenity halves it, dropping the half (±${Math.trunc((best.hit ?? 0) / 2)}); with both, it stays at ±${best.hit ?? 0} (0x80165fbc, 0x8016600c). Either counts only while the unit has it.`
+      : ''
   return (
     <div className="space-y-2">
       <h4 className="text-sm font-semibold text-neutral-200">Biorhythm</h4>
-      <Chart curve={curve} top={top} mark={chapters[0]?.point} axis={byChapter ? 'Point' : 'Turn'} />
+      <Chart curve={curve} top={top} axis={byChapter ? 'Point' : 'Turn'} />
       <ul className="space-y-1 text-sm">
         {bio.effects.map((e) => {
           const at = when(e.state)
@@ -136,14 +124,8 @@ export function Biorhythm({ data, unit }: { data: TelliusData; unit: TelliusUnit
       </ul>
       <p className="text-xs text-neutral-500">
         {byChapter
-          ? `The wave moves ${bio.perChapter} points each chapter, for every unit whether deployed or not, and 1 more for every ${bio.battlesPerPoint} battles the unit fights; the map's turns don't move it (0x801660c4). ${
-              phase === null
-                ? "Where they start on it is rolled each time the game is switched on (their record has no place of its own, 0x8001aff0), so the chart is the wave itself, point by point."
-                : `The chart is the wave point by point; the ringed point is where they stand in ${chapters[0]?.chapter.label ?? 'the chapter they join'}, and the chapters listed are each chapter's with no battles yet.`
-            }`
-          : 'Turn 1 is their first turn on the map. Each of their army\'s phases moves them a turn on, and the count carries into the next chapter (it\'s saved with them), so the wave repeats every 25 turns of theirs. Matrona and the herons\' Bliss move them to the wave\'s peak, Sorrow to its trough (0x801072e4).'}
-        {tempest && ' They join with Tempest, which doubles the effects.'}
-        {serenity && ' They join with Serenity, which halves the effects.'}
+          ? `The wave moves ${bio.perChapter} points each chapter, for every unit whether deployed or not, and 1 more for every ${bio.battlesPerPoint} battles the unit fights; the map's turns don't move it (0x801660c4).${tempestNote}`
+          : "Turn 1 is their first turn on the map. Each of their army's phases moves them a turn on, and the count carries into the next chapter (it's saved with them), so the wave repeats every 25 turns of theirs. Matrona and the herons' Bliss move them to the wave's peak, Sorrow to its trough (0x801072e4)."}
       </p>
     </div>
   )
