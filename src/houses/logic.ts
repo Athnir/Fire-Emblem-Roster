@@ -219,6 +219,9 @@ export function helpOf(data: Fe16Data, l: Pick<Fe16Learn, 'kind' | 'name'>): str
 
 
 /** The game's limits: five abilities and three combat arts equipped (the personal ability and the class's own come on their own). */
+/** The classes' tiers, in the order the exams climb. */
+export const CLASS_TIERS: Fe16Class['tier'][] = ['Starting', 'Beginner', 'Intermediate', 'Advanced', 'Master', 'Unique', 'DLC']
+
 export const MAX_ABILITIES = 5
 export const MAX_ARTS = 3
 

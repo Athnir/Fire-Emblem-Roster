@@ -3,11 +3,8 @@ import { AllLevelsToggle, Loadout, SkillRow, type PoolSkill } from '../component
 import { topLevels } from '../logic/skillChains'
 import { useAllLevels } from '../state/allLevelsStore'
 import { useArmy, useScreenshotUnit, useSpoiler, useUnitPlan } from './hooks'
-import { canTake, classesFor, kindOf, labelOf, learnsOf, MAX_ABILITIES, MAX_ARTS, personalNow, type Fe16Data } from './logic'
-import { FE16_RANKS, FE16_SKILL_LABELS, FE16_SKILLS, type Fe16Class } from './types'
-
-/** The classes' tiers, in the order the exams climb. */
-const TIERS: Fe16Class['tier'][] = ['Starting', 'Beginner', 'Intermediate', 'Advanced', 'Master', 'Unique', 'DLC']
+import { canTake, CLASS_TIERS, classesFor, kindOf, labelOf, learnsOf, MAX_ABILITIES, MAX_ARTS, personalNow, type Fe16Data } from './logic'
+import { FE16_RANKS, FE16_SKILL_LABELS, FE16_SKILLS } from './types'
 import { Fe16PlanSets, SkillIcon, UnitSelect } from './ui'
 
 /** The abilities and combat arts a unit equips, laid out as Fates' Skill Planner: the personal ability, the loadouts, then everything
@@ -92,7 +89,7 @@ export function Fe16SkillPlanner({ data }: { data: Fe16Data }) {
             />
           )
         })}
-        {TIERS.filter((t) => classes.some((c) => c.tier === t)).map((t) => (
+        {CLASS_TIERS.filter((t) => classes.some((c) => c.tier === t)).map((t) => (
           <div key={t} className="space-y-2 pt-2">
             <h4 className="text-sm font-semibold text-neutral-200">{t} classes</h4>
             {classes

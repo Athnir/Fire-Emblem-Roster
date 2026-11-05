@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { FE17_CLASSES, FE17_UNITS } from '../../data/fe17/fe17Units'
 import { FE17_DATA } from '../../games/fe17'
-import { internalAfter, levelAfter, levelGain, PACT_RING_CHAPTER, pactPartners, shownStats } from '../logic'
+import { estimate, internalAfter, levelAfter, levelGain, PACT_RING_CHAPTER, pactPartners, pathTo, shownStats } from '../logic'
 import { FE17_STATS, type Fe17Stats } from '../types'
 
 /** The level-up's re-roll straight from the routine (Unit.LevelUp 0x1a3a040), to check levelGain's averages against. */
@@ -78,5 +78,17 @@ describe('the Pact Ring', () => {
     expect(m.length).toBeGreaterThan(30)
     expect(pactPartners(FE17_DATA, 'fe17-alear-female')).toEqual(m)
     expect(FE17_DATA.chapters.find((c) => c.id === PACT_RING_CHAPTER)?.label).toBe('Paralogue: The Connector')
+  })
+})
+
+describe('the estimate (as Fates\' Projected Stats)', () => {
+  it('takes the shortest way to a class, promoting at Lv 20 unless told, and gives the stats there', () => {
+    const alear = FE17_DATA.units.find((u) => u.id === 'fe17-alear')!
+    expect(pathTo(FE17_DATA, alear, 'divine-dragon')).toEqual([{ at: 20, to: 'divine-dragon' }])
+    expect(pathTo(FE17_DATA, alear, 'divine-dragon', 10)).toEqual([{ at: 10, to: 'divine-dragon' }])
+    const stages = estimate(FE17_DATA, alear, { steps: [], targetLevel: 1 }, 'divine-dragon', 20)
+    expect(stages.at(-1)).toMatchObject({ classId: 'divine-dragon', level: 20 })
+    // The male Alear can't be a flier only women can be.
+    expect(pathTo(FE17_DATA, alear, 'sword-flier')).toEqual([])
   })
 })

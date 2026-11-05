@@ -292,6 +292,28 @@ export function project(data: Fe16Data, unit: Fe16Unit, plan: Fe16Plan, picks: F
   return stages
 }
 
+/** The shortest way from where a unit starts to a class (as Fates' Projected Stats takes one): the class it needs first if any (the
+ * Dark Bishop's Dark Mage), each change at its exam's level or the level they're at, whichever is higher. */
+export function pathTo(data: Fe16Data, unit: Fe16Unit, start: { classId: string; level: number }, targetId: string): Fe16Step[] {
+  if (targetId === start.classId) return []
+  const cls = data.classes[targetId]
+  const steps: Fe16Step[] = []
+  let level = start.level
+  const had = certifiedBy(unit, start.classId, [])
+  if (cls.requires && !had.has(cls.requires)) {
+    level = Math.max(level, data.classes[cls.requires].level)
+    steps.push({ at: level, to: cls.requires })
+  }
+  steps.push({ at: Math.max(level, cls.level), to: targetId })
+  return steps
+}
+
+/** The rough stats a unit can expect in a class at a level, the way there by pathTo: the stages, the last the estimate. */
+export function estimate(data: Fe16Data, unit: Fe16Unit, plan: Fe16Plan, picks: Fe16Picks, targetId: string, level: number): Fe16Stage[] {
+  const steps = pathTo(data, unit, startOf(data, unit, plan, picks), targetId)
+  return project(data, unit, { ...plan, steps, targetLevel: level }, picks)
+}
+
 /** The highest rank each skill must reach for the plan's exams. */
 export function ranksNeeded(data: Fe16Data, steps: Fe16Step[]): Partial<Record<Fe16Skill, string>> {
   const out: Partial<Record<Fe16Skill, string>> = {}

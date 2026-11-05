@@ -100,6 +100,9 @@ new rule, add it here.
 - **Engage and Three Houses follow Fates' tabs** (user, 2026-11-04): the Avatar as two units, the Unit Planner's growths and
   maximums before the projected stats, the Skill Planner's rows by source (a class, a skill rank, an Emblem) under the loadout,
   saved sets in the planners, the Team Viewer table; Engage's Supports plan the Pact Ring, as Fates' Marriage Planner plans spouses.
+- **The Unit Planner estimates any class at any level** (user, 2026-11-04, as Fates' Projected Stats): pick a class the unit can be
+  in and a level, and see that class's growths and maximums and the rough stats there, by the shortest way from the class they join
+  in (Engage: promoted at Lv 20 unless set). It doesn't change the plan.
 - **A skill that comes in levels shows its top level alone** (user, 2026-11-04): Sword Prowess Lv 1-4 beside Lv 5, Sword Agility
   1-4 beside 5, Unyielding beside Unyielding++ (the game replaces a lower level with a higher), unless the tickbox shows every level.
   The chains are the game's own upgrade groups.

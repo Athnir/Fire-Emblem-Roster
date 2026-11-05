@@ -208,9 +208,8 @@ export interface Fe17Stage {
   how: 'joins' | 'level' | 'change' | 'target' | 'boosters'
 }
 
-/** A plan's steps, up to the first the game doesn't allow. */
-export function legalSteps(data: Fe17Data, unit: Fe17Unit, plan: Fe17Plan): Fe17Step[] {
-  const have = proficienciesOf(data, unit, plan)
+/** A plan's steps, up to the first the game doesn't allow; `have`: the proficiencies (the plan's, unless given). */
+export function legalSteps(data: Fe17Data, unit: Fe17Unit, plan: Fe17Plan, have = proficienciesOf(data, unit, plan)): Fe17Step[] {
   const out: Fe17Step[] = []
   let cls = data.classes[unit.classId]
   let level = unit.level
@@ -228,8 +227,8 @@ export function legalSteps(data: Fe17Data, unit: Fe17Unit, plan: Fe17Plan): Fe17
 
 /** Stats along a plan: averages in random mode, the game's own running totals in fixed mode. Level-ups add to the unit's own stats
  * while the shown stat is below its cap; a class change keeps them and swaps the class's bases and caps. Boosters count at the end. */
-export function project(data: Fe17Data, unit: Fe17Unit, plan: Fe17Plan): Fe17Stage[] {
-  const steps = legalSteps(data, unit, plan)
+export function project(data: Fe17Data, unit: Fe17Unit, plan: Fe17Plan, have?: string[]): Fe17Stage[] {
+  const steps = legalSteps(data, unit, plan, have)
   const cap = INTERNAL_CAP[plan.difficulty ?? 'normal']
   let cls = data.classes[unit.classId]
   let level = unit.level
@@ -281,6 +280,48 @@ export function project(data: Fe17Data, unit: Fe17Unit, plan: Fe17Plan): Fe17Sta
   }
   if (Object.values(plan.boosters ?? {}).some((n) => n > 0)) stages.push({ classId: cls.id, level: target, internal, own: boost(data, unit, cls, own, plan), how: 'boosters' })
   return stages
+}
+
+/** Every proficiency there is: an Emblem's bonds can give any, so an estimate takes them all as had. */
+export function allProficiencies(data: Fe17Data): string[] {
+  return [...new Set(Object.values(data.classes).flatMap((c) => [...c.needs.all, ...c.needs.from]))]
+}
+
+/** The shortest way from the class a unit joins in to another (as Fates' Projected Stats takes one): each change as early as it's
+ * allowed, a promotion with a Master Seal at `promoteAt` (Lv 20 unless set, 10 at the earliest). Proficiencies are taken as had. */
+export function pathTo(data: Fe17Data, unit: Fe17Unit, targetId: string, promoteAt = 20): Fe17Step[] {
+  const have = allProficiencies(data)
+  const prev = new Map<string, string>([[unit.classId, '']])
+  const queue = [unit.classId]
+  while (queue.length && !prev.has(targetId)) {
+    const from = queue.shift()!
+    for (const c of changesFrom(data, unit, from, have)) {
+      if (prev.has(c.to)) continue
+      prev.set(c.to, from)
+      queue.push(c.to)
+    }
+  }
+  if (!prev.has(targetId)) return []
+  const ids: string[] = []
+  for (let id = targetId; id !== unit.classId; id = prev.get(id)!) ids.unshift(id)
+  const steps: Fe17Step[] = []
+  let cls = data.classes[unit.classId]
+  let level = unit.level
+  for (const to of ids) {
+    const change = changesFrom(data, unit, cls.id, have).find((c) => c.to === to)!
+    const at = Math.min(cls.maxLevel, Math.max(level, change.minLevel, change.seal === 'master' ? promoteAt : 0))
+    steps.push({ at, to })
+    level = levelAfter(cls, at, data.classes[to])
+    cls = data.classes[to]
+  }
+  return steps
+}
+
+/** The rough stats a unit can expect in a class at a level (the way there by pathTo), with the plan's growth settings and no
+ * boosters: the stages, the last the estimate. */
+export function estimate(data: Fe17Data, unit: Fe17Unit, plan: Fe17Plan, targetId: string, level: number, promoteAt = 20): Fe17Stage[] {
+  const steps = pathTo(data, unit, targetId, promoteAt)
+  return project(data, unit, { ...plan, steps, targetLevel: level, boosters: undefined }, allProficiencies(data))
 }
 
 /** Stat boosters (ItemUseImpl 0x1a4c690): each adds its amount to the unit's own stat, usable only while the stat is below its cap (a

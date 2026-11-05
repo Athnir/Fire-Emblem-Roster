@@ -4,23 +4,97 @@ import {
   capsOf,
   changesFrom,
   classSkill,
+  estimate,
   growthsIn,
   INTERNAL_CAP,
   legalSteps,
   levelAfter,
+  pathTo,
   proficienciesOf,
   project,
   shownStats,
   syncBonus,
   type Fe17Data,
   type Fe17Difficulty,
+  type Fe17Plan,
   type Fe17Stage,
 } from './logic'
+import type { Fe17Class, Fe17Unit } from './types'
 import { useFe17Store } from './store'
 import { Fe17PlanSets, SkillList, StatTable, UnitSelect } from './ui'
 
 const SEAL_NAMES = { master: 'Master Seal', second: 'Second Seal', item: 'its item' }
 const levels = (from: number, to: number) => Array.from({ length: Math.max(0, to - from + 1) }, (_, i) => from + i)
+const TIER_NAMES: Record<Fe17Class['tier'], string> = { base: 'Base classes', special: 'Special classes', advanced: 'Advanced classes' }
+
+/** As Fates' Projected Stats: the rough stats to expect in any class the unit can be in, at any level, by the shortest way there
+ * (pathTo), with that class's growths and maximums. Not saved: it doesn't change the plan. */
+function Estimate({ data, unit, plan, defaultClass, defaultLevel }: { data: Fe17Data; unit: Fe17Unit; plan: Fe17Plan; defaultClass: string; defaultLevel: number }) {
+  const [classId, setClassId] = useState(defaultClass)
+  const [wanted, setWanted] = useState(defaultLevel)
+  const [promoteAt, setPromoteAt] = useState(20)
+  const reachable = Object.values(data.classes).filter((c) => c.id === unit.classId || pathTo(data, unit, c.id).length > 0)
+  const cls = data.classes[classId] ?? data.classes[unit.classId]
+  const steps = pathTo(data, unit, cls.id, promoteAt)
+  const arrival = estimate(data, unit, plan, cls.id, 0, promoteAt).at(-1)!.level
+  const level = Math.min(cls.maxLevel, Math.max(arrival, wanted))
+  const stages = estimate(data, unit, plan, cls.id, level, promoteAt)
+  const last = stages[stages.length - 1]
+  const promotes = steps.some((st, i) => data.classes[st.to].tier === 'advanced' && data.classes[i ? steps[i - 1].to : unit.classId].tier === 'base')
+  const way = [`${data.classes[unit.classId].name} Lv ${unit.level}`, ...steps.map((st) => `Lv ${st.at}, then ${data.classes[st.to].name}`)].join(' to ')
+  return (
+    <div className="space-y-2">
+      <h4 className="text-sm font-semibold text-neutral-200">Estimated stats</h4>
+      <div className="flex flex-wrap items-center gap-2 text-sm">
+        <span className="text-neutral-500">As a</span>
+        <select value={cls.id} onChange={(e) => setClassId(e.target.value)} className={selectClass}>
+          {(['base', 'special', 'advanced'] as const).map((t) => (
+            <optgroup key={t} label={TIER_NAMES[t]}>
+              {reachable
+                .filter((c) => c.tier === t)
+                .map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+            </optgroup>
+          ))}
+        </select>
+        <span className="text-neutral-500">at Lv</span>
+        <select value={level} onChange={(e) => setWanted(Number(e.target.value))} className={selectClass}>
+          {levels(arrival, cls.maxLevel).map((lv) => (
+            <option key={lv} value={lv}>
+              {lv}
+            </option>
+          ))}
+        </select>
+        {promotes && (
+          <>
+            <span className="text-neutral-500">promoted at Lv</span>
+            <select value={promoteAt} onChange={(e) => setPromoteAt(Number(e.target.value))} className={selectClass}>
+              {levels(10, 20).map((lv) => (
+                <option key={lv} value={lv}>
+                  {lv}
+                </option>
+              ))}
+            </select>
+          </>
+        )}
+      </div>
+      <StatTable
+        rows={[
+          { label: `Growths as a ${cls.name}`, values: growthsIn(unit, cls, plan), suffix: '%' },
+          { label: `Maximums as a ${cls.name}`, values: capsOf(cls, unit) },
+          { label: `${cls.name} Lv ${last.level} (rough)`, values: shownStats(cls, unit, last.own), caps: capsOf(cls, unit) },
+        ]}
+      />
+      <p className="text-xs text-neutral-500">
+        The way there: {way}{steps.length ? '' : ' (the class they join in)'}. Averages with the plan's growth settings, without boosters
+        or an Emblem; any proficiency a class needs is taken as had (an Emblem's bonds give it). The plan itself is below.
+      </p>
+    </div>
+  )
+}
 
 /** One unit's stats through their class changes, with an emblem synced, its bonds and the stat boosters. Saved per unit. */
 export function Fe17Planner({ data }: { data: Fe17Data }) {
@@ -204,19 +278,7 @@ export function Fe17Planner({ data }: { data: Fe17Data }) {
           Growth is the unit's own plus the class's; a stat at its cap gains nothing. A class change starts again at Lv 1 and keeps the
           unit's own stats, so the shown ones move by the classes' bases.
         </p>
-        <div className="space-y-1">
-          <h4 className="text-sm font-semibold text-neutral-200">Growths and maximums</h4>
-          <StatTable
-            rows={[...new Set([unit.classId, finalCls.id])].flatMap((id) => {
-              const cls = data.classes[id]
-              const as = id === unit.classId ? `as a ${cls.name} (joins)` : `as a ${cls.name}`
-              return [
-                { label: `Growths ${as}`, values: growthsIn(unit, cls, plan), suffix: '%' },
-                { label: `Maximums ${as}`, values: capsOf(cls, unit) },
-              ]
-            })}
-          />
-        </div>
+        <Estimate key={unit.id} data={data} unit={unit} plan={plan} defaultClass={finalCls.id} defaultLevel={lastLevel} />
         <div className="space-y-1">
           <h4 className="text-sm font-semibold text-neutral-200">Projected stats</h4>
           <StatTable

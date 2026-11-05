@@ -1,19 +1,22 @@
 import { useState } from 'react'
 import { chip, selectClass, useArmy, useScreenshotUnit, useUnitPlan } from './hooks'
-import { canTake, classesFor, labelOf, learnsOf, rankIndex, type Fe16Data } from './logic'
+import { canTake, CLASS_TIERS, classesFor, labelOf, learnsOf, rankIndex, type Fe16Data, type Fe16Picks } from './logic'
 import {
   capsOf,
   canChange,
   certifiedBy,
+  estimate,
   growthsIn,
   isMounted,
   joinOptions,
   legalSteps,
   MAX_LEVEL,
+  pathTo,
   project,
   ranksNeeded,
   shownStats,
   startOf,
+  type Fe16Plan,
   type Fe16Stage,
 } from './plan'
 import { useFe16Store } from './store'
@@ -203,19 +206,7 @@ export function Fe16Planner({ data }: { data: Fe16Data }) {
           can go past them. Changing into a class, or passing its exam, lifts any stat below the class's base to it for good. The numbers
           are averages and can run a little off.
         </p>
-        <div className="space-y-1">
-          <h4 className="text-sm font-semibold text-neutral-200">Growths and maximums</h4>
-          <StatTable
-            rows={[
-              ...[...new Set([start.classId, finalCls.id])].map((id) => ({
-                label: `Growths as a ${data.classes[id].name}${id === start.classId ? ' (joins)' : ''}`,
-                values: growthsIn(unit, data.classes[id]),
-                suffix: '%',
-              })),
-              { label: 'Maximums (their own)', values: caps },
-            ]}
-          />
-        </div>
+        <Estimate key={unit.id} data={data} unit={unit} plan={plan} picks={picks} caps={caps} onFoot={onFoot} defaultClass={finalCls.id} defaultLevel={last.level} />
         <div className="space-y-1">
           <h4 className="text-sm font-semibold text-neutral-200">Projected stats</h4>
           <StatTable rows={stages.map(row)} />
@@ -261,6 +252,82 @@ export function Fe16Planner({ data }: { data: Fe16Data }) {
         </div>
       </div>
       <Fe16PlanSets />
+    </div>
+  )
+}
+
+/** As Fates' Projected Stats: the rough stats to expect in any class the unit can be in, at any level, by the shortest way there
+ * (pathTo), with that class's growths and the unit's maximums. Not saved: it doesn't change the plan. */
+function Estimate({
+  data,
+  unit,
+  plan,
+  picks,
+  caps,
+  onFoot,
+  defaultClass,
+  defaultLevel,
+}: {
+  data: Fe16Data
+  unit: Fe16Unit
+  plan: Fe16Plan
+  picks: Fe16Picks
+  caps: Fe16Stats
+  onFoot: boolean
+  defaultClass: string
+  defaultLevel: number
+}) {
+  const [classId, setClassId] = useState(defaultClass)
+  const [wanted, setWanted] = useState(defaultLevel)
+  const start = startOf(data, unit, plan, picks)
+  const options = classesFor(data, unit).filter((c) => c.id === start.classId || canTake(c, unit))
+  const cls = data.classes[classId] ?? data.classes[start.classId]
+  const steps = pathTo(data, unit, start, cls.id)
+  const arrival = steps.length ? steps[steps.length - 1].at : start.level
+  const level = Math.min(MAX_LEVEL, Math.max(arrival, wanted))
+  const stages = estimate(data, unit, plan, picks, cls.id, level)
+  const last = stages[stages.length - 1]
+  const shown = shownStats(cls, last.own, !onFoot)
+  const shownCaps = {} as Fe16Stats
+  for (const s of FE16_STATS) shownCaps[s] = caps[s] + (shown[s] - last.own[s])
+  const way = [`${data.classes[start.classId].name} Lv ${start.level}`, ...steps.map((st) => `Lv ${st.at}, then ${data.classes[st.to].name}`)].join(' to ')
+  return (
+    <div className="space-y-2">
+      <h4 className="text-sm font-semibold text-neutral-200">Estimated stats</h4>
+      <div className="flex flex-wrap items-center gap-2 text-sm">
+        <span className="text-neutral-500">As a</span>
+        <select value={cls.id} onChange={(e) => setClassId(e.target.value)} className={selectClass}>
+          {CLASS_TIERS.filter((t) => options.some((c) => c.tier === t)).map((t) => (
+            <optgroup key={t} label={t}>
+              {options
+                .filter((c) => c.tier === t)
+                .map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+            </optgroup>
+          ))}
+        </select>
+        <span className="text-neutral-500">at Lv</span>
+        <select value={level} onChange={(e) => setWanted(Number(e.target.value))} className={selectClass}>
+          {Array.from({ length: MAX_LEVEL - arrival + 1 }, (_, i) => arrival + i).map((lv) => (
+            <option key={lv} value={lv}>
+              {lv}
+            </option>
+          ))}
+        </select>
+      </div>
+      <StatTable
+        rows={[
+          { label: `Growths as a ${cls.name}`, values: growthsIn(unit, cls), suffix: '%' },
+          { label: 'Maximums (their own)', values: caps },
+          { label: `${cls.name} Lv ${last.level} (rough)`, values: shown, caps: shownCaps, mov: true },
+        ]}
+      />
+      <p className="text-xs text-neutral-500">
+        The way there: {way}{steps.length ? ', each exam passed' : ' (the class they join in)'}. Averages, as the plan below works them out.
+      </p>
     </div>
   )
 }

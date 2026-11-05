@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { FE16_DATA } from '../../games/fe16'
 import { canTake, learnable, personalNow } from '../logic'
+import { pathTo } from '../plan'
 
 const unit = (id: string) => FE16_DATA.units.find((u) => u.id === id)!
 const dancer = Object.values(FE16_DATA.classes).find((c) => c.name === 'Dancer')!
@@ -28,5 +29,24 @@ describe('Three Houses skills', () => {
     // With the block off, both, the second marked with its chapter.
     expect(personalNow(unit('fe16-dimitri'))).toEqual([{ name: 'Royal Lineage' }, { name: 'Royal Lineage+', part: 'from Chapter 13' }])
     expect(names('fe16-hubert', 13)).toEqual(names('fe16-hubert', 1))
+  })
+})
+
+describe('Three Houses classes', () => {
+  it('gives each unit the Noble or the Commoner class they join in, never the other', () => {
+    const noble = FE16_DATA.classes['0']
+    const commoner = FE16_DATA.classes['1']
+    expect([canTake(noble, unit('fe16-edelgard')), canTake(commoner, unit('fe16-edelgard'))]).toEqual([true, false])
+    expect([canTake(noble, unit('fe16-byleth-m')), canTake(commoner, unit('fe16-byleth-m'))]).toEqual([false, true])
+    // The staff hold one too, as they join certified in it (Manuela a Commoner, Seteth a Noble).
+    expect([canTake(commoner, unit('fe16-manuela')), canTake(noble, unit('fe16-seteth'))]).toEqual([true, true])
+  })
+
+  it('estimates by the shortest way: the Dark Bishop after the Dark Mage, each at its exam level', () => {
+    const start = { classId: '1', level: 1 }
+    expect(pathTo(FE16_DATA, unit('fe16-byleth-m'), start, '29')).toEqual([
+      { at: 10, to: '15' },
+      { at: 20, to: '29' },
+    ])
   })
 })
