@@ -244,7 +244,7 @@ export function Fe16Supports({ data }: { data: Fe16Data }) {
         <p className="text-xs text-neutral-500">
           Each pair's support levels, one per conversation in the game's support list. Besides C, B, A and S, some pairs have the half
           levels C+, B+ or A+ (Byleth and Edelgard: C, C+, B, A, S), and some stop at B. Only Byleth has S supports, each with the
-          genders the list allows; a ♥ marks a pair with an ending together. What supports give in battle is in the Armory.
+          genders the list allows. What supports give in battle is in the Armory.
         </p>
         {rows.length === 0 ? (
           <p className="text-sm text-neutral-500">No supports.</p>
@@ -272,15 +272,10 @@ export function Fe16Supports({ data }: { data: Fe16Data }) {
                           {partner ? (
                             <button type="button" onClick={() => setUnitId(partner.id)} className="flex items-center gap-1.5 text-left text-neutral-200 hover:text-violet-300">
                               <UnitPortrait data={data} unit={partner} size={20} />
-                              <span>
-                                {labelOf(partner)}
-                                {s.pairedEnding && <span className="ml-1 text-pink-400">♥</span>}
-                              </span>
+                              {labelOf(partner)}
                             </button>
                           ) : (
-                            <span className="text-neutral-400">
-                              {s.npc} (not a unit){s.pairedEnding && <span className="ml-1 text-pink-400">♥</span>}
-                            </span>
+                            <span className="text-neutral-400">{s.npc} (not a unit)</span>
                           )}
                         </div>
                       </td>
