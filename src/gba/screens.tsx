@@ -267,7 +267,7 @@ function UnitPortrait({ data, unit, size = 64 }: { data: GbaData; unit: GbaUnit;
 
 function fmt(v: number | undefined): string {
   if (v === undefined) return '–'
-  return Number.isInteger(v) ? String(v) : v.toFixed(1)
+  return String(Math.trunc(v))
 }
 
 function StatTable({ data, rows }: { data: GbaData; rows: { label: string; values: GbaStats; caps?: GbaStats; suffix?: string }[] }) {

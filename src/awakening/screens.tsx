@@ -194,7 +194,7 @@ export function AvatarBuild({ palette, genders = AVATARS }: { palette?: string[]
 
 function fmt(v: number | undefined): string {
   if (v === undefined) return '–'
-  return Number.isInteger(v) ? String(v) : v.toFixed(1)
+  return String(Math.trunc(v))
 }
 
 type Row = {
@@ -236,7 +236,7 @@ function StatTable({ rows, mov = false }: { rows: Row[]; mov?: boolean }) {
                     {row.signed && v !== undefined && v > 0 ? '+' : ''}
                     {fmt(v)}
                     {v !== undefined ? (row.suffix ?? '') : ''}
-                    {kept > 0.05 && <sup className="ml-0.5 text-[10px] text-neutral-500">+{fmt(kept)}</sup>}
+                    {kept >= 1 && <sup className="ml-0.5 text-[10px] text-neutral-500">+{fmt(kept)}</sup>}
                   </td>
                 )
               })}

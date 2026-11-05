@@ -193,7 +193,8 @@ export function supportsOf(data: Fe16Data, unitId: string): { partner: string; n
 /** The highest support conversation. */
 export const topTalk = (talks: string[]) => talks[talks.length - 1] ?? ''
 
-export const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1))
+/** A stat as shown: its decimals dropped (user, 2026-11-05: an estimate shows 20, not 20.4). */
+export const fmt = (n: number) => String(Math.trunc(n))
 
 /** A unit's name where both Byleths can show: "Byleth (male)", "Byleth (female)". Portraits are matched by it. */
 export const labelOf = (u: Fe16Unit) => (isByleth(u) ? `${u.name} (${u.female ? 'female' : 'male'})` : u.name)

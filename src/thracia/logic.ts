@@ -298,5 +298,5 @@ export function joinText(data: Fe5Data, joinChapter: string, j: Fe5Join): string
 }
 
 export function fmt(v: number): string {
-  return Number.isInteger(v) ? String(v) : v.toFixed(1)
+  return String(Math.trunc(v))
 }

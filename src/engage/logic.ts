@@ -374,6 +374,7 @@ export function supportsOf(data: Fe17Data, unitId: string): { partner: string; t
   return data.supports.filter((s) => s.a === unitId || s.b === unitId).map((s) => ({ partner: s.a === unitId ? s.b : s.a, top: s.top }))
 }
 
-export const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1))
+/** A stat as shown: its decimals dropped (user, 2026-11-05: an estimate shows 20, not 20.4). */
+export const fmt = (n: number) => String(Math.trunc(n))
 
 export const chapterLabel = (data: Fe17Data, id: string) => data.chapters.find((c) => c.id === id)?.label ?? id

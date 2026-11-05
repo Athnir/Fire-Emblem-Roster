@@ -22,7 +22,7 @@ export const LABELS: Record<Fe4Stat, string> = { hp: 'HP', str: 'Str', mag: 'Mag
 export const selectClass = 'rounded-md border border-neutral-700 bg-neutral-800 px-2 py-1 text-sm text-neutral-200'
 
 export function fmt(v: number): string {
-  return Number.isInteger(v) ? String(v) : v.toFixed(1)
+  return String(Math.trunc(v))
 }
 
 /** A child's Luck range for StatTable's `extra`: the average is the value, the game adds a random 1 to 10. */

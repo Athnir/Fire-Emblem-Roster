@@ -23,7 +23,7 @@ function SkillTags({ names }: { names: string[] }) {
 
 /** Stats four to a row, fixed-width so "Save as image" keeps the spacing (as the Fates viewer does). */
 function StatGrid({ values, mov, suffix = '' }: { values: Fe13Stats; mov?: number; suffix?: string }) {
-  const show = (v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(1))
+  const show = (v: number) => String(Math.trunc(v))
   return (
     <div className="grid grid-cols-[repeat(4,4.5rem)] whitespace-nowrap text-xs">
       {FE13_STATS.map((s) => (
