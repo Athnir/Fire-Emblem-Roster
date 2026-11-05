@@ -3,23 +3,28 @@ Make Fire Emblem Engage's portraits from the user's own dump, ready for the app'
 Engage -> select the folder). The images are the user's and stay on their machine: the output goes to data-raw/fe17/art/, which is
 git-ignored, and nothing here is ever committed.
 
-Engage draws its units in 3D on the status screen; the hand-drawn 2D art it has for every unit is the face shown when a unit levels
-up: the Addressables key Telop/LevelUp/FaceThumb/<name>, the bundle fe_assets_telop/levelup/facethumb/<name>.bundle, one Texture2D
-(640x340, ASTC 4x4, Tegra block-linear swizzled; UnityPy and texture2ddecoder decode it). <name> is the person's Name label less
-"MPID_" (person.xml), which the catalog's keys match for every playable person (Rafal: MPID_Rafale, though his UnitIconID is
-049Il). Alear's person record is male (Gender 1): Lueur; the female Alear's art is LueurW (written only with --alear-female).
+Engage draws its units in 3D on the status and inventory screens; by default each portrait is that model, waist up
+(scripts/fe17_models.py: the unit's pieces from the asset table, posed at the first frame of their status loop, lit by the menu
+model's own lights), a 384x384 square from the hips to above the head (the user asked for waist up, 2026-11-04). Alear's person
+record is male (Gender 1); --alear-female also writes the female Alear (alear_female.png).
 
-Each image is cropped to a square around the face (its full height, centred on the opaque pixels' middle) and scaled to 256x256
-(Lanczos, on premultiplied alpha so the edges keep no dark fringe). The file name is the app's (src/tellius/logic.ts, artId): the
-English name with its accents dropped, lower-cased, each run of anything but a-z and 0-9 as one "_" (Céline -> celine.png).
+--level-up writes the hand-drawn 2D art instead, the only 2D art every unit has, which ends at the neck: the face shown when a unit
+levels up, the Addressables key Telop/LevelUp/FaceThumb/<name>, the bundle fe_assets_telop/levelup/facethumb/<name>.bundle, one
+Texture2D (640x340, ASTC 4x4, Tegra block-linear swizzled; UnityPy and texture2ddecoder decode it). <name> is the person's Name
+label less "MPID_" (person.xml), which the catalog's keys match for every playable person (Rafal: MPID_Rafale, though his
+UnitIconID is 049Il); the female Alear's is LueurW. Each is cropped to a square around the face (its full height, centred on the
+opaque pixels' middle) and scaled to 256x256 (Lanczos, on premultiplied alpha so the edges keep no dark fringe).
+
+The file name is the app's (src/tellius/logic.ts, artId): the English name with its accents dropped, lower-cased, each run of
+anything but a-z and 0-9 as one "_" (Céline -> celine.png).
 
 Each Bond Ring's face goes in rings/, named the same way after the ring (Black Knight -> rings/black_knight.png): the Ring Chamber's
 faces, fe_assets_ui/hub/godroom/face/face.bundle, one SpriteAtlas with a Sprite per hero named by ring.xml's Icon (Seeda: Caeda).
 Each Sprite is 300x300, but the atlas keeps only its opaque part (textureRect, placed at textureRectOffset from the bottom left), so
 it's put back on its 300x300 before it's scaled to 128x128, as the face shows small beside the ring's stats.
 
-Run: python scripts/fe17_portraits.py [out folder] [--sheet sheet.png] [--alear-female]
-Needs: pip install UnityPy (it brings texture2ddecoder).
+Run: python scripts/fe17_portraits.py [out folder] [--sheet sheet.png] [--alear-female] [--level-up]
+Needs: pip install UnityPy numba (UnityPy brings texture2ddecoder).
 """
 import io
 import os
@@ -34,7 +39,8 @@ from PIL import Image, ImageDraw
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import fe17_data as D  # noqa: E402
 import fe17_units as U  # noqa: E402
-from fe17_extract import AA, merged_romfs  # noqa: E402
+import fe17_models as M  # noqa: E402
+from fe17_extract import AA  # noqa: E402
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 OUT = os.path.join(ROOT, 'data-raw', 'fe17', 'art')
@@ -100,6 +106,22 @@ def portraits(rom, files, alear_female=False):
     return out
 
 
+def model_portraits(alear_female=False):
+    """[(file stem, display name, the outfit's model, PIL image)] for every playable person, in the support table's order: the
+    3D model, waist up (fe17_models)."""
+    persons = {r['Pid']: r for r in D.rows('person')}
+    for pid in [r['Pid'] for r in D.rows('reliance', '支援関係')]:
+        p = persons[pid]
+        name = U.text(p['Name'])
+        looks = [(art_id(name), name, None)]
+        if pid == 'PID_リュール' and alear_female:
+            looks.append((art_id(name) + '_female', name + ' (female)', '2'))
+        for stem, label, gender in looks:
+            spec, acc = M.unit_spec(p, gender)
+            draws, rig_w = M.assemble(spec, acc)
+            yield stem, label, spec['DressModel'], M.waist_up(draws, rig_w)
+
+
 def ring_faces(rom, files):
     """[(file stem, ring name, the sprite's name, PIL image)] for every bond ring, in ring.xml's order: its Icon names the
     sprite, each put back on its full rect."""
@@ -149,15 +171,22 @@ def main(argv):
         sheet = argv[k + 1]
         del argv[k:k + 2]
     female = '--alear-female' in argv
-    argv = [a for a in argv if a != '--alear-female']
+    level_up = '--level-up' in argv
+    argv = [a for a in argv if a not in ('--alear-female', '--level-up')]
     out = argv[0] if argv else OUT
     os.makedirs(os.path.join(out, 'rings'), exist_ok=True)
-    _update, rom, files = merged_romfs()
+    rom, files = M.romfs()[:2]
     made = []
-    for stem, label, key, im in portraits(rom, files, female):
-        bust = premultiplied_resize(square_bust(im), (SIZE, SIZE))
-        bust.save(os.path.join(out, stem + '.png'))
-        made.append((stem, f'{label} ({key})', bust))
+    if level_up:
+        for stem, label, key, im in portraits(rom, files, female):
+            bust = premultiplied_resize(square_bust(im), (SIZE, SIZE))
+            bust.save(os.path.join(out, stem + '.png'))
+            made.append((stem, f'{label} ({key})', bust))
+    else:
+        for stem, label, key, im in model_portraits(female):
+            im.save(os.path.join(out, stem + '.png'))
+            made.append((stem, f'{label} ({key})', im))
+            print(' ', label, flush=True)
     print(f'{len(made)} portraits written to {os.path.abspath(out)}')
     faces = 0
     for stem, label, key, im in ring_faces(rom, files):

@@ -198,12 +198,39 @@ Rings page, which also gives the forging chances (60/30/7/3); its heading spells
 For the user's own copy of the art only: the PNGs go to `data-raw/fe17/art/` (git-ignored) and are loaded through Bulk Upload. Read
 straight from the NSPs (the bundles aren't copied into `romfs/`).
 
-- **Which art:** the status screen draws the units in 3D; the 2D art every unit has is the face the level-up shows: Addressables
-  key `Telop/LevelUp/FaceThumb/<name>` (the catalog, `aa/catalog.bundle`), bundle `fe_assets_telop/levelup/facethumb/<name>.bundle`,
-  where `<name>` is the person's Name label less `MPID_` (person.xml), which matches all 41 (Rafal is `Rafale`, though his
-  UnitIconID is `049Il`). Alear's record is male (Gender 1): `Lueur`; the female look is `LueurW` (`--alear-female` writes it too).
-- **Format:** one Texture2D, 640x340, ASTC 4x4, Tegra block-linear swizzled; read and decoded with UnityPy (texture2ddecoder).
-- **Crop:** a square of the full height, centred on the opaque columns' middle, scaled to 256x256 (Lanczos on premultiplied alpha).
+- **Which art (the default):** each unit's 3D model as the status and inventory screens show it, waist up (the user asked for waist
+  up, 2026-11-04; the 2D art ends at the neck). `scripts/fe17_models.py` builds it (its docstring has the details):
+  - **Pieces:** the asset table (`assettable.xml`, アセット) walked in order, every row whose Conditions match overwriting the
+    fields it sets (Mode 2, the detailed models, and Mode 0, all modes). The context: the Name label (MPID_), the Pid, the class,
+    男装/女装 by Gender, and 情報 (the info screen). Accessories are kept by attach point (a later row's `l_swdbox_loc` → null
+    doesn't drop Yunaka's hair piece at `c_spine1_jnt`). All 41 resolve to their own outfit, head and pose; the rigs are
+    `uRig_HumnM1`, `uRig_HumnF1`, and `uRig_HumnF1High` (Céline) and `uRig_HumnF1Low` (Veyle). Mounted units show without the
+    mount, as the `!コンバット` rows clear it.
+  - **Pose:** the model is `App.UnitInfoWindowCharaModel`; its controller (`AC_InfoCharacter`) has StandBy-<weapon> (target
+    select, the weapon shop: `UpdateOffenseStandByAnime`), Status → StatusLoop and RelaxLoop (the ring menu: `SetStatusAnime`,
+    `SetRelaxAnime`). The portrait is the first frame of the unit's own `ianim_cXXX_statusloop` (the user's in-game photo of Yunaka
+    in the inventory shows the same pose), with the head's `fAnim_<head>_Status` face. AnimationClips are generic: streamed keys
+    (cubic segments), dense samples, constants, curves in binding order, each binding's path the CRC32 of the bone path.
+  - **Assembly:** dress and hair pieces carry a copy of the skeleton and bind to the rig by bone name; the head and a hair model sit
+    on `c_head_loc`, their root bone (`c_root_jnt`, or `c_hairroot_jnt`) there times the orientation it was bound in (Vander's
+    hair was bound turned 90 degrees); a bone-less hair (Lindon, Mauvier) by its prefab root; other accessories at their locator.
+    Bone weights are 16-bit fractions (summing to 65535).
+  - **Materials** (from their properties; the shader is compiled): base map times `_BaseColor`; a face with `_Makeup` keeps its
+    texture untinted (its skin is painted in: Yunaka's face middle is (255, 224, 209), her table skin colour); other skin takes the
+    table's `SkinR/G/B` (Zelkov's ashen (121, 112, 110) is his: his 2D art matches); hair: `_BaseColor` toward `_GradationColor` by
+    the vertex colour's green, plus `_AngelRingMap` on UV1; eyes flatten their decals; shadow tint from `_ToonRamp`; outlines an
+    inverted hull of `_OutlineScale` times the vertex colour's red, cut through texture holes (Ivy's lace veil).
+  - **Lights:** the menu model's prefab (`fe_assets_ui/common/unitinfo/prefabs/unitinfowindowcharamodel`): a white directional
+    light at 1 and a (0.769, 0.692, 0.792) one at 0.5 from below, worked in linear light; that camera's post-processing profile
+    (PPP_CharaImage) is bloom alone, so nothing grades the colour.
+  - **Crop:** a square from the hips' joint to above the head (hair and hats included), 384x384, rendered at 3x and scaled down.
+- **`--level-up`:** the 2D art every unit has, the face the level-up shows: Addressables key `Telop/LevelUp/FaceThumb/<name>` (the
+  catalog, `aa/catalog.bundle`), bundle `fe_assets_telop/levelup/facethumb/<name>.bundle`, where `<name>` is the person's Name
+  label less `MPID_` (person.xml), which matches all 41 (Rafal is `Rafale`, though his UnitIconID is `049Il`). One Texture2D,
+  640x340, ASTC 4x4, Tegra block-linear swizzled (UnityPy, texture2ddecoder); a square of the full height, centred on the opaque
+  columns' middle, scaled to 256x256 (Lanczos on premultiplied alpha). The folder also holds the Emblems' faces.
+- **Alear:** the person record is male (Gender 1); `--alear-female` also writes the female look (`alear_female.png`: the 女装
+  models, or `LueurW` with `--level-up`).
 - **File names:** the app's artId (src/tellius/logic.ts): the English name with its accents dropped, lower-cased, each run of
   anything but a-z and 0-9 as one "_" (Céline: `celine.png`, as the Roster looks it up).
 - **Bond Ring faces** (`rings/<ring>.png`, 123): the Ring Chamber's, `fe_assets_ui/hub/godroom/face/face.bundle`: one SpriteAtlas
@@ -214,5 +241,5 @@ straight from the NSPs (the bundles aren't copied into `romfs/`).
 - **Other 2D art found, not used:** the unit list's 188x74 strips (`fe_assets_ui/common/unitlist/facethumb`), the Somniel
   notebook's photos (3D renders with backgrounds, `fe_assets_ui/hub/notebook/pictures`), the ring book's Emblem faces
   (`fe_assets_ui/hub/ringbook/godface/godface.bundle`, 24 Sprites of 388x388, Ephraim's not among them).
-- **Run:** `python scripts/fe17_portraits.py` (41 portraits and 123 Bond Ring faces; `--sheet <png>` for a labelled contact sheet).
-  Needs `pip install UnityPy`.
+- **Run:** `python scripts/fe17_portraits.py` (41 portraits and 123 Bond Ring faces, about a minute; `--sheet <png>` for a
+  labelled contact sheet, `--level-up` for the 2D faces). Needs `pip install UnityPy numba`.
