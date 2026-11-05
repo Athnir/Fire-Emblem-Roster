@@ -233,13 +233,11 @@ def _matches(cond, keys):
 _TABLE = None
 
 
-def unit_spec(person, gender=None):
-    """The asset table's fields for a person on the info screen, and their accessories by attach point."""
+def resolve(keys):
+    """The asset table's fields for a context (Mode 2 and Mode 0 rows, in order), and the accessories by attach point."""
     global _TABLE
     if _TABLE is None:
         _TABLE = [r for r in D.rows('assettable') if r.get('Conditions')]
-    female = (gender or person.get('Gender')) == '2'
-    keys = {person['Name'], person['Pid'], person['Jid'], '女装' if female else '男装', '情報'}
     spec, acc = {}, {}
     for r in _TABLE:
         if (r.get('Mode') or '0') not in ('2', '0') or not _matches(r['Conditions'], keys):
@@ -258,6 +256,17 @@ def unit_spec(person, gender=None):
                 else:
                     acc[loc] = model
     return spec, acc
+
+
+def unit_spec(person, gender=None):
+    """A person on the info screen: their Name label, Pid, class, 男装 or 女装 by Gender (gender='2' for the other Alear) and 情報."""
+    female = (gender or person.get('Gender')) == '2'
+    return resolve({person['Name'], person['Pid'], person['Jid'], '女装' if female else '男装', '情報'})
+
+
+def emblem_spec(god):
+    """An Emblem (a god.xml row) on the info screen: its Gid, 男装 or 女装 by its Female flag, and 情報."""
+    return resolve({god['Gid'], '女装' if god.get('Female') == '1' else '男装', '情報'})
 
 
 # ---------------------------------------------------------------------------------------------------------------------------
@@ -544,10 +553,10 @@ def render(draws, cam, outline=0.0016):
     return buf
 
 
-def waist_up(draws, rig_w, size=384, supersample=3, fov=16.0):
-    """A square from the hips' joint to above the head's top (hair and hats included), the camera level with its middle."""
+def _square(draws, rig_w, bottom, size, supersample, fov):
+    """A square from bottom to above the head's top (hair and hats included), the camera level with its middle."""
     heads = np.concatenate([d['P'] for d in draws if any(k in d['src'] for k in ('/uhead/', '/uhair/', '/head/', '/hair'))])
-    top, bottom = heads[:, 1].max(), rig_w['c_hip_jnt'][1, 3] + 0.03
+    top = heads[:, 1].max()
     head = rig_w['c_head_loc'][:3, 3]
     side = (top - bottom) * 1.06
     cam = Camera((head[0], bottom + side / 2 - 0.01, head[2]), (side / 2) / np.tan(np.radians(fov) / 2), fov,
@@ -555,3 +564,13 @@ def waist_up(draws, rig_w, size=384, supersample=3, fov=16.0):
     buf = render(draws, cam)
     img = Image.fromarray((np.clip(buf, 0, 1) * 255 + 0.5).astype(np.uint8), 'RGBA')
     return img.resize((size, size), Image.LANCZOS)
+
+
+def waist_up(draws, rig_w, size=384, supersample=3, fov=16.0):
+    """From the hips' joint to above the head: the units' portraits."""
+    return _square(draws, rig_w, rig_w['c_hip_jnt'][1, 3] + 0.03, size, supersample, fov)
+
+
+def bust(draws, rig_w, size=388, supersample=3, fov=16.0):
+    """From the upper chest to above the head, as the ring book frames the Emblems."""
+    return _square(draws, rig_w, rig_w['c_spine2_jnt'][1, 3] + 0.02, size, supersample, fov)

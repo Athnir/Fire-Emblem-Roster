@@ -1,5 +1,6 @@
+import { AssetIcon } from '../components/AssetIcon'
 import { Portrait } from '../components/Portrait'
-import { emblemFaceId, ringFaceId } from './art'
+import { emblemFaceId, FEMALE_ALEAR, ringFaceId, skillIconId } from './art'
 import { artId, chip, selectClass } from './hooks'
 import { fmt, type Fe17Data } from './logic'
 import { useFe17Store } from './store'
@@ -8,7 +9,9 @@ import { FE17_STATS, FE17_STAT_LABELS, type Fe17Stat, type Fe17StatsMov, type Fe
 // Engage's shared components.
 
 export function UnitPortrait({ data, unit, size = 64 }: { data: Fe17Data; unit: Fe17Unit; size?: number }) {
-  return <Portrait characterId={artId(data.gameId, unit.name)} isChild={false} size={size} />
+  // Alear picked female shows her own portrait.
+  const female = useFe17Store((s) => s.picks.alear) === 'f' && unit.id === 'fe17-alear'
+  return <Portrait characterId={artId(data.gameId, female ? FEMALE_ALEAR : unit.name)} isChild={false} size={size} />
 }
 
 /** A Bond Ring's face: its hero as the Ring Chamber shows them (Bulk Upload's "rings" folder). */
@@ -18,7 +21,29 @@ export function RingFace({ data, ring, size = 36 }: { data: Fe17Data; ring: stri
 
 /** An Emblem's face, as the Somniel's ring book shows it (Bulk Upload's "emblems" folder). */
 export function EmblemFace({ data, emblem, size = 64 }: { data: Fe17Data; emblem: string; size?: number }) {
-  return <Portrait characterId={emblemFaceId(data.gameId, emblem)} isChild={false} size={size} />
+  // The Emblem Alear follows the gender Alear is picked.
+  const female = useFe17Store((s) => s.picks.alear) === 'f' && emblem === 'Alear'
+  return <Portrait characterId={emblemFaceId(data.gameId, female ? FEMALE_ALEAR : emblem)} isChild={false} size={size} />
+}
+
+/** A skill's icon, as the game draws it (Bulk Upload's "skills" folder). */
+export function SkillIcon({ data, skill, size = 20 }: { data: Fe17Data; skill: string; size?: number }) {
+  return <AssetIcon type="skill" iconId={skillIconId(data.gameId, skill)} label={skill} size={size} />
+}
+
+/** Skills in a row that wraps, each with its icon. */
+export function SkillChips({ data, skills, size = 16 }: { data: Fe17Data; skills: { name: string; note?: string }[]; size?: number }) {
+  return (
+    <span className="flex flex-wrap gap-x-2 gap-y-0.5">
+      {skills.map((s) => (
+        <span key={s.name + (s.note ?? '')} className="inline-flex items-center gap-1 whitespace-nowrap">
+          <SkillIcon data={data} skill={s.name} size={size} />
+          {s.name}
+          {s.note && <span className="text-neutral-500">{s.note}</span>}
+        </span>
+      ))}
+    </span>
+  )
 }
 
 type Row = { label: string; values: Partial<Fe17StatsMov>; caps?: Partial<Fe17StatsMov>; suffix?: string; extra?: Partial<Record<Fe17Stat | 'mov', number>> }
@@ -126,9 +151,12 @@ export function SkillList({ data, skills }: { data: Fe17Data; skills: string[] }
   return (
     <ul className="space-y-1 text-sm">
       {skills.map((s) => (
-        <li key={s}>
-          <span className="font-medium text-neutral-200">{s}</span>
-          {data.skills[s] && <span className="text-neutral-400">: {data.skills[s]}</span>}
+        <li key={s} className="flex items-start gap-2">
+          <SkillIcon data={data} skill={s} />
+          <span>
+            <span className="font-medium text-neutral-200">{s}</span>
+            {data.skills[s] && <span className="text-neutral-400">: {data.skills[s]}</span>}
+          </span>
         </li>
       ))}
     </ul>

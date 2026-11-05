@@ -1,7 +1,7 @@
 import { UploadSection } from '../components/BulkAssetUpload'
 import { LinearSpoilerBar } from '../components/LinearSpoilerBar'
 import { FE17_BOND_RINGS, FE17_BOOSTERS, FE17_CHAPTERS, FE17_CLASSES, FE17_EMBLEMS, FE17_SKILLS, FE17_SUPPORTS, FE17_UNITS } from '../data/fe17/fe17Units'
-import { fe17Art, matchEmblemFaces, matchRingFaces } from '../engage/art'
+import { FEMALE_ALEAR, fe17Art, matchEmblemFaces, matchRingFaces, matchSkillIcons } from '../engage/art'
 import { Fe17BulkViewer } from '../engage/bulk'
 import type { Fe17Data } from '../engage/logic'
 import { Fe17Planner } from '../engage/planner'
@@ -23,14 +23,16 @@ export const FE17_DATA: Fe17Data = {
   boosters: FE17_BOOSTERS,
 }
 
-// The bulk upload matches portraits by unit name, Bond Ring faces (in a "rings" folder) by the ring's name, Emblem faces (in an
-// "emblems" folder) by the Emblem's; skill icons (in a "skills" folder) by skill name.
+// The bulk upload matches portraits by unit name (and the female Alear's, alear_female.png), Bond Ring faces (in a "rings" folder)
+// by the ring's name, Emblem faces (in an "emblems" folder) by the Emblem's, skill icons (in a "skills" folder) by the skill's.
 const UPLOAD_DATA = {
   gameId: 'fe17',
-  units: FE17_UNITS,
-  skills: Object.fromEntries(Object.keys(FE17_SKILLS).map((name) => [name, { name }])),
+  units: [...FE17_UNITS, { name: FEMALE_ALEAR }],
+  skills: {},
 } as unknown as TelliusData
-const UPLOAD_ART = fe17Art(UPLOAD_DATA, FE17_BOND_RINGS, FE17_EMBLEMS)
+const EMBLEM_FACES = [...FE17_EMBLEMS.map((e) => e.name), FEMALE_ALEAR]
+const SKILL_NAMES = Object.keys(FE17_SKILLS)
+const UPLOAD_ART = fe17Art(UPLOAD_DATA, FE17_BOND_RINGS, EMBLEM_FACES, SKILL_NAMES)
 const RING_COUNT = FE17_BOND_RINGS.reduce((n, s) => n + s.rings.length, 0)
 
 const fe17: GameParts = {
@@ -51,8 +53,12 @@ const fe17: GameParts = {
       title="Engage"
       onClose={onClose}
       folder={{
-        hint: 'Portraits named like "alear.png"; Bond Ring faces in a "rings" folder, named like "caeda.png"; Emblem faces in an "emblems" folder, named like "sigurd.png".',
+        hint: 'Portraits named like "alear.png" (the female Alear: "alear_female.png"); Bond Ring faces in a "rings" folder, named like "caeda.png"; Emblem faces in an "emblems" folder, named like "sigurd.png"; skill icons in a "skills" folder, named like "lunar_brace_plus.png".',
         match: UPLOAD_ART.match,
+      }}
+      skills={{
+        hint: `Files named after each skill, each "+" as "plus", like "lunar_brace_plus.png" (${SKILL_NAMES.length} skills).`,
+        match: (files) => matchSkillIcons('fe17', SKILL_NAMES, files),
       }}
     >
       <UploadSection
@@ -62,13 +68,13 @@ const fe17: GameParts = {
       />
       <UploadSection
         title="Emblem faces"
-        hint={`Files named after each Emblem, like "sigurd.png" (${FE17_EMBLEMS.length} Emblems).`}
-        match={(files) => matchEmblemFaces('fe17', FE17_EMBLEMS, files)}
+        hint={`Files named after each Emblem, like "sigurd.png" (${FE17_EMBLEMS.length} Emblems, and "alear_female.png").`}
+        match={(files) => matchEmblemFaces('fe17', EMBLEM_FACES, files)}
       />
     </TelliusBulkUpload>
   ),
-  // Engage's screens show no skill icons, so its folder holds the portraits, and the Bond Ring and Emblem faces.
-  art: fe17Art({ ...UPLOAD_DATA, skills: {} } as TelliusData, FE17_BOND_RINGS, FE17_EMBLEMS),
+  // Engage's folder: the portraits, the Bond Ring and Emblem faces, and the skill icons.
+  art: UPLOAD_ART,
 }
 
 export default fe17

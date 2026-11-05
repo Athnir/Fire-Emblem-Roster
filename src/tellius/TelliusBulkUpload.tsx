@@ -9,6 +9,7 @@ export function TelliusBulkUpload({
   title,
   onClose,
   folder,
+  skills,
   children,
 }: {
   data: TelliusData
@@ -16,6 +17,8 @@ export function TelliusBulkUpload({
   onClose: () => void
   /** A game whose folder holds more than portraits, skill icons and layers (Engage's Bond Ring faces): its own matcher and hint. */
   folder?: { hint: string; match: (files: File[]) => MatchResult }
+  /** A game whose skill icons are named its own way (Engage's "+" spelled out): its matcher and hint for the Skill icons section. */
+  skills?: { hint: string; match: (files: File[]) => MatchResult }
   /** The game's own upload-by-category sections, after the skill icons. */
   children?: ReactNode
 }) {
@@ -49,8 +52,8 @@ export function TelliusBulkUpload({
         />
         <UploadSection
           title="Skill icons"
-          hint={`Files named after each skill, like "sol.png" (${Object.keys(data.skills).length} skills).`}
-          match={(files) => matchSkills(data, files)}
+          hint={skills?.hint ?? `Files named after each skill, like "sol.png" (${Object.keys(data.skills).length} skills).`}
+          match={skills?.match ?? ((files) => matchSkills(data, files))}
         />
         {children}
       </div>

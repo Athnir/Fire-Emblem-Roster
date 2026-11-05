@@ -42,7 +42,8 @@ new rule, add it here.
   into the user's personal zip (`Documents\FE Games\FE Roster Art.zip`), never into the repo.
 - **Engage's portraits are its 3D models, waist up** (user, 2026-11-04): posed and lit as its status and inventory screens draw
   them (`scripts/fe17_models.py`), since its only 2D art of the units ends at the neck. Each Bond Ring shows its hero's face, and
-  each Emblem Ring its Emblem's, from the Somniel's ring book (user, 2026-11-04; Ephraim has none in the game).
+  each Emblem Ring its Emblem's, from the Somniel's ring book (user, 2026-11-04; Ephraim's, which the book lacks, drawn from his
+  model). Alear picked female shows her own portrait and Emblem face; skills show the game's icons.
 
 ## Data sources
 

@@ -3,11 +3,15 @@ import { matchByStem, type GameArt, type MatchResult } from '../logic/bulkAssetI
 import { telliusArt } from '../tellius/art'
 import type { TelliusData } from '../tellius/types'
 import { artId } from './hooks'
-import type { Fe17BondRingSet, Fe17Emblem } from './types'
+import type { Fe17BondRingSet } from './types'
 
 // Engage's art: the units' portraits, as the other games' (src/tellius/art.ts), each Bond Ring's face, kept under the game's
-// "rings/", and each Emblem's, under "emblems/", so a hero who shares a unit's name (the Heroes ring Anna, Engage's Anna) or an
-// Emblem's (the Bond Ring Chrom, the Emblem Chrom) stays apart.
+// "rings/", each Emblem's, under "emblems/", and each skill's icon, under "skills/", so a hero who shares a unit's name (the Heroes
+// ring Anna, Engage's Anna) or an Emblem's (the Bond Ring Chrom, the Emblem Chrom) stays apart.
+
+/** The name the female Alear's art is kept under (alear_female.png), as a portrait and as the Emblem: the app shows it when Alear is
+ * picked female. */
+export const FEMALE_ALEAR = 'Alear Female'
 
 /** A face's file name, without ".png": the name as a unit's portrait is named ("Black Knight": black_knight). */
 function stem(gameId: string, name: string): string {
@@ -24,15 +28,22 @@ export function emblemFaceId(gameId: string, emblem: string): string {
   return `${gameId}/emblems/${stem(gameId, emblem)}`
 }
 
-/** The Emblems the game has no face of: Ephraim shows only beside Eirika (data-raw/fe17/README.md, "Portraits"). */
-const NO_FACE = new Set(['Ephraim'])
+/** The id a skill's icon is kept and looked up by: the name as a portrait's, each "+" spelled out ('fe17/lunar_brace_plus'), as
+ * Engage has both Lunar Brace and Lunar Brace+ (and Unyielding++), which would otherwise share one. */
+export function skillIconId(gameId: string, skill: string): string {
+  return artId(gameId, skill.replace(/\+/g, ' plus'))
+}
 
 function ringEntries(gameId: string, sets: Fe17BondRingSet[]) {
   return sets.flatMap((s) => s.rings.map((r) => ({ id: stem(gameId, r.name), label: `${r.name} (Bond Ring)` })))
 }
 
-function emblemEntries(gameId: string, emblems: Fe17Emblem[]) {
-  return emblems.map((e) => ({ id: stem(gameId, e.name), label: `${e.name} (Emblem)` }))
+function emblemEntries(gameId: string, emblems: string[]) {
+  return emblems.map((e) => ({ id: stem(gameId, e), label: `${e} (Emblem)` }))
+}
+
+function skillEntries(gameId: string, skills: string[]) {
+  return skills.map((s) => ({ id: skillIconId(gameId, s).slice(gameId.length + 1), label: s }))
 }
 
 /** Bond Ring faces by file name ("caeda.png"). */
@@ -41,31 +52,38 @@ export function matchRingFaces(gameId: string, sets: Fe17BondRingSet[], files: F
 }
 
 /** Emblem faces by file name ("sigurd.png"). */
-export function matchEmblemFaces(gameId: string, emblems: Fe17Emblem[], files: File[]): MatchResult {
+export function matchEmblemFaces(gameId: string, emblems: string[], files: File[]): MatchResult {
   return matchByStem(files, emblemEntries(gameId, emblems), (id) => assetKeys.portrait(`${gameId}/emblems/${id}`))
+}
+
+/** Skill icons by file name ("lunar_brace_plus.png"). */
+export function matchSkillIcons(gameId: string, skills: string[], files: File[]): MatchResult {
+  return matchByStem(files, skillEntries(gameId, skills), (id) => assetKeys.skillIcon(`${gameId}/${id}`))
 }
 
 const inFolder = (f: File, folder: string) =>
   ((f as File & { webkitRelativePath?: string }).webkitRelativePath || f.name).replace(/\\/g, '/').toLowerCase().split('/').includes(folder)
 
-/** Engage's folder for Bulk Upload: files in a "rings" folder are Bond Ring faces, in an "emblems" folder Emblem faces, the rest are
- * read as the other games' are. */
-export function fe17Art(data: TelliusData, sets: Fe17BondRingSet[], emblems: Fe17Emblem[]): GameArt {
-  const rest = telliusArt(data)
+/** Engage's folder for Bulk Upload: files in a "rings" folder are Bond Ring faces, in "emblems" Emblem faces, in "skills" skill
+ * icons; the rest are portraits, read as the other games' are (data.units: the units, and the female Alear). */
+export function fe17Art(data: TelliusData, sets: Fe17BondRingSet[], emblems: string[], skills: string[]): GameArt {
+  const portraits = telliusArt({ ...data, skills: {} })
+  const own = (f: File) => inFolder(f, 'rings') || inFolder(f, 'emblems') || inFolder(f, 'skills')
   return {
     match: (files) => {
-      const rings = matchRingFaces(data.gameId, sets, files.filter((f) => inFolder(f, 'rings')))
-      const faces = matchEmblemFaces(data.gameId, emblems, files.filter((f) => inFolder(f, 'emblems')))
-      const others = rest.match(files.filter((f) => !inFolder(f, 'rings') && !inFolder(f, 'emblems')))
-      return {
-        matched: [...others.matched, ...rings.matched, ...faces.matched],
-        unmatched: [...others.unmatched, ...rings.unmatched, ...faces.unmatched],
-      }
+      const parts = [
+        portraits.match(files.filter((f) => !own(f))),
+        matchRingFaces(data.gameId, sets, files.filter((f) => inFolder(f, 'rings'))),
+        matchEmblemFaces(data.gameId, emblems, files.filter((f) => inFolder(f, 'emblems'))),
+        matchSkillIcons(data.gameId, skills, files.filter((f) => inFolder(f, 'skills'))),
+      ]
+      return { matched: parts.flatMap((p) => p.matched), unmatched: parts.flatMap((p) => p.unmatched) }
     },
     expected: [
-      ...rest.expected,
+      ...portraits.expected,
       ...ringEntries(data.gameId, sets).map((e) => `rings/${e.id}.png`),
-      ...emblemEntries(data.gameId, emblems.filter((e) => !NO_FACE.has(e.name))).map((e) => `emblems/${e.id}.png`),
+      ...emblemEntries(data.gameId, emblems).map((e) => `emblems/${e.id}.png`),
+      ...skillEntries(data.gameId, skills).map((e) => `skills/${e.id}.png`),
     ],
   }
 }

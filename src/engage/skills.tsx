@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useArmy, useScreenshotUnit, useUnitPlan } from './hooks'
 import { inheritable, type Fe17Data } from './logic'
-import { UnitSelect } from './ui'
+import { SkillIcon, UnitSelect } from './ui'
 
 /** The skill slots inheriting fills (Unit.EquipSkillMax). */
 const SLOTS = 2
@@ -63,8 +63,11 @@ export function Fe17SkillPlanner({ data }: { data: Fe17Data }) {
                   on ? 'border-violet-500 bg-violet-950/50 text-violet-200' : 'border-neutral-700 bg-neutral-800 text-neutral-300 hover:border-neutral-600'
                 }`}
               >
-                <span>
-                  {s.name} <span className="text-neutral-500">({s.sp} SP)</span>
+                <span className="flex items-center gap-1.5">
+                  <SkillIcon data={data} skill={s.name} size={18} />
+                  <span>
+                    {s.name} <span className="text-neutral-500">({s.sp} SP)</span>
+                  </span>
                 </span>
                 <span className="text-[10px] leading-tight text-neutral-500">{s.ways.join(', ')}</span>
               </button>

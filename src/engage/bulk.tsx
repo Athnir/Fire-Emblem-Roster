@@ -3,7 +3,7 @@ import { useReached } from '../state/spoilerStore'
 import { armyWith, plansWith, selectClass } from './hooks'
 import { project, shownStats, type Fe17Data } from './logic'
 import { useFe17Builds, useFe17Store } from './store'
-import { StatGrid, UnitPortrait } from './ui'
+import { SkillChips, StatGrid, UnitPortrait } from './ui'
 
 /** As Fates' Team Viewer: the plans and picks, now or in a saved set, with every unit's final class, stats and inherited skills at
  * once; and the saved sets themselves. */
@@ -114,7 +114,11 @@ export function Fe17BulkViewer({ data }: { data: Fe17Data }) {
                 · {r.cls.name} Lv {r.level}
               </span>
             </div>
-            {r.skills.length > 0 && <div className="text-xs text-neutral-400">{r.skills.join(', ')}</div>}
+            {r.skills.length > 0 && (
+              <div className="text-xs text-neutral-400">
+                <SkillChips data={data} skills={r.skills.map((name) => ({ name }))} size={14} />
+              </div>
+            )}
             <StatGrid values={r.stats} />
           </div>
         ))}

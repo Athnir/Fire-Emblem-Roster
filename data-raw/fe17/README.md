@@ -229,8 +229,8 @@ straight from the NSPs (the bundles aren't copied into `romfs/`).
   label less `MPID_` (person.xml), which matches all 41 (Rafal is `Rafale`, though his UnitIconID is `049Il`). One Texture2D,
   640x340, ASTC 4x4, Tegra block-linear swizzled (UnityPy, texture2ddecoder); a square of the full height, centred on the opaque
   columns' middle, scaled to 256x256 (Lanczos on premultiplied alpha). The folder also holds the Emblems' faces.
-- **Alear:** the person record is male (Gender 1); `--alear-female` also writes the female look (`alear_female.png`: the 女装
-  models, or `LueurW` with `--level-up`).
+- **Alear:** the person record is male (Gender 1); the female look is written too (`alear_female.png`: the 女装 models, or `LueurW`
+  with `--level-up`), and the app shows it when Alear is picked female (and the Emblem Alear's `emblems/alear_female.png`).
 - **File names:** the app's artId (src/tellius/logic.ts): the English name with its accents dropped, lower-cased, each run of
   anything but a-z and 0-9 as one "_" (Céline: `celine.png`, as the Roster looks it up).
 - **Bond Ring faces** (`rings/<ring>.png`, 123): the Ring Chamber's, `fe_assets_ui/hub/godroom/face/face.bundle`: one SpriteAtlas
@@ -241,9 +241,18 @@ straight from the NSPs (the bundles aren't copied into `romfs/`).
 - **Emblem faces** (`emblems/<emblem>.png`, 23): the ring book's, `fe_assets_ui/hub/ringbook/godface/godface.bundle`: one
   SpriteAtlas (`GodFace`) with a Sprite per Emblem, named by god.xml's `AsciiName` (`Siglud`, `Leaf`, `Lin`, `Kamui`, `Eirik`,
   `Senerio`, `Reflet`; `Lueur` and `LueurW` for the two Alears), 388x388 trimmed as the ring faces are, scaled to 192x192. Every
-  playable Emblem (a `GID_<name>` row) has one but Ephraim, whom the game shows only beside Eirika; his card keeps the blank.
-  god.xml's `FaceIconName` (`Face_Marth`...) names no sprite or catalog key in the dump.
+  playable Emblem (a `GID_<name>` row) has one but Ephraim (he shows on his own in the Night and Day switch and engaged, but not in
+  the ring book): his is drawn from his Emblem model (the asset table's `GID_エフラム` row: `uRig_GodM1`, `uBody_Eph0AM_c536`,
+  `uHead_c536`, `uHair_h536`, the status loop `ianim_c536_statusloop`), framed as the ring book frames them (upper chest to above
+  the head), its colours deepened a little (gamma 1.18) and given the ring book's blue glow. god.xml's `FaceIconName`
+  (`Face_Marth`...) names no sprite or catalog key in the dump.
+- **Skill icons** (`skills/<skill>.png`, 473, 56x56): the skill atlas `fe_assets_ui/icon/skill/skill.bundle` (one SpriteAtlas, 516
+  Sprites named in Japanese). A skill's sprite is skill.xml's `IconLabel`, or with none its Sid less `SID_` (月の腕輪＋ for Lunar
+  Brace+); IconKind 1 rows name effectiveness icons from another atlas. Every skill the app lists has one (checked against the
+  user's photos: Divinely Inspiring, Speedtaker, Night and Day, Solar Brace+...). The file name spells each `+` as `plus`
+  (`lunar_brace_plus.png`), as Lunar Brace and Lunar Brace+ (and Unyielding++) would otherwise share one.
 - **Other 2D art found, not used:** the unit list's 188x74 strips (`fe_assets_ui/common/unitlist/facethumb`), the Somniel
   notebook's photos (3D renders with backgrounds, `fe_assets_ui/hub/notebook/pictures`).
-- **Run:** `python scripts/fe17_portraits.py` (41 portraits, 123 Bond Ring faces and 23 Emblem faces, about a minute; `--sheet <png>` for a
+- **Run:** `python scripts/fe17_portraits.py` (42 portraits with the female Alear, 123 Bond Ring faces, 25 Emblem faces and 473
+  skill icons, about a minute; `--sheet <png>` for a
   labelled contact sheet, `--level-up` for the 2D faces). Needs `pip install UnityPy numba`.

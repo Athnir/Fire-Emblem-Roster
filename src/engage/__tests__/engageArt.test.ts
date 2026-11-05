@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { assetKeys } from '../../data/assetStorage'
-import { FE17_BOND_RINGS, FE17_EMBLEMS, FE17_UNITS } from '../../data/fe17/fe17Units'
+import { FE17_BOND_RINGS, FE17_EMBLEMS, FE17_SKILLS, FE17_UNITS } from '../../data/fe17/fe17Units'
 import fe17 from '../../games/fe17'
-import { emblemFaceId, ringFaceId } from '../art'
+import { emblemFaceId, ringFaceId, skillIconId } from '../art'
 import { artId } from '../hooks'
 
 /** A file as a picked folder, or an unzipped .zip, gives it: its name, and its path in webkitRelativePath. */
@@ -23,6 +23,9 @@ describe('Engage art', () => {
     }
     expect(keyOf('fe17/celine.png')).toBe('portrait:fe17/celine')
     expect(keyOf('fe17/chloe.png')).toBe('portrait:fe17/chloe')
+    // The female Alear has a portrait of her own, shown when Alear is picked female.
+    expect(keyOf('fe17/alear_female.png')).toBe('portrait:fe17/alear_female')
+    expect(fe17.art.expected).toContain('alear_female.png')
   })
 
   it("gives every Bond Ring a face of its own, in the folder's \"rings\", apart from the units' portraits", () => {
@@ -44,8 +47,20 @@ describe('Engage art', () => {
     // The Emblem Chrom and the Bond Ring Chrom.
     expect(keyOf('fe17/emblems/chrom.png')).toBe('portrait:fe17/emblems/chrom')
     expect(keyOf('fe17/rings/chrom.png')).toBe('portrait:fe17/rings/chrom')
-    // The ring book has a face for every Emblem but Ephraim, who shows only beside Eirika.
-    expect(fe17.art.expected.filter((p) => p.startsWith('emblems/'))).toHaveLength(23)
-    expect(fe17.art.expected).not.toContain('emblems/ephraim.png')
+    // Every Emblem has one (Ephraim's drawn from his model), and the female Alear's Emblem too.
+    expect(fe17.art.expected.filter((p) => p.startsWith('emblems/'))).toHaveLength(25)
+    expect(fe17.art.expected).toContain('emblems/ephraim.png')
+    expect(keyOf('fe17/emblems/alear_female.png')).toBe('portrait:fe17/emblems/alear_female')
+  })
+
+  it('gives every skill an icon of its own, a "+" spelled out so Lunar Brace and Lunar Brace+ stay apart', () => {
+    const names = Object.keys(FE17_SKILLS)
+    const ids = names.map((n) => skillIconId('fe17', n))
+    expect(new Set(ids).size).toBe(names.length)
+    for (const [i, n] of names.entries()) expect(keyOf(`fe17/skills/${ids[i].slice('fe17/'.length)}.png`), n).toBe(`icon:skill:${ids[i]}`)
+    expect(skillIconId('fe17', 'Lunar Brace')).toBe('fe17/lunar_brace')
+    expect(skillIconId('fe17', 'Lunar Brace+')).toBe('fe17/lunar_brace_plus')
+    expect(skillIconId('fe17', 'Unyielding++')).toBe('fe17/unyielding_plus_plus')
+    expect(fe17.art.expected.filter((p) => p.startsWith('skills/'))).toHaveLength(names.length)
   })
 })

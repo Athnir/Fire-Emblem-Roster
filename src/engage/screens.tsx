@@ -3,7 +3,7 @@ import { useReached } from '../state/spoilerStore'
 import { chip, selectClass, useArmy, useScreenshotUnit } from './hooks'
 import { capsOf, chapterLabel, supportsOf, type Fe17Data } from './logic'
 import { FE17_STAT_LABELS, type Fe17BondRingSet, type Fe17StatsMov, type Fe17Unit } from './types'
-import { AlearPicker, EmblemFace, RingFace, SkillList, StatTable, UnitPortrait, UnitSelect } from './ui'
+import { AlearPicker, EmblemFace, RingFace, SkillChips, SkillIcon, SkillList, StatTable, UnitPortrait, UnitSelect } from './ui'
 
 function UnitDetail({ data, unit, reached }: { data: Fe17Data; unit: Fe17Unit; reached?: Set<string> }) {
   const cls = data.classes[unit.classId]
@@ -305,9 +305,12 @@ function RingSet({ data, set }: { data: Fe17Data; set: Fe17BondRingSet }) {
                         <span className="text-neutral-600">—</span>
                       ) : (
                         ringSkills.map((s) => (
-                          <div key={s}>
-                            <span className="text-neutral-100">{s}</span>
-                            {skills[s] && <span className="text-xs text-neutral-500">: {skills[s]}</span>}
+                          <div key={s} className="flex items-start gap-1.5">
+                            <SkillIcon data={data} skill={s} />
+                            <span>
+                              <span className="text-neutral-100">{s}</span>
+                              {skills[s] && <span className="text-xs text-neutral-500">: {skills[s]}</span>}
+                            </span>
                           </div>
                         ))
                       )}
@@ -375,7 +378,10 @@ function EmblemRings({ data, reached }: { data: Fe17Data; reached?: Set<string> 
             <tbody>
               {e.levels.map((lv, i) => {
                 const before = e.levels[i - 1]
-                const fresh = [...lv.sync.filter((s) => !before?.sync.includes(s)), ...lv.engage.filter((s) => !before?.engage.includes(s)).map((s) => `${s} (engaged)`)]
+                const fresh = [
+                  ...lv.sync.filter((s) => !before?.sync.includes(s)).map((name) => ({ name })),
+                  ...lv.engage.filter((s) => !before?.engage.includes(s)).map((name) => ({ name, note: '(engaged)' })),
+                ]
                 return (
                   <tr key={lv.level} className="border-t border-neutral-800 align-top">
                     <td className="py-1 pr-2 tabular-nums text-neutral-400">{lv.level}</td>
@@ -384,8 +390,12 @@ function EmblemRings({ data, reached }: { data: Fe17Data; reached?: Set<string> 
                         .map(([s, v]) => `${FE17_STAT_LABELS[s as keyof typeof FE17_STAT_LABELS]} +${v}`)
                         .join(', ')}
                     </td>
-                    <td className="px-1 py-1 text-neutral-300">{fresh.join(', ')}</td>
-                    <td className="px-1 py-1 text-neutral-300">{lv.inherit.map((s) => `${s.name} (${s.sp})`).join(', ')}</td>
+                    <td className="px-1 py-1 text-neutral-300">
+                      <SkillChips data={data} skills={fresh} />
+                    </td>
+                    <td className="px-1 py-1 text-neutral-300">
+                      <SkillChips data={data} skills={lv.inherit.map((s) => ({ name: s.name, note: `(${s.sp})` }))} />
+                    </td>
                     <td className="px-1 py-1 text-neutral-300">{lv.proficiency.join(', ')}</td>
                   </tr>
                 )
