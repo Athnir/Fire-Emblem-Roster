@@ -1,3 +1,4 @@
+import { StatBlocks } from '../components/StatBlocks'
 import { AssetIcon } from '../components/AssetIcon'
 import { PlanSets } from '../components/PlanSets'
 import { Portrait } from '../components/Portrait'
@@ -35,46 +36,15 @@ export function SkillChips({ data, skills, size = 16 }: { data: Fe16Data; skills
 
 type Row = { label: string; values: Partial<Fe16Stats> & { mov?: number }; caps?: Partial<Fe16Stats>; suffix?: string; mov?: boolean }
 
-/** Rows of stats, a column per stat (and Mov where a row has it); a stat at its cap is green. */
+/** Rows of stats, each a block of stats four to a line (as Fates' planner), Mov where a row has it; a stat at its cap is green. */
 export function StatTable({ rows }: { rows: Row[] }) {
-  const mov = rows.some((r) => r.mov)
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[30rem] text-sm">
-        <thead>
-          <tr className="text-xs text-neutral-500">
-            <th className="py-1 pr-2 text-left font-normal" />
-            {FE16_STATS.map((s) => (
-              <th key={s} className="px-1 py-1 text-right font-normal">
-                {FE16_STAT_LABELS[s]}
-              </th>
-            ))}
-            {mov && <th className="px-1 py-1 text-right font-normal">Mov</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row, i) => (
-            <tr key={`${row.label}-${i}`} className="border-t border-neutral-800">
-              <td className="whitespace-nowrap py-1 pr-2 text-xs text-neutral-400">{row.label}</td>
-              {FE16_STATS.map((s) => {
-                const cap = row.caps?.[s]
-                const v = row.values[s]
-                return (
-                  <td key={s} className={`px-1 py-1 text-right tabular-nums ${cap !== undefined && v !== undefined && v >= cap ? 'text-emerald-400' : 'text-neutral-200'}`}>
-                    {v === undefined ? '' : `${fmt(v)}${row.suffix ?? ''}`}
-                  </td>
-                )
-              })}
-              {mov && (
-                <td className="px-1 py-1 text-right tabular-nums text-neutral-200">
-                  {row.mov && row.values.mov !== undefined ? `${fmt(row.values.mov)}${row.suffix ?? ''}` : ''}
-                </td>
-              )}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <StatBlocks
+      stats={[...FE16_STATS, 'mov'] as const}
+      labels={FE16_STAT_LABELS}
+      fmt={fmt}
+      rows={rows.map((r) => ({ label: r.label, values: r.mov ? r.values : { ...r.values, mov: undefined }, caps: r.caps, suffix: r.suffix }))}
+    />
   )
 }
 

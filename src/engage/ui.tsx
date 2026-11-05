@@ -1,3 +1,4 @@
+import { StatBlocks } from '../components/StatBlocks'
 import { AssetIcon } from '../components/AssetIcon'
 import { PlanSets } from '../components/PlanSets'
 import { Portrait } from '../components/Portrait'
@@ -52,43 +53,12 @@ export function SkillChips({ data, skills, size = 16 }: { data: Fe17Data; skills
 type Row = { label: string; values: Partial<Fe17StatsMov>; caps?: Partial<Fe17StatsMov>; suffix?: string; extra?: Partial<Record<Fe17Stat | 'mov', number>> }
 const COLS = [...FE17_STATS, 'mov'] as (Fe17Stat | 'mov')[]
 
-/** Rows of stats, a column per stat and Mov; a stat at its cap is green; `extra` (a synced emblem's) shows as +n beside it. */
+/** Rows of stats, each a block of stats four to a line (as Fates' planner); a stat at its cap is green; `extra` (a synced emblem's)
+ * shows as +n beside it. */
 export function StatTable({ rows }: { rows: Row[] }) {
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[32rem] text-sm">
-        <thead>
-          <tr className="text-xs text-neutral-500">
-            <th className="py-1 pr-2 text-left font-normal" />
-            {COLS.map((s) => (
-              <th key={s} className="px-1 py-1 text-right font-normal">
-                {FE17_STAT_LABELS[s]}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row, i) => (
-            <tr key={`${row.label}-${i}`} className="border-t border-neutral-800">
-              <td className="whitespace-nowrap py-1 pr-2 text-xs text-neutral-400">{row.label}</td>
-              {COLS.map((s) => {
-                const v = row.values[s]
-                const cap = row.caps?.[s]
-                const plus = row.extra?.[s]
-                return (
-                  <td key={s} className={`px-1 py-1 text-right tabular-nums ${v !== undefined && cap !== undefined && v >= cap ? 'text-emerald-400' : 'text-neutral-200'}`}>
-                    {v === undefined ? '' : fmt(v)}
-                    {v !== undefined ? (row.suffix ?? '') : ''}
-                    {plus ? <span className="text-sky-400">+{plus}</span> : null}
-                  </td>
-                )
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  )
+  const plus = (extra: Row['extra']) =>
+    extra && Object.fromEntries(Object.entries(extra).flatMap(([k, v]) => (v ? [[k, <span key={k} className="text-sky-400">+{v}</span>]] : [])))
+  return <StatBlocks stats={COLS} labels={FE17_STAT_LABELS} fmt={fmt} rows={rows.map((r) => ({ label: r.label, values: r.values, caps: r.caps, suffix: r.suffix, after: plus(r.extra) }))} />
 }
 
 /** Stats in a fixed-width grid, so "Save as image" keeps the spacing. */

@@ -235,58 +235,40 @@ function RingSet({ data, set }: { data: Fe17Data; set: Fe17BondRingSet }) {
         </span>
       </summary>
       {open && (
-        <div className="overflow-x-auto px-4 pb-3">
-          <table className="w-full min-w-[40rem] text-sm">
-            <thead>
-              <tr className="text-xs text-neutral-500">
-                <th className="py-1 pr-2 text-left font-normal">Ring</th>
-                {RING_RANKS.map((r) => (
-                  <th key={r} className="px-1 py-1 text-left font-normal">
-                    {r}
-                  </th>
-                ))}
-                <th className="px-1 py-1 text-left font-normal">Skill (S)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {set.rings.map((ring) => {
-                const ringSkills = ring.ranks.flatMap((r) => r.skills ?? [])
-                return (
-                  <tr key={ring.name} className="border-t border-neutral-800 align-top">
-                    <td className="py-1 pr-2 text-neutral-100">
-                      <div className="flex items-center gap-2">
-                        <RingFace data={data} ring={ring.name} />
-                        <span>{ring.name}</span>
+        // A block for each ring, its ranks two to a row on a phone, so nothing scrolls sideways (user, 2026-11-05).
+        <div className="divide-y divide-neutral-800 px-4 pb-3">
+          {set.rings.map((ring) => {
+            const ringSkills = ring.ranks.flatMap((r) => r.skills ?? [])
+            return (
+              <div key={ring.name} className="space-y-1.5 py-2 text-sm">
+                <div className="flex items-center gap-2 text-neutral-100">
+                  <RingFace data={data} ring={ring.name} />
+                  <span>{ring.name}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-neutral-300 sm:grid-cols-4">
+                  {RING_RANKS.map((rank) => {
+                    const r = ring.ranks.find((x) => x.rank === rank)
+                    return (
+                      <div key={rank}>
+                        <span className="text-neutral-500">{rank}: </span>
+                        {r ? <RingStats stats={r.stats} /> : <span className="text-neutral-600">—</span>}
                       </div>
-                    </td>
-                    {RING_RANKS.map((rank) => {
-                      const r = ring.ranks.find((x) => x.rank === rank)
-                      return (
-                        <td key={rank} className="px-1 py-1 text-neutral-300 sm:whitespace-nowrap">
-                          {r ? <RingStats stats={r.stats} /> : <span className="text-neutral-600">—</span>}
-                        </td>
-                      )
-                    })}
-                    <td className="px-1 py-1 text-neutral-300">
-                      {ringSkills.length === 0 ? (
-                        <span className="text-neutral-600">—</span>
-                      ) : (
-                        ringSkills.map((s) => (
-                          <div key={s} className="flex items-start gap-1.5">
-                            <SkillIcon data={data} skill={s} />
-                            <span>
-                              <span className="text-neutral-100">{s}</span>
-                              {skills[s] && <span className="text-xs text-neutral-500">: {skills[s]}</span>}
-                            </span>
-                          </div>
-                        ))
-                      )}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+                    )
+                  })}
+                </div>
+                {ringSkills.map((sk) => (
+                  <div key={sk} className="flex items-start gap-1.5 text-neutral-300">
+                    <SkillIcon data={data} skill={sk} />
+                    <span>
+                      <span className="text-neutral-500">At S: </span>
+                      <span className="text-neutral-100">{sk}</span>
+                      {skills[sk] && <span className="text-xs text-neutral-500">: {skills[sk]}</span>}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )
+          })}
         </div>
       )}
     </details>
@@ -342,44 +324,47 @@ function EmblemRings({ data, reached }: { data: Fe17Data; reached?: Set<string> 
             Alear can reach 21 (GodBond.GetMaxLevel 0x2b4db90).
           </p>
         )}
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[34rem] text-sm">
-            <thead>
-              <tr className="text-xs text-neutral-500">
-                <th className="py-1 pr-2 text-left font-normal">Bond</th>
-                <th className="px-1 py-1 text-left font-normal">Sync stats</th>
-                <th className="px-1 py-1 text-left font-normal">New skills</th>
-                <th className="px-1 py-1 text-left font-normal">Inherit (SP)</th>
-                <th className="px-1 py-1 text-left font-normal">Proficiency</th>
-              </tr>
-            </thead>
-            <tbody>
-              {e.levels.map((lv, i) => {
-                const before = e.levels[i - 1]
-                const fresh = [
-                  ...lv.sync.filter((s) => !before?.sync.includes(s)).map((name) => ({ name })),
-                  ...lv.engage.filter((s) => !before?.engage.includes(s)).map((name) => ({ name, note: '(engaged)' })),
-                ]
-                return (
-                  <tr key={lv.level} className="border-t border-neutral-800 align-top">
-                    <td className="py-1 pr-2 tabular-nums text-neutral-400">{lv.level}</td>
-                    <td className="px-1 py-1 text-neutral-200">
-                      {Object.entries(lv.stats)
-                        .map(([s, v]) => `${FE17_STAT_LABELS[s as keyof typeof FE17_STAT_LABELS]} +${v}`)
-                        .join(', ')}
-                    </td>
-                    <td className="px-1 py-1 text-neutral-300">
+        {/* A block for each bond level, stacked so nothing squeezes or scrolls sideways on a phone (user, 2026-11-05). */}
+        <div className="divide-y divide-neutral-800">
+          {e.levels.map((lv, i) => {
+            const before = e.levels[i - 1]
+            const fresh = [
+              ...lv.sync.filter((s) => !before?.sync.includes(s)).map((name) => ({ name })),
+              ...lv.engage.filter((s) => !before?.engage.includes(s)).map((name) => ({ name, note: '(engaged)' })),
+            ]
+            const stats = Object.entries(lv.stats).map(([s, v]) => `${FE17_STAT_LABELS[s as keyof typeof FE17_STAT_LABELS]} +${v}`)
+            return (
+              <div key={lv.level} className="flex gap-3 py-2 text-sm">
+                <div className="w-12 shrink-0 text-neutral-400">Bond {lv.level}</div>
+                <div className="min-w-0 flex-1 space-y-1 text-neutral-300">
+                  {stats.length > 0 && (
+                    <div>
+                      <span className="text-neutral-500">Sync stats: </span>
+                      <span className="text-neutral-200">{stats.join(', ')}</span>
+                    </div>
+                  )}
+                  {fresh.length > 0 && (
+                    <div>
+                      <span className="text-neutral-500">New skills: </span>
                       <SkillChips data={data} skills={fresh} />
-                    </td>
-                    <td className="px-1 py-1 text-neutral-300">
+                    </div>
+                  )}
+                  {lv.inherit.length > 0 && (
+                    <div>
+                      <span className="text-neutral-500">Inherit (SP): </span>
                       <SkillChips data={data} skills={lv.inherit.map((s) => ({ name: s.name, note: `(${s.sp})` }))} />
-                    </td>
-                    <td className="px-1 py-1 text-neutral-300">{lv.proficiency.join(', ')}</td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+                    </div>
+                  )}
+                  {lv.proficiency.length > 0 && (
+                    <div>
+                      <span className="text-neutral-500">Proficiency: </span>
+                      {lv.proficiency.join(', ')}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          })}
         </div>
       </div>
     </div>

@@ -1,3 +1,4 @@
+import { StatBlocks } from '../components/StatBlocks'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
@@ -270,40 +271,11 @@ function fmt(v: number | undefined): string {
   return String(Math.trunc(v))
 }
 
+/** Rows of stats, each a block of stats four to a line (as Fates' planner); a stat at its cap is green. */
 function StatTable({ data, rows }: { data: GbaData; rows: { label: string; values: GbaStats; caps?: GbaStats; suffix?: string }[] }) {
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[30rem] text-sm">
-        <thead>
-          <tr className="text-xs text-neutral-500">
-            <th className="py-1 pr-2 text-left font-normal" />
-            {statsOf(data).map((s) => (
-              <th key={s} className="px-1 py-1 text-right font-normal">
-                {labelOf(data, s)}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.label} className="border-t border-neutral-800">
-              <td className="whitespace-nowrap py-1 pr-2 text-xs text-neutral-400">{row.label}</td>
-              {statsOf(data).map((s) => {
-                const v = row.values[s]
-                const cap = row.caps?.[s]
-                return (
-                  <td key={s} className={`px-1 py-1 text-right tabular-nums ${v !== undefined && cap !== undefined && v >= cap ? 'text-emerald-400' : 'text-neutral-200'}`}>
-                    {fmt(v)}
-                    {v !== undefined ? (row.suffix ?? '') : ''}
-                  </td>
-                )
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  )
+  const stats = statsOf(data)
+  const labels = Object.fromEntries(stats.map((s) => [s, labelOf(data, s)])) as Record<(typeof stats)[number], string>
+  return <StatBlocks stats={stats} labels={labels} fmt={fmt} rows={rows} />
 }
 
 function useScreenshotUnit(unit: GbaUnit | undefined) {

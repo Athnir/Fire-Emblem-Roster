@@ -1,3 +1,4 @@
+import { StatBlocks } from '../components/StatBlocks'
 import { useMemo, useRef, useState, type ReactNode } from 'react'
 import { Portrait } from '../components/Portrait'
 import { assetKeys } from '../data/assetStorage'
@@ -207,44 +208,25 @@ type Row = {
   signed?: boolean
 }
 
+/** Rows of stats, each a block of stats four to a line (as Fates' planner); a stat at its cap is green, with the points it keeps past
+ * the cap beside it. */
 function StatTable({ rows, mov = false }: { rows: Row[]; mov?: boolean }) {
   const cols = [...FE13_STATS, ...(mov ? (['mov'] as const) : [])]
+  const kept = (row: Row) =>
+    Object.fromEntries(
+      FE13_STATS.flatMap((s) => {
+        const v = row.values[s]
+        const k = v === undefined ? 0 : (row.raw?.[s] ?? v) - v
+        return k >= 1 ? [[s, <sup key={s} className="ml-0.5 text-[10px] text-neutral-500">+{fmt(k)}</sup>]] : []
+      }),
+    )
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[30rem] text-sm">
-        <thead>
-          <tr className="text-xs text-neutral-500">
-            <th className="py-1 pr-2 text-left font-normal" />
-            {cols.map((s) => (
-              <th key={s} className="px-1 py-1 text-right font-normal">
-                {FE13_STAT_LABELS[s]}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row, i) => (
-            // A plan can pass through the same class and level more than once.
-            <tr key={`${i}-${row.label}`} className="border-t border-neutral-800">
-              <td className="whitespace-nowrap py-1 pr-2 text-xs text-neutral-400">{row.label}</td>
-              {cols.map((s) => {
-                const v = row.values[s]
-                const cap = s === 'mov' ? undefined : row.caps?.[s]
-                const kept = s === 'mov' || v === undefined ? 0 : (row.raw?.[s] ?? v) - v
-                return (
-                  <td key={s} className={`px-1 py-1 text-right tabular-nums ${v !== undefined && cap !== undefined && v >= cap ? 'text-emerald-400' : 'text-neutral-200'}`}>
-                    {row.signed && v !== undefined && v > 0 ? '+' : ''}
-                    {fmt(v)}
-                    {v !== undefined ? (row.suffix ?? '') : ''}
-                    {kept >= 1 && <sup className="ml-0.5 text-[10px] text-neutral-500">+{fmt(kept)}</sup>}
-                  </td>
-                )
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <StatBlocks
+      stats={cols}
+      labels={FE13_STAT_LABELS}
+      fmt={(n) => fmt(n)}
+      rows={rows.map((r) => ({ label: r.label, values: mov ? r.values : { ...r.values, mov: undefined }, caps: r.caps, suffix: r.suffix, signed: r.signed, after: kept(r) }))}
+    />
   )
 }
 

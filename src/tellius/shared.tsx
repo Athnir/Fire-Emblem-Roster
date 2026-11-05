@@ -1,3 +1,4 @@
+import { StatBlocks } from '../components/StatBlocks'
 import { useEffect } from 'react'
 import { AssetIcon } from '../components/AssetIcon'
 import { Portrait } from '../components/Portrait'
@@ -87,40 +88,9 @@ export function UnitSelect({ data, value, onChange }: { data: TelliusData; value
   )
 }
 
-/** Rows of stats: one row per entry, a column per stat. Wraps on a phone. */
+/** Rows of stats, each a block of stats four to a line (as Fates' planner); a stat at its cap is green. */
 export function StatTable({ rows }: { rows: { label: string; values: TelliusStats; caps?: TelliusStats; suffix?: string }[] }) {
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[28rem] text-sm">
-        <thead>
-          <tr className="text-xs text-neutral-500">
-            <th className="py-1 pr-2 text-left font-normal" />
-            {TELLIUS_STATS.map((s) => (
-              <th key={s} className="px-1 py-1 text-right font-normal">
-                {TELLIUS_STAT_LABELS[s]}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.label} className="border-t border-neutral-800">
-              <td className="whitespace-nowrap py-1 pr-2 text-xs text-neutral-400">{row.label}</td>
-              {TELLIUS_STATS.map((s) => {
-                const atCap = row.caps && row.values[s] >= row.caps[s]
-                return (
-                  <td key={s} className={`px-1 py-1 text-right tabular-nums ${atCap ? 'text-emerald-400' : 'text-neutral-200'}`}>
-                    {formatStat(row.values[s])}
-                    {row.suffix ?? ''}
-                  </td>
-                )
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  )
+  return <StatBlocks stats={TELLIUS_STATS} labels={TELLIUS_STAT_LABELS} fmt={formatStat} rows={rows} />
 }
 
 export function WeaponsLine({ data, classId }: { data: TelliusData; classId: string }) {

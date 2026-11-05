@@ -174,8 +174,10 @@ reveals it. What that means for each tab is settled with the user as each game i
 
 ## Look and layout
 
-- **Everything fits a phone screen.** A support table shows every level (C, B, A, S and any half levels) without scrolling sideways
-  (user, 2026-11-05): narrow level columns, the partner's name wrapping, other facts under the name.
+- **Everything fits a phone screen, with as little sideways scrolling as can be** (user, 2026-11-05). Stats show as Fates' planner
+  shows them, each row a titled block of stats four to a line (src/components/StatBlocks.tsx, every game's stat table); a support
+  table shows every level (C, B, A, S and any half levels) with narrow level columns, the partner's name wrapping, other facts under
+  the name; long per-level lists (Engage's bond levels and Bond Rings) stack a block per level.
 - **Wording works for every game** ("Lord", not "Corrin", in shared screens).
 
 ## Process

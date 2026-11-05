@@ -1,3 +1,4 @@
+import { StatBlocks } from '../components/StatBlocks'
 import { Portrait } from '../components/Portrait'
 import { artId, chip, selectClass } from './hooks'
 import { chapterLabel, fmt, ranksOf, ranksText, type Fe5Data } from './logic'
@@ -10,37 +11,9 @@ export function UnitPortrait({ data, unit, size = 64 }: { data: Fe5Data; unit: F
   return <Portrait characterId={artId(data.gameId, unit.name)} isChild={false} size={size} />
 }
 
-/** Rows of stats, a column per stat; a stat at its cap is green. */
+/** Rows of stats, each a block of stats four to a line (as Fates' planner); a stat at its cap is green. */
 export function StatTable({ rows }: { rows: { label: string; values: Fe5Stats; caps?: Fe5Stats; suffix?: string }[] }) {
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[28rem] text-sm">
-        <thead>
-          <tr className="text-xs text-neutral-500">
-            <th className="py-1 pr-2 text-left font-normal" />
-            {FE5_STATS.map((s) => (
-              <th key={s} className="px-1 py-1 text-right font-normal">
-                {FE5_STAT_LABELS[s]}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row, i) => (
-            <tr key={`${row.label}-${i}`} className="border-t border-neutral-800">
-              <td className="whitespace-nowrap py-1 pr-2 text-xs text-neutral-400">{row.label}</td>
-              {FE5_STATS.map((s) => (
-                <td key={s} className={`px-1 py-1 text-right tabular-nums ${row.caps && row.values[s] >= row.caps[s] ? 'text-emerald-400' : 'text-neutral-200'}`}>
-                  {fmt(row.values[s])}
-                  {row.suffix ?? ''}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  )
+  return <StatBlocks stats={FE5_STATS} labels={FE5_STAT_LABELS} fmt={fmt} rows={rows} />
 }
 
 /** Stats four to a row, fixed-width so "Save as image" keeps the spacing (as the Fates viewer does). */
