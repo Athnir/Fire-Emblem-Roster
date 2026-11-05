@@ -65,6 +65,8 @@ const ICONS: Record<Icon, { fill?: string; line?: string }> = {
   crescent: { fill: 'M15 2.5A9.5 9.5 0 1 0 21.5 15.5A7.5 7.5 0 1 1 15 2.5Z' },
 }
 
+export const WINDOW_NOTE = "A full glass is major blood, a ring minor. Each line keeps its spot: Baldr at the top, then the game's order clockwise."
+
 /** Dark ink on a light glass, white on a dark one. */
 function inkOn(hex: string): string {
   const n = parseInt(hex.slice(1), 16)
@@ -103,14 +105,30 @@ function StandIn({ slots, size }: { slots: BloodSlot[]; size: number }) {
   )
 }
 
-/** The window with the unit's holy blood filled in, and a line under it for each blood they have. */
-export function HolyBloodWindow({ lines, blood }: { lines: Fe4Blood[]; blood: Fe4BloodLevel[] }) {
+/** The window with the unit's holy blood filled in, and a line under it for each blood they have. `compact` is the smaller one in a
+ * Pairings card (its note is on the page once); `sources` says which parents each line comes from. */
+export function HolyBloodWindow({
+  lines,
+  blood,
+  compact = false,
+  sources,
+}: {
+  lines: Fe4Blood[]
+  blood: Fe4BloodLevel[]
+  compact?: boolean
+  sources?: Record<string, string>
+}) {
   const size = 400
   const slots = ringSlots(lines.length)
   const held = new Map(blood.map((b) => [b.blood, b.level]))
   return (
     <div className="space-y-2">
-      <svg viewBox={`0 0 ${size} ${size}`} className="block aspect-square w-full max-w-[320px]" role="img" aria-label="Holy blood">
+      <svg
+        viewBox={`0 0 ${size} ${size}`}
+        className={`block aspect-square w-full ${compact ? 'max-w-[200px]' : 'max-w-[320px]'}`}
+        role="img"
+        aria-label="Holy blood"
+      >
         <defs>
           {lines.map((line) => {
             const color = BLOOD_LOOK[line.id]?.color ?? '#a8a29e'
@@ -149,7 +167,7 @@ export function HolyBloodWindow({ lines, blood }: { lines: Fe4Blood[]; blood: Fe
           )
         })}
       </svg>
-      <ul className="space-y-0.5 text-sm text-neutral-300">
+      <ul className={`space-y-0.5 text-neutral-300 ${compact ? 'text-xs' : 'text-sm'}`}>
         {blood.map((b) => {
           const line = lines.find((l) => l.id === b.blood)
           const color = BLOOD_LOOK[b.blood]?.color ?? '#a8a29e'
@@ -166,12 +184,13 @@ export function HolyBloodWindow({ lines, blood }: { lines: Fe4Blood[]; blood: Fe
                     {b.level === 'major' ? `: can wield ${line.weapon}` : `: ${line.weapon}'s line`}
                   </span>
                 )}
+                {sources?.[b.blood] && <span className="block text-neutral-500">from {sources[b.blood]}</span>}
               </span>
             </li>
           )
         })}
       </ul>
-      <p className="text-xs text-neutral-500">A full glass is major blood, a ring minor. Each line keeps its spot: Baldr at the top, then the game's order clockwise.</p>
+      {!compact && <p className="text-xs text-neutral-500">{WINDOW_NOTE}</p>}
     </div>
   )
 }

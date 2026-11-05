@@ -162,6 +162,22 @@ export function childBlood(main: Fe4BloodLevel[], other: Fe4BloodLevel[]): Fe4Bl
   })
 }
 
+/** Where each of a child's bloods comes from: the parents who have it and at what level, main parent first ("Holyn (minor) and
+ * Ayra (minor)"). A child whose blood the game sets (Seliph) or a substitute has none. */
+export function bloodSources(child: Fe4Unit, blood: Fe4BloodLevel[], father: Fe4Unit, mother: Fe4Unit): Record<string, string> {
+  if (child.blood) return {}
+  const parents = child.mainParent === 'father' ? [father, mother] : [mother, father]
+  const out: Record<string, string> = {}
+  for (const b of blood) {
+    const from = parents.flatMap((p) => {
+      const has = p.blood?.find((x) => x.blood === b.blood)
+      return has ? [`${p.name} (${has.level})`] : []
+    })
+    if (from.length) out[b.blood] = from.join(' and ')
+  }
+  return out
+}
+
 /** A parent as they stand at the end of the first generation: their class and stats (the Unit Planner's plan), gold. */
 export interface Fe4Parent {
   unit: Fe4Unit

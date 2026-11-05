@@ -1,9 +1,9 @@
 import { useRef, useState } from 'react'
 import { chapterLabel, luckExtra, pairingChoices, selectClass, useArmy, useProfiles, useScreenshotUnit } from './hooks'
-import { excludedUnits, FE4_MAX_LEVEL, loveFor, NO_HUSBAND, project, promoteLevelOf, ringBonus, skillsWith, type Fe4Data, type Fe4Plan } from './logic'
+import { bloodSources, excludedUnits, FE4_MAX_LEVEL, loveFor, NO_HUSBAND, project, promoteLevelOf, ringBonus, skillsWith, type Fe4Data, type Fe4Plan } from './logic'
 import { useFe4Store } from './store'
 import { FE4_STATS, type Fe4Choice, type Fe4Unit } from './types'
-import { HolyBloodWindow } from './HolyBlood'
+import { HolyBloodWindow, WINDOW_NOTE } from './HolyBlood'
 import { StatTable, UnitPortrait, UnitSelect, WeaponsLine, WrapWarning } from './ui'
 
 function joinText(data: Fe4Data, u: Fe4Unit): string {
@@ -406,7 +406,17 @@ export function Fe4Pairings({ data }: { data: Fe4Data }) {
                     </div>
                     {p && (
                       <>
-                        {p.blood.length > 0 && <div className="text-xs text-neutral-400">{p.blood.map((b) => `${b.blood} (${b.level})`).join(', ')}</div>}
+                        {/* The child's holy blood as the picked father makes it ($87:A9FB). */}
+                        {p.blood.length > 0 ? (
+                          <HolyBloodWindow
+                            lines={data.bloods}
+                            blood={p.blood}
+                            compact
+                            sources={father ? bloodSources(shown, p.blood, father, mother) : undefined}
+                          />
+                        ) : (
+                          <div className="text-xs text-neutral-500">No holy blood</div>
+                        )}
                         <StatTable
                           rows={[
                             { label: 'Bases', values: p.bases, extra: luckExtra(p) },
@@ -425,7 +435,10 @@ export function Fe4Pairings({ data }: { data: Fe4Data }) {
           </div>
         )
       })}
-      <p className="text-xs text-neutral-500">{CHILD_RULES} Luck shows its average and, in brackets, its range.</p>
+      <p className="text-xs text-neutral-500">
+        {CHILD_RULES} A child's holy blood is their main parent's, one level up (minor to major) if the other parent has that line too
+        ($87:A9FB). {WINDOW_NOTE} Luck shows its average and, in brackets, its range.
+      </p>
     </div>
   )
 }

@@ -54,7 +54,8 @@ new rule, add it here.
   and a ring of its colour for minor. Colours go by element (fire red, thunder yellow, wind green, light gold, dark purple, staff
   white; the sword, lance, axe and bow lines a colour each, all 13 different), and each slot shows an icon for its weapon's kind (a
   lightning bolt, a longsword), not the holy weapon itself. The window is a stand-in until the user's own artwork comes: never a
-  generated image, and then the fills and icons go into its blanks (`src/genealogy/HolyBlood.tsx`: `BASIS`, the slots).
+  generated image, and then the fills and icons go into its blanks (`src/genealogy/HolyBlood.tsx`: `BASIS`, the slots). Pairings
+  shows a smaller window on each child, filled in from the picked father (user, 2026-11-05), with the parents each line comes from.
 - **Three Houses' abilities and combat arts show the game's icons** (user, 2026-11-04): an ability's square one, a combat art its
   weapon's round one, as the game draws them; spells have none of their own.
 
