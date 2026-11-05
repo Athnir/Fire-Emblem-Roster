@@ -1,4 +1,4 @@
-import { FE9_BANDS, FE9_CHAPTERS, FE9_CHOICES, FE9_CLASSES, FE9_SKILLS, FE9_SUPPORTS, FE9_UNITS } from '../data/fe9/fe9Units'
+import { FE9_BANDS, FE9_BIORHYTHM, FE9_CHAPTERS, FE9_CHOICES, FE9_CLASSES, FE9_SKILLS, FE9_SUPPORTS, FE9_UNITS } from '../data/fe9/fe9Units'
 import { LinearSpoilerBar } from '../components/LinearSpoilerBar'
 import { telliusArt } from '../tellius/art'
 import { TelliusBulkUpload } from '../tellius/TelliusBulkUpload'
@@ -15,6 +15,7 @@ export const FE9_DATA: TelliusData = {
   gameId: 'fe9',
   chapters: FE9_CHAPTERS,
   units: FE9_UNITS,
+  biorhythm: FE9_BIORHYTHM,
   classes: FE9_CLASSES,
   skills: FE9_SKILLS,
   supports: FE9_SUPPORTS,

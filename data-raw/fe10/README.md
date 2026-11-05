@@ -16,7 +16,7 @@ end exactly where the next table starts, which the reader checks.
 - Pointers: PID, MPID (name), MNPID (set for named characters), FID (portrait), JID, affinity, weapon ranks (12 places:
   sword, lance, axe, bow, knife, strike, fire, thunder, wind, light, dark, staff; `*` is SS).
 - The skills (the head's count), a pointer (unused here), four animation pointers (AID_).
-- 28 bytes: 0 biorhythm type; 1-2 always 3, 8; 3 the laguz gauge it starts at; 4 leadership stars; 5-8 the laguz gauge's
+- 28 bytes: 0 biorhythm type (0-9); 1 the biorhythm's phase code (3, phase 0, for every playable unit) and 2 its step a turn (8); 3 the laguz gauge it starts at; 4 leadership stars; 5-8 the laguz gauge's
   changes (signed); 9-16 their own bases, signed, added to the class's (HP, Str, Mag, Skl, Spd, Lck, Def, Res); 17 Con and
   18 Wt, signed, added to the class's; 19-26 growth rates; 27 unused.
 - Serenes Forest's bases are class + own for all 73 playable units, and their growths are bytes 19-26 (tested).
@@ -164,3 +164,12 @@ the app's (`artId`), read from the generated `src/data/fe10/fe10Units.ts`. Path 
   byte 31 - 1 in its icon code (`#K#P%03X#k`). Byte 28 is only a running number: byte 28 - 60 equals
   byte 31 from Canto to Maelstrom, but the two Wildheart records (`SID_HALFBEAST_DUMMY` and `SID_HALFBEAST`) share an icon,
   so from Blessing on it's one ahead.
+
+## Biorhythm (`scripts/tellius_biorhythm.py`)
+
+FE10Data.cms's BioData (ten rows of floats A, B, F, C) and BioParam (five rows, Best to Worst: a float threshold, then Hit, Avoid,
+Crit, skill activation and buried-treasure bonuses). value = A·B·sin(2π (F t + phase) / 100) + C (0x801070a4). t starts at 0 when the
+unit is first placed and gains the step (8) at the end of each of its army's phases (0x80042d38); it's saved with the unit, so it
+carries from chapter to chapter, and every type repeats every 25 turns. Best ≥ 0.8, Good ≥ 0.4, Normal > −0.4, Bad > −0.8, else
+Worst (0x801076d0): Hit, Avoid and skill activation ±5 or ±10, the treasure chance ±10 or ±20, Crit 0. Matrona and Bliss set t to the
+first peak, Sorrow to the first trough (0x801072e4, 0x80107444). No NA unit or class has Tempest or Serenity.

@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { Biorhythm } from './Biorhythm'
 import { excludedUnits, useTelliusChoices } from './choiceStore'
 import { chapterLabel, chapterRuns, StoryPromotions, UnitPortrait, useScreenshotUnit } from './shared'
 import type { TelliusChoice, TelliusData, TelliusUnit } from './types'
@@ -53,6 +54,7 @@ function UnitDetail({ data, unit }: { data: TelliusData; unit: TelliusUnit }) {
           )}
         </div>
       </div>
+      <Biorhythm data={data} unit={unit} />
       <StoryPromotions data={data} unit={unit} />
 
       {unit.available && (

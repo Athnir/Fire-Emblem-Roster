@@ -54,7 +54,7 @@ class Tables:
 def people(t):
     """PersonData: a count, then records of a 4-byte head (skill count, 0, level, 1 for women), seven pointers (PID,
     MPID, MNPID, FID, JID, affinity, weapon ranks), the skills, a pointer, four animation pointers (AID_), then 28
-    bytes: 0 biorhythm type, 1-2 its amplitude and period (3, 8 for everyone), 3 the laguz gauge it starts with, 4
+    bytes: 0 biorhythm type, 1 its phase code and 2 its step a turn (3 and 8 for everyone; scripts/tellius_biorhythm.py), 3 the laguz gauge it starts with, 4
     leadership stars, 5-8 the laguz gauge's changes (turn, battle, transformed turn, transformed battle; signed), 9-16
     their own bases (HP, Str, Mag, Skl, Spd, Lck, Def, Res; signed, added to the class's), 17-18 Con and Wt (signed,
     added to the class's), 19-26 growth rates. {PID: dict}."""

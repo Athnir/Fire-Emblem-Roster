@@ -26,6 +26,10 @@ decoded) and `DivineData` (not decoded).
 | 0x14 | affinity: `telius`, `heaven`, `light`, `dark`, `water`, `wind`, `thunder`, `fire`; their names are `MDV_TELI` (Earth), `MDV_HV` (Heaven), `MDV_LIT`, `MDV_D`, `MDV_WAT`, `MDV_WD`, `MDV_TH`, `MDV_FI` in `common.m` |
 | 0x18 | weapon ranks, a 9-letter string: sword, lance, axe, bow, fire, thunder, wind, staff, light (`-` none) |
 | 0x1C-0x24 | up to three skills (`SID_`) |
+| 0x30 | a person number (u16) |
+| 0x32 | biorhythm phase (u16): 0 is rolled (0-365) each time the game boots (0x8001aff0) |
+| 0x34 | non-zero on laguz only (5, 10, 16) |
+| 0x35 | biorhythm period: 0 is 30, and every record's is 30 (0x8001b00c) |
 | 0x36 | level |
 | 0x37, 0x38 | Con and Wt, added to the class's (signed) |
 | 0x39-0x40 | HP, Str, Mag, Skl, Spd, Lck, Def, Res, added to the class's bases (signed) |
@@ -179,3 +183,11 @@ tiles, CMPR, and the palettes).
   height, centred on the eyes and mouth) and scaled up 2x with Lanczos.
 - `window/icon.tpl`: two C8 textures; the second (1024x96) holds the skill icons, 32x32 in rows of 32. A skill's icon byte
   (+0x19) is its place plus one; 0 is none. Shove (`SID_TACKLE`) has none, so the app's Shove icon has no file.
+
+## Biorhythm (`scripts/tellius_biorhythm.py`)
+
+value = sin(2π x / period), x = 7 × the chapter's file number + 236161 + battles // 10 − phase (0x801660c4; 0x801660a8 ignores the
+map's turn). The battle set-up (0x801a5268) adds 1 to both units' counts. The value against −0.8, −0.4, 0.4, 0.8 (0x8036a8c8) picks a row
+of the 5×5 table at 0x80277888 (Str/Mag, Def/Res, Hit, Avoid, Crit): only Hit and Avoid move, +5 in Best and Good, −5 in Bad and Worst.
+Tempest (SID_TEMPER) doubles, then Serenity (SID_CALM) halves toward zero (0x80165fbc, 0x8016600c). Only Ike, Boyd, Titania, Oscar,
+Shinon, Gatrie, Soren, Mia, Mist and Rolf (and Greil and Zawana) have a phase of their own; the rest are rolled at boot and never saved.

@@ -130,6 +130,11 @@ new rule, add it here.
   traits (affinity, leadership, holy blood, crests), and their personal skill (Genealogy's and Thracia's own skills; Path of
   Radiance's and Radiant Dawn's biorhythm). Their bases, growths, caps or maximums, weapon ranks, gold, other skills and supports
   are in the Unit Planner (growths and caps first, as Fates'), the Skill Planner and the Supports tab.
+- **Path of Radiance's and Radiant Dawn's biorhythm stands in the Roster for a personal skill** (user, 2026-11-05): the unit's wave
+  as the game works it out (scripts/tellius_biorhythm.py), a point for each step it moves, coloured by state, and what each state adds
+  or takes with the turns the unit is in it. Radiant Dawn's moves a turn at a time (25 turns repeat, carried between chapters); Path
+  of Radiance's moves 7 points a chapter and 1 for every 10 battles, so a unit with a place of its own lists the chapters, and the rest
+  (rolled each time the game is switched on) show the wave alone.
 - **Three Houses' and Engage's Rosters keep to who the unit is** (user, 2026-11-04 and 11-05): no supports, growths, skill levels
   or skills there (the planners and the Supports tab have them; Engage's proficiencies in the Unit Planner, SP in the Skill Planner,
   support type in the Supports tab, the class's weapons in the Classes tab). Each unit is a Noble or a Commoner, never both. In the Skill Planner a skill's ranks are

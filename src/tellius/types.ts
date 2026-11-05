@@ -92,6 +92,9 @@ export interface TelliusUnit {
   heldBack?: string[]
   /** Leadership stars. */
   leadership?: number
+  /** Their biorhythm: the wave they follow (TelliusData.biorhythm's curves) and their place on it. Path of Radiance: the phase
+   * taken off the chapter's place, or null when the game rolls it (0 to 365) each time it's switched on. */
+  biorhythm?: { curve: string; phase: number | null }
   /** Promotions the story gives (the class can't use a Seal or Crown): at the start or end of these chapters, and what
    * they depend on ('if you pick "Hire." when he asks'). A unit in such a class without one never promotes. */
   storyPromotions?: { chapter: string; when: 'start' | 'end'; note?: string }[]
@@ -258,5 +261,33 @@ export interface TelliusData {
   bonds?: TelliusBond[]
   /** The story's choices of who joins. */
   choices?: TelliusChoice[]
+  /** The biorhythm's waves and what each state does. */
+  biorhythm?: TelliusBiorhythm
   rules: TelliusRules
+}
+
+export type TelliusBioState = 'Best' | 'Good' | 'Normal' | 'Bad' | 'Worst'
+
+/** One biorhythm wave: amplitude × sin(2π × frequency × step / period) + offset, and one full cycle of it a step at a time with the
+ * game's own values and states (Path of Radiance: 30 points; Radiant Dawn: 25 turns). */
+export interface TelliusBioCurve {
+  amplitude: number
+  offset: number
+  frequency: number
+  period: number
+  points: { value: number; state: TelliusBioState }[]
+}
+
+export interface TelliusBiorhythm {
+  /** 'chapter': Path of Radiance's wave moves `perChapter` points a chapter and one for every `battlesPerPoint` battles; 'turn':
+   * Radiant Dawn's moves a step at the end of each of the unit's army's phases. */
+  moves: 'chapter' | 'turn'
+  curves: Record<string, TelliusBioCurve>
+  /** What each state adds; a missing field is 0. Skill: to skills' activation; treasure: to the chance of finding buried
+   * treasure. */
+  effects: ({ state: TelliusBioState } & Partial<Record<'hit' | 'avoid' | 'crit' | 'skill' | 'treasure', number>>)[]
+  /** Path of Radiance: where each chapter puts the wave before a unit's phase is taken off, mod the period. */
+  chapterShift?: Record<string, number>
+  perChapter?: number
+  battlesPerPoint?: number
 }
