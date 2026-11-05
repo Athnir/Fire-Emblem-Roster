@@ -1,10 +1,8 @@
 import { useRef, useState } from 'react'
 import { useArmy, useScreenshotUnit } from './hooks'
-import { CAP, HP_CAP, joinOf, joinText, onRoute, skillsAt, type Fe5Data } from './logic'
-import { FE5_STATS, type Fe5Stats, type Fe5Unit } from './types'
-import { ChoicePicker, SkillList, StatTable, UnitPortrait, UnitSelect, WeaponsLine } from './ui'
-
-const CAPS = Object.fromEntries(FE5_STATS.map((s) => [s, s === 'hp' ? HP_CAP : CAP])) as Fe5Stats
+import { joinOf, joinText, onRoute, type Fe5Data } from './logic'
+import type { Fe5Unit } from './types'
+import { ChoicePicker, SkillList, UnitPortrait, UnitSelect } from './ui'
 
 function supportLines(data: Fe5Data, unitId: string) {
   const byId = new Map(data.units.map((u) => [u.id, u]))
@@ -35,19 +33,13 @@ function Stars({ unit }: { unit: Fe5Unit }) {
   )
 }
 
+/** Who the unit is, as Fates' Roster (user, 2026-11-05): their stats, growths, weapon ranks and class skills are in the Unit Planner,
+ * their supports in the Supports tab. */
 function UnitDetail({ data, unit, picks, reached }: { data: Fe5Data; unit: Fe5Unit; picks: Record<string, number>; reached?: Set<string> }) {
   const cls = data.classes[unit.classId]
   const { joinChapter, join } = joinOf(unit, picks)
-  const { gets, gives } = supportLines(data, unit.id)
   const promo = unit.promotion ? data.classes[unit.promotion.classId] : undefined
   const step = unit.storyStep ? data.classes[unit.storyStep.classId] : undefined
-  const supportList = (title: string, items: { unit?: Fe5Unit; note?: string; bonus: number }[]) =>
-    items.length > 0 && (
-      <div>
-        <span className="text-neutral-500">{title}: </span>
-        {items.map((g) => `${g.unit?.name ?? g.note} (+${g.bonus})`).join(', ')}
-      </div>
-    )
   return (
     <div className="space-y-4 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
       <div className="flex flex-col items-start gap-4 sm:flex-row">
@@ -92,41 +84,15 @@ function UnitDetail({ data, unit, picks, reached }: { data: Fe5Data; unit: Fe5Un
         </div>
       )}
       <Stars unit={unit} />
-      <div className="space-y-1 text-sm text-neutral-300">
-        <div>
-          <span className="text-neutral-500">Weapons: </span>
-          <WeaponsLine cls={cls} unit={unit} />
-        </div>
-        {cls.dismounted && (
-          <div>
-            <span className="text-neutral-500">On foot (indoors): </span>
-            <WeaponsLine cls={data.classes[cls.dismounted]} unit={unit} />
-          </div>
-        )}
-        <p className="text-xs text-neutral-500">
-          A rank is the class's points plus the unit's own, a letter every 50 (E 50 to A 250). Each attack adds a point.
-        </p>
-      </div>
-      <div className="space-y-1">
-        <h4 className="text-sm font-semibold text-neutral-200">Skills</h4>
-        <SkillList data={data} skills={skillsAt(data, unit, unit.classId)} />
-        {unit.storySkill && (
-          <p className="text-sm text-neutral-400">
-            Can learn {unit.storySkill.skill}: {unit.storySkill.note}
-          </p>
-        )}
-      </div>
-      <StatTable
-        rows={[
-          { label: 'Bases', values: unit.bases, caps: CAPS },
-          { label: 'Growths', values: unit.growths, suffix: '%' },
-        ]}
-      />
-      {(gets.length > 0 || gives.length > 0) && (
-        <div className="space-y-1 text-sm text-neutral-300">
-          <h4 className="text-sm font-semibold text-neutral-200">Supports</h4>
-          {supportList('Gets from', gets)}
-          {supportList('Gives to', gives)}
+      {(unit.skills.length > 0 || unit.storySkill) && (
+        <div className="space-y-1">
+          <h4 className="text-sm font-semibold text-neutral-200">Personal skills</h4>
+          {unit.skills.length > 0 && <SkillList data={data} skills={unit.skills} />}
+          {unit.storySkill && (
+            <p className="text-sm text-neutral-400">
+              Can learn {unit.storySkill.skill}: {unit.storySkill.note}
+            </p>
+          )}
         </div>
       )}
     </div>

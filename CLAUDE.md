@@ -119,6 +119,11 @@ new rule, add it here.
 - **A skill that comes in levels shows its top level alone** (user, 2026-11-04): Sword Prowess Lv 1-4 beside Lv 5, Sword Agility
   1-4 beside 5, Unyielding beside Unyielding++ (the game replaces a lower level with a higher), unless the tickbox shows every level.
   The chains are the game's own upgrade groups.
+- **Every game's Roster is Fates'** (user, 2026-11-05): who the unit is, and nothing to plan. The portrait and name, the class and
+  level they join in (and their class set, reclass set or promotions), how and when they join, the story's notes on them, fixed
+  traits (affinity, leadership, holy blood, crests), and their personal skill (Genealogy's and Thracia's own skills; Path of
+  Radiance's and Radiant Dawn's biorhythm). Their bases, growths, caps or maximums, weapon ranks, gold, other skills and supports
+  are in the Unit Planner (growths and caps first, as Fates'), the Skill Planner and the Supports tab.
 - **Three Houses' and Engage's Rosters keep to who the unit is** (user, 2026-11-04 and 11-05): no supports, growths, skill levels
   or skills there (the planners and the Supports tab have them; Engage's proficiencies in the Unit Planner, SP in the Skill Planner,
   support type in the Supports tab, the class's weapons in the Classes tab). Each unit is a Noble or a Commoner, never both. In the Skill Planner a skill's ranks are

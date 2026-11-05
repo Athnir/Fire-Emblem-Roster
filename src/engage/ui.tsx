@@ -50,7 +50,7 @@ export function SkillChips({ data, skills, size = 16 }: { data: Fe17Data; skills
   )
 }
 
-type Row = { label: string; values: Partial<Fe17StatsMov>; caps?: Partial<Fe17StatsMov>; suffix?: string; extra?: Partial<Record<Fe17Stat | 'mov', number>> }
+type Row = { label: string; values: Partial<Fe17StatsMov>; caps?: Partial<Fe17StatsMov>; suffix?: string; signed?: boolean; extra?: Partial<Record<Fe17Stat | 'mov', number>> }
 const COLS = [...FE17_STATS, 'mov'] as (Fe17Stat | 'mov')[]
 
 /** Rows of stats, each a block of stats four to a line (as Fates' planner); a stat at its cap is green; `extra` (a synced emblem's)
@@ -58,7 +58,7 @@ const COLS = [...FE17_STATS, 'mov'] as (Fe17Stat | 'mov')[]
 export function StatTable({ rows }: { rows: Row[] }) {
   const plus = (extra: Row['extra']) =>
     extra && Object.fromEntries(Object.entries(extra).flatMap(([k, v]) => (v ? [[k, <span key={k} className="text-sky-400">+{v}</span>]] : [])))
-  return <StatBlocks stats={COLS} labels={FE17_STAT_LABELS} fmt={fmt} rows={rows.map((r) => ({ label: r.label, values: r.values, caps: r.caps, suffix: r.suffix, after: plus(r.extra) }))} />
+  return <StatBlocks stats={COLS} labels={FE17_STAT_LABELS} fmt={fmt} rows={rows.map((r) => ({ label: r.label, values: r.values, caps: r.caps, suffix: r.suffix, signed: r.signed, after: plus(r.extra) }))} />
 }
 
 /** Stats in a fixed-width grid, so "Save as image" keeps the spacing. */

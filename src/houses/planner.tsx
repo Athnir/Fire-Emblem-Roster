@@ -206,6 +206,14 @@ export function Fe16Planner({ data }: { data: Fe16Data }) {
           can go past them. Changing into a class, or passing its exam, lifts any stat below the class's base to it for good. The numbers
           are averages and can run a little off.
         </p>
+        {/* As Fates' Unit Planner: their own growths, bases and maximums first. */}
+        <StatTable
+          rows={[
+            { label: 'Growths (their own; a class adds its own)', values: unit.growths, suffix: '%' },
+            { label: 'Bases (Lv 1)', values: unit.bases, mov: true },
+            { label: `Maximums (their own${plan.statues ? ', with the Saint Statues' : ''}; classes have none)`, values: caps },
+          ]}
+        />
         <Estimate key={unit.id} data={data} unit={unit} plan={plan} picks={picks} caps={caps} onFoot={onFoot} defaultClass={finalCls.id} defaultLevel={last.level} />
         <div className="space-y-1">
           <h4 className="text-sm font-semibold text-neutral-200">Projected stats</h4>
@@ -321,7 +329,6 @@ function Estimate({
       <StatTable
         rows={[
           { label: `Growths as a ${cls.name}`, values: growthsIn(unit, cls), suffix: '%' },
-          { label: 'Maximums (their own)', values: caps },
           { label: `${cls.name} Lv ${last.level} (rough)`, values: shown, caps: shownCaps, mov: true },
         ]}
       />

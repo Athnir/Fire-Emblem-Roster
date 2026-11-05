@@ -264,15 +264,13 @@ export function UnitSelect({ data, value, onChange }: { data: Fe13Data; value: s
   )
 }
 
+/** Who the unit is, as Fates' Roster (user, 2026-11-05): their stats, growths, modifiers and maximums are in the Unit Planner, their
+ * skills in the Skill Planner, whom they can marry in Supports and the Marriage Planner. */
 function UnitDetail({ data, unit }: { data: Fe13Data; unit: Fe13Unit }) {
   const cls = data.classes[unit.classId]
   const byId = new Map(data.units.map((u) => [u.id, u]))
-  const total = {} as Fe13Stats
-  for (const s of FE13_STATS) total[s] = unit.growths[s] + (cls.growths?.[s] ?? 0)
-  const spouses = spousesOf(data, unit)
-  // A child always has their fixed parent's classes and modifiers, and the +1; the other parent adds theirs.
+  // A child always has their fixed parent's classes, and the other parent adds theirs.
   const share = fixedShare(data, unit)
-  const modifiers = share?.modifiers ?? unit.modifiers
   // The hair: from the parent picked below, else the plan's, else their own (0x2cdfd8).
   const planSpouses = useFe13Store((s) => s.spouses)
   const avatar = useFe13Store((s) => s.avatar)
@@ -290,7 +288,7 @@ function UnitDetail({ data, unit }: { data: Fe13Data; unit: Fe13Unit }) {
     <div className={panel}>
       <div className="flex flex-col items-start gap-4 sm:flex-row">
         <UnitPortrait unit={unit} size={unit.parent || isAvatar(unit) ? 256 : 128} hairHex={hair.hex} />
-        <div className="space-y-1 text-sm text-neutral-300">
+        <div className="min-w-0 space-y-1 text-sm text-neutral-300">
           <h3 className="text-lg font-semibold text-neutral-100">{unit.name}</h3>
           <div>
             {cls.name} · Lv {unit.level}
@@ -307,23 +305,11 @@ function UnitDetail({ data, unit }: { data: Fe13Data; unit: Fe13Unit }) {
               {byId.get(unit.parent)?.name ?? unit.parent}
             </div>
           )}
-          {unit.skills && unit.skills.length > 0 && (
-            <div>
-              <span className="text-neutral-500">Skills: </span>
-              {unit.skills.join(', ')}
-            </div>
-          )}
           <div>
             <span className="text-neutral-500">Classes (Second Seal): </span>
             {names(data, share?.classes ?? classSetOf(unit))}
             {share && <span className="text-neutral-500"> (theirs and {share.parent.name}'s; the other parent adds theirs)</span>}
           </div>
-          {spouses.length > 0 && (
-            <div>
-              <span className="text-neutral-500">Can marry: </span>
-              {spouses.map((u) => u.name).join(', ')}
-            </div>
-          )}
         </div>
       </div>
       {isAvatar(unit) && (
@@ -371,24 +357,6 @@ function UnitDetail({ data, unit }: { data: Fe13Data; unit: Fe13Unit }) {
             their {fixedParent.female ? 'father' : 'mother'}, as the portrait shows: the program's 0x2cdfd8.
           </p>
         </div>
-      )}
-      <StatTable
-        mov
-        rows={[
-          { label: unit.parent ? 'Bases (own part)' : 'Bases', values: unit.bases },
-          { label: 'Personal growths', values: unit.growths, suffix: '%' },
-          { label: `Growths as a ${cls.name}`, values: total, suffix: '%' },
-          { label: share ? `Modifiers (${share.parent.name}'s, +1)` : 'Modifiers', values: modifiers, signed: true },
-          { label: `Maximums (${cls.name})`, values: capsOf(cls, modifiers) },
-        ]}
-      />
-      {share && (
-        <p className="text-xs text-neutral-500">
-          A child joins with at least these bases, the class's plus their own: each parent above them in a stat adds a third of the
-          difference. Their growths are their own and both parents' averaged, and their modifiers and maximums also take the other
-          parent's modifiers. Their hair is their other parent's (Lucina's is always her own). The Marriage Planner shows them with
-          both parents.
-        </p>
       )}
     </div>
   )
@@ -698,6 +666,11 @@ export function Fe13Planner({ data: raw }: { data: Fe13Data }) {
     update({ steps: patch.to ? kept : [...kept, ...steps.slice(i + 1)] })
   }
   const nextOptions = classChanges(data, current, set, plan.dlc)
+  const growthsAs = (cls: Fe13Class) => {
+    const out = {} as Fe13Stats
+    for (const s of FE13_STATS) out[s] = growths[s] + (cls.growths?.[s] ?? 0) + (plan.aptitude ? 20 : 0)
+    return out
+  }
   return (
     <div className="space-y-4">
       <UnitSelect data={data} value={unit.id} onChange={setUnitId} />
@@ -824,6 +797,15 @@ export function Fe13Planner({ data: raw }: { data: Fe13Data }) {
               ? ' Marry their parent in the Marriage Planner to plan them with what they inherit.'
               : ''}
         </p>
+        {/* As Fates' Unit Planner: the growths, modifiers and maximums, then the stats (the first row is as they join). */}
+        <StatTable
+          rows={[
+            { label: 'Personal growths', values: growths, suffix: '%' },
+            { label: `Growths as a ${finalClass.name}${plan.aptitude ? ' (with Aptitude)' : ''}`, values: growthsAs(finalClass), suffix: '%' },
+            { label: child ? `Modifiers (${child.fixed.unit.name}'s and ${child.other.unit.name}'s)` : 'Modifiers', values: modifiers, signed: true },
+            { label: `Maximums (${finalClass.name})`, values: capsOf(finalClass, modifiers, plan.limitBreaker) },
+          ]}
+        />
         <StatTable
           rows={stages.map((st, i) => ({
             label: `${data.classes[st.classId].name} Lv ${st.level}${i === 0 ? ' (joins)' : ''}`,

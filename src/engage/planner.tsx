@@ -252,6 +252,13 @@ export function Fe17Planner({ data }: { data: Fe17Data }) {
           Growth is the unit's own plus the class's; a stat at its cap gains nothing. A class change starts again at Lv 1 and keeps the
           unit's own stats, so the shown ones move by the classes' bases.
         </p>
+        {/* As Fates' Unit Planner: their own growths and cap modifiers first. */}
+        <StatTable
+          rows={[
+            { label: 'Growths (their own; a class adds its own)', values: unit.growths, suffix: '%' },
+            { label: "Cap modifiers (their own, added to every class's caps)", values: unit.capMods, signed: true },
+          ]}
+        />
         <Estimate key={unit.id} data={data} unit={unit} plan={plan} defaultClass={finalCls.id} defaultLevel={lastLevel} />
         <div className="space-y-1">
           <h4 className="text-sm font-semibold text-neutral-200">Projected stats</h4>

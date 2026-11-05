@@ -22,7 +22,7 @@ import {
 } from './logic'
 import { useTelliusPlanStore, useUnitPlan, type TelliusUnitPlan } from './planStore'
 import { SkillIcon, StatTable, StoryPromotions, UnitSelect, useScreenshotUnit, WeaponsLine } from './shared'
-import { TELLIUS_STATS, TELLIUS_STAT_LABELS, type TelliusData, type TelliusStat, type TelliusUnit } from './types'
+import { TELLIUS_RANK_LABELS, TELLIUS_STATS, TELLIUS_STAT_LABELS, type TelliusData, type TelliusRankType, type TelliusStat, type TelliusUnit } from './types'
 
 const selectClass = 'rounded-md border border-neutral-700 bg-neutral-800 px-2 py-1 text-sm text-neutral-200'
 
@@ -295,6 +295,13 @@ function Planner({ data, unit, onShowUnit }: { data: TelliusData; unit: TelliusU
               ? " Promoting adds the new class's promotion gains and starts again at Lv 1 (0x8011ffd0)."
               : " Promoting switches to the new class's bases (the difference is the gain) and starts again at Lv 1 (0x8003d2c4).")}
         </p>
+        {/* As Fates' Unit Planner: the growths and caps, then the stats (the first row is as they join). */}
+        <StatTable
+          rows={[
+            { label: 'Growths', values: unit.growths, suffix: '%' },
+            ...[...new Set(stages.map((st) => st.classId))].map((id) => ({ label: `Caps (${data.classes[id].name})`, values: data.classes[id].caps })),
+          ]}
+        />
         <StatTable
           rows={[
             ...stages.map((st, i) => ({
@@ -319,6 +326,12 @@ function Planner({ data, unit, onShowUnit }: { data: TelliusData; unit: TelliusU
         )}
 
         <WeaponsLine data={data} classId={finalClass.id} />
+        {Object.keys(unit.ranks).length > 0 && (
+          <div className="text-sm text-neutral-300">
+            <span className="text-neutral-500">Weapon ranks as they join: </span>
+            {(Object.entries(unit.ranks) as [TelliusRankType, string][]).map(([type, rank]) => `${TELLIUS_RANK_LABELS[type]} ${rank}`).join(', ')}
+          </div>
+        )}
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-neutral-300">
           <span>
             <span className="text-neutral-500">Mov </span>
@@ -331,6 +344,10 @@ function Planner({ data, unit, onShowUnit }: { data: TelliusData; unit: TelliusU
             <span className="text-neutral-500">Con </span>
             {unit.con}
             {final.con !== unit.con && ` → ${final.con}`}
+          </span>
+          <span>
+            <span className="text-neutral-500">Wt </span>
+            {unit.wt}
           </span>
           <label className="flex items-center gap-2 text-xs text-neutral-300">
             <input type="checkbox" checked={boots} onChange={(e) => setBoots(e.target.checked)} />

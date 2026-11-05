@@ -1,12 +1,12 @@
 import { useRef, useState } from 'react'
 import { useReached } from '../state/spoilerStore'
 import { chip, selectClass, useArmy, useScreenshotUnit } from './hooks'
-import { capsOf, chapterLabel, labelOf, supportsOf, type Fe17Data } from './logic'
+import { chapterLabel, labelOf, supportsOf, type Fe17Data } from './logic'
 import { FE17_STAT_LABELS, type Fe17BondRingSet, type Fe17StatsMov, type Fe17Unit } from './types'
-import { EmblemFace, RingFace, SkillChips, SkillIcon, SkillList, StatTable, UnitPortrait, UnitSelect } from './ui'
+import { EmblemFace, RingFace, SkillChips, SkillIcon, SkillList, UnitPortrait, UnitSelect } from './ui'
 
-/** Who the unit is (user, 2026-11-05, as Three Houses' Roster): their growths, proficiencies, SP and supports are in the planners and
- * the Supports tab, their class's weapons in the Classes tab. */
+/** Who the unit is (user, 2026-11-05, as Fates' Roster): their stats, growths, caps, proficiencies, SP and supports are in the planners
+ * and the Supports tab, their class's weapons in the Classes tab. */
 function UnitDetail({ data, unit }: { data: Fe17Data; unit: Fe17Unit }) {
   const cls = data.classes[unit.classId]
   return (
@@ -35,13 +35,6 @@ function UnitDetail({ data, unit }: { data: Fe17Data; unit: Fe17Unit }) {
         <h4 className="text-sm font-semibold text-neutral-200">Personal skill</h4>
         <SkillList data={data} skills={unit.personal} />
       </div>
-      <StatTable
-        rows={[
-          { label: `Joins (${cls.name})`, values: unit.joinStats, caps: capsOf(cls, unit) },
-          { label: `Caps (${cls.name})`, values: capsOf(cls, unit) },
-        ]}
-      />
-      <p className="text-xs text-neutral-500">The caps are the class's plus the unit's own modifiers.</p>
     </div>
   )
 }

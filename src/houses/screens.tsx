@@ -20,7 +20,7 @@ import {
 } from './logic'
 import { useFe16Store } from './store'
 import type { Fe16Unit } from './types'
-import { ChoicePicker, SkillIcon, StatTable, UnitPortrait, UnitSelect } from './ui'
+import { ChoicePicker, SkillIcon, UnitPortrait, UnitSelect } from './ui'
 
 function UnitDetail({ data, unit, picks, chapter }: { data: Fe16Data; unit: Fe16Unit; picks: Fe16Picks; chapter?: number }) {
   const cls = data.classes[unit.classId]
@@ -80,15 +80,8 @@ function UnitDetail({ data, unit, picks, chapter }: { data: Fe16Data; unit: Fe16
           </div>
         ))}
       </div>
-      {/* The Roster keeps to who the unit is (user, 2026-11-04): their skill ranks, growths, skills and supports are in the planners
-          and the Supports tab. */}
-      <StatTable
-        rows={[
-          { label: 'Bases (Lv 1)', values: unit.bases, mov: true },
-          { label: 'Maximums', values: unit.caps },
-        ]}
-      />
-      <p className="text-xs text-neutral-500">The maximums are the unit's own: in Three Houses classes have none.</p>
+      {/* The Roster keeps to who the unit is (user, 2026-11-04 and 11-05): their bases, maximums, skill ranks, growths, skills and
+          supports are in the planners and the Supports tab. */}
     </div>
   )
 }

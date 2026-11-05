@@ -340,12 +340,6 @@ function bonusesOf(data: GbaData, unitId: string) {
   }
 }
 
-function bonusPartnersOf(data: GbaData, unitId: string) {
-  const { gets, gives } = bonusesOf(data, unitId)
-  const seen = new Set<string>()
-  return [...gets, ...gives].filter((x) => !seen.has(x.partner.id) && seen.add(x.partner.id)).map((x) => ({ partner: x.partner }))
-}
-
 /** A unit's ranked supports: each partner, what the unit gets and gives at each rank, and the points and acts. */
 function rankedOf(data: GbaData, unitId: string) {
   const byId = new Map(data.units.map((u) => [u.id, u]))
@@ -363,20 +357,27 @@ function turnsFor(levels: number[], s: GbaSupport): (number | null)[] {
   return levels.map((need) => (s.perTurn ? Math.max(0, Math.ceil((need - s.start) / s.perTurn)) : null))
 }
 
+/** Who the unit is, as Fates' Roster (user, 2026-11-05): their stats, growths, maximums and weapon ranks are in the Unit Planner, their
+ * supports in the Supports tab. */
 function UnitDetail({ data, unit }: { data: GbaData; unit: GbaUnit }) {
   const cls = data.classes[unit.classId]
   const promo = optionsOf(data, cls)
-  const supports = [...supportsOf(data, unit.id), ...bonusPartnersOf(data, unit.id), ...rankedOf(data, unit.id)]
   return (
     <div className="space-y-4 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
       <div className="flex flex-col items-start gap-4 sm:flex-row">
         <UnitPortrait data={data} unit={unit} size={128} />
-        <div className="space-y-1 text-sm text-neutral-300">
+        <div className="min-w-0 space-y-1 text-sm text-neutral-300">
           <h3 className="text-lg font-semibold text-neutral-100">{unit.name}</h3>
           <div>
             {cls.name} · Lv {unit.level}
             {promo.length > 0 && <span className="text-neutral-500"> · promotes to {promo.map((c) => c.name).join(' or ')}</span>}
           </div>
+          {unit.reclass && (
+            <div>
+              <span className="text-neutral-500">Reclass set: </span>
+              {unit.reclass.map((id) => data.classes[id]?.name ?? id).join(', ')}
+            </div>
+          )}
           {unit.affinity && (
             <div>
               <span className="text-neutral-500">Affinity: </span>
@@ -388,37 +389,8 @@ function UnitDetail({ data, unit }: { data: GbaData; unit: GbaUnit }) {
             {joinText(data, unit)}
           </div>
           {unit.join.note && <div className="text-neutral-400">{unit.join.note}</div>}
-          {Object.keys(unit.ranks).length > 0 && (
-            <div>
-              <span className="text-neutral-500">Weapons </span>
-              {Object.entries(unit.ranks)
-                .map(([w, r]) => `${w[0].toUpperCase()}${w.slice(1)} ${r}`)
-                .join(', ')}
-            </div>
-          )}
         </div>
       </div>
-      <StatTable
-        data={data}
-        rows={[
-          { label: 'Bases', values: unit.bases },
-          { label: cls.growths ? 'Personal growths' : 'Growths', values: unit.growths, suffix: '%' },
-          ...(cls.growths ? [{ label: `Growths as a ${cls.name}`, values: withClassGrowths(data, unit, cls), suffix: '%' }] : []),
-          unit.caps ? { label: 'Maximums', values: unit.caps } : { label: `Caps (${cls.name})`, values: cls.caps },
-        ]}
-      />
-      {unit.reclass && (
-        <p className="text-sm text-neutral-300">
-          <span className="text-neutral-500">Reclass set: </span>
-          {unit.reclass.map((id) => data.classes[id]?.name ?? id).join(', ')}
-        </p>
-      )}
-      {supports.length > 0 && (
-        <p className="text-sm text-neutral-300">
-          <span className="text-neutral-500">Supports: </span>
-          {supports.map((s) => s.partner.name).join(', ')}
-        </p>
-      )}
     </div>
   )
 }
@@ -658,6 +630,7 @@ export function GbaPlanner({ data: game }: { data: GbaData }) {
   const stages = project(data, unit, plan)
   const levels = (from: number, to = MAX_LEVEL) => Array.from({ length: Math.max(0, to - from + 1) }, (_, i) => from + i)
   const finalClass = data.classes[stages[stages.length - 1].classId]
+  const classIds = [...new Set(stages.map((st) => st.classId))]
   const last = steps[steps.length - 1]
   const lastLevel = last ? (last.promotion ? 1 : last.at) : unit.level
   // The promotions offered: the first from the class the unit joins in, then one from wherever that leads.
@@ -752,6 +725,25 @@ export function GbaPlanner({ data: game }: { data: GbaData }) {
               : "Promoting adds the difference between the classes' bases (Serenes Forest; not yet traced in the game's code)."}
           {start.autoPromote ? ` A trainee promotes on reaching Lv ${maxLevelOf(start)} (Serenes Forest).` : ''}
         </p>
+        {/* As Fates' Unit Planner: the growths and maximums, then the stats (the first row is as they join). */}
+        <StatTable
+          data={data}
+          rows={[
+            { label: classIds.some((id) => data.classes[id].growths) ? 'Personal growths' : 'Growths', values: unit.growths, suffix: '%' },
+            ...classIds
+              .filter((id) => data.classes[id].growths)
+              .map((id) => ({ label: `Growths as a ${data.classes[id].name}`, values: withClassGrowths(data, unit, data.classes[id]), suffix: '%' })),
+            ...(unit.caps ? [{ label: 'Maximums (their own)', values: unit.caps }] : classIds.map((id) => ({ label: `Caps (${data.classes[id].name})`, values: data.classes[id].caps }))),
+          ]}
+        />
+        {Object.keys(unit.ranks).length > 0 && (
+          <p className="text-sm text-neutral-300">
+            <span className="text-neutral-500">Weapon ranks as they join: </span>
+            {Object.entries(unit.ranks)
+              .map(([w, r]) => `${w[0].toUpperCase()}${w.slice(1)} ${r}`)
+              .join(', ')}
+          </p>
+        )}
         <StatTable
           data={data}
           rows={stages.map((st, i) => ({

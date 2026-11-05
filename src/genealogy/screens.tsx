@@ -22,6 +22,8 @@ const PROTECTION = {
 const CHILD_RULES =
   "A child's growths are the parent of their own sex's plus half the other's (rounded down), plus their holy blood; each stat is (2 × that parent's + the other's) / 10 from what the game stores (Str to Res above the class's base), plus their levels' growth; HP adds 15, Luck 1 and a random 1 to 10. Holy blood and items come from the father for the sons but Leif and Febail, and for Altena and Patty; from the mother for the rest. From the game's code ($87:A869, $87:A6E6), run on every mother, father and child; the parents' stats are their Unit Planner plans, so these are averages."
 
+/** Who the unit is, as Fates' Roster (user, 2026-11-05): their stats, growths, gold, weapons and class skills are in the Unit Planner;
+ * how a child's come about, in Pairings. */
 function UnitDetail({ data, unit }: { data: Fe4Data; unit: Fe4Unit }) {
   const { profile, fatherOf } = useProfiles(data)
   const byId = new Map(data.units.map((u) => [u.id, u]))
@@ -29,12 +31,11 @@ function UnitDetail({ data, unit }: { data: Fe4Data; unit: Fe4Unit }) {
   const cls = data.classes[unit.classId]
   const promo = unit.promotesTo ? data.classes[unit.promotesTo] : undefined
   const father = unit.role === 'child' ? fatherOf(unit) : undefined
-  const classSkills = (cls.skills ?? []).filter((s) => !p?.skills.includes(s))
   return (
     <div className="space-y-4 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
       <div className="flex flex-col items-start gap-4 sm:flex-row">
         <UnitPortrait data={data} unit={unit} size={128} />
-        <div className="space-y-1 text-sm text-neutral-300">
+        <div className="min-w-0 space-y-1 text-sm text-neutral-300">
           <h3 className="text-lg font-semibold text-neutral-100">{unit.name}</h3>
           <div>
             {cls.name} · Lv {unit.level}
@@ -73,37 +74,15 @@ function UnitDetail({ data, unit }: { data: Fe4Data; unit: Fe4Unit }) {
         </div>
       </div>
       {p ? (
-        <>
-          <StatTable
-            rows={[
-              { label: unit.role === 'child' ? 'Bases (Luck: average, range)' : 'Bases', values: p.bases, extra: luckExtra(p) },
-              { label: 'Growths (with holy blood)', values: p.growths, suffix: '%' },
-              ...(unit.growths ? [{ label: 'Own growths', values: unit.growths, suffix: '%' }] : []),
-            ]}
-          />
-          <WrapWarning data={data} p={p} />
-          <WeaponsLine data={data} classId={unit.classId} blood={p.blood} />
-          <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-neutral-300">
-            <span>
-              <span className="text-neutral-500">Mov </span>
-              {cls.mov}
-            </span>
-            <span>
-              <span className="text-neutral-500">Gold </span>
-              {p.gold}
-            </span>
-            {(p.skills.length > 0 || classSkills.length > 0) && (
-              <span>
-                <span className="text-neutral-500">Skills </span>
-                {[...p.skills, ...classSkills.map((s) => `${s} (${cls.name})`)].join(', ')}
-              </span>
-            )}
+        p.skills.length > 0 && (
+          <div className="space-y-1 text-sm text-neutral-300">
+            <h4 className="text-sm font-semibold text-neutral-200">Personal skills</h4>
+            <div>{p.skills.join(', ')}</div>
           </div>
-        </>
+        )
       ) : (
-        <p className="text-sm text-neutral-400">Pick {byId.get(unit.mother ?? '')?.name}'s husband in Pairings to see this child's stats.</p>
+        <p className="text-sm text-neutral-400">Pick {byId.get(unit.mother ?? '')?.name}'s husband in Pairings to see what this child inherits.</p>
       )}
-      {unit.role === 'child' && <p className="text-xs text-neutral-500">{CHILD_RULES}</p>}
       {unit.unconfirmed && <p className="rounded-md border border-amber-800/60 bg-amber-950/30 p-2 text-xs text-amber-300">Unconfirmed: {unit.unconfirmed}</p>}
     </div>
   )
@@ -259,6 +238,20 @@ export function Fe4Planner({ data }: { data: Fe4Data }) {
                 classes' bases, and HP and Luck don't ($87:A438, $84:ABB0). Lv 30 is the cap. The first generation passes these stats on
                 to their children (Pairings).
               </p>
+              {/* As Fates' Unit Planner: the growths and caps, then the stats (the first row is as they join). */}
+              <StatTable
+                rows={[
+                  { label: 'Growths (with holy blood)', values: p.growths, suffix: '%' },
+                  ...(unit.growths ? [{ label: 'Own growths', values: unit.growths, suffix: '%' }] : []),
+                  ...[...new Map(stages.map((st) => [st.classId, st.caps])).entries()].map(([id, caps]) => ({ label: `Caps (${data.classes[id].name})`, values: caps })),
+                ]}
+              />
+              {unit.role === 'child' && (
+                <p className="text-xs text-neutral-500">
+                  A child's bases and growths come from their parents' plans (Pairings has how); Luck shows its average and, in brackets, its
+                  range.
+                </p>
+              )}
               <StatTable
                 rows={[
                   ...stages.map((st, i) => ({
@@ -278,6 +271,8 @@ export function Fe4Planner({ data }: { data: Fe4Data }) {
                 {bonus.mov ? ` + ${bonus.mov} (Leg Ring) = ${finalClass.mov + bonus.mov}` : ''}
                 <span className="text-neutral-500"> · Skills </span>
                 {skillsWith(data, p.skills, finalClass.id, rings).join(', ') || 'none'}
+                <span className="text-neutral-500"> · Gold as they join </span>
+                {p.gold}
               </div>
               {data.rings && data.rings.length > 0 && (
                 <div className="space-y-1.5">

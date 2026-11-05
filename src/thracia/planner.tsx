@@ -275,6 +275,13 @@ export function Fe5Planner({ data }: { data: Fe5Data }) {
           on foot indoors a mounted unit shows its dismounted class's bases. A class change starts again at Lv 1. The numbers are averages
           and can run a little off.
         </p>
+        {/* As Fates' Unit Planner: the growths and caps, then the stats (the first row is as they join). */}
+        <StatTable
+          rows={[
+            { label: 'Growths (their own, before scrolls)', values: unit.growths, suffix: '%' },
+            { label: 'Caps (every class)', values: CAPS },
+          ]}
+        />
         <StatTable
           rows={stages.map((st, i) => ({
             label: label(st, i),
