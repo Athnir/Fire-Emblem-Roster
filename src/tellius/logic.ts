@@ -527,9 +527,10 @@ export function weaponsText(data: TelliusData, classId: string): string {
   return parts.join(', ') || 'no weapon ranks'
 }
 
-/** Ids for art the user uploads (Edit Mode, Bulk Upload): 'fe9/ike', 'fe9/sol'. */
+/** Ids for art the user uploads (Edit Mode, Bulk Upload): 'fe9/ike', 'fe9/sol'. Accents are dropped (Engage's Céline: 'fe17/celine'),
+ * as every game's screens drop them when they look a portrait up, so Bulk Upload keeps each where it's read. */
 export function artId(gameId: string, name: string): string {
-  return `${gameId}/${name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '')}`
+  return `${gameId}/${name.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '')}`
 }
 
 export function formatStat(value: number): string {

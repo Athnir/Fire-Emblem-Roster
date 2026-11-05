@@ -151,8 +151,8 @@ The DLC recruits aren't made by it.
 
 ## Every game at once (a phone, or any device without the files)
 
-Each game's portraits (and skill icons, where its screens show them) come from a script reading your own dump into
-`data-raw/<game>/art/` (the "Portraits" section of each `data-raw/<game>/README.md` names it; Fates' are the `public/` files above).
+Each game's portraits (and skill icons, where its screens show them, and Engage's Bond Ring faces, in its `rings/`) come from a
+script reading your own dump into `data-raw/<game>/art/` (the "Portraits" section of each `data-raw/<game>/README.md` names it; Fates' are the `public/` files above).
 Then:
 
 ```bash

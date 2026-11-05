@@ -204,8 +204,15 @@ straight from the NSPs (the bundles aren't copied into `romfs/`).
   UnitIconID is `049Il`). Alear's record is male (Gender 1): `Lueur`; the female look is `LueurW` (`--alear-female` writes it too).
 - **Format:** one Texture2D, 640x340, ASTC 4x4, Tegra block-linear swizzled; read and decoded with UnityPy (texture2ddecoder).
 - **Crop:** a square of the full height, centred on the opaque columns' middle, scaled to 256x256 (Lanczos on premultiplied alpha).
+- **File names:** the app's artId (src/tellius/logic.ts): the English name with its accents dropped, lower-cased, each run of
+  anything but a-z and 0-9 as one "_" (Céline: `celine.png`, as the Roster looks it up).
+- **Bond Ring faces** (`rings/<ring>.png`, 123): the Ring Chamber's, `fe_assets_ui/hub/godroom/face/face.bundle`: one SpriteAtlas
+  (`Face`, one 4096x4096 ASTC 4x4 page) with a Sprite per hero, named by ring.xml's Icon (アイコン: `Seeda` for Caeda, `Anna_FEH` for the
+  Heroes ring Anna), all 123 matched one to one. Each Sprite's rect is 300x300, but the atlas keeps only its opaque part
+  (m_RD.textureRect, placed at textureRectOffset from the bottom left), so it's put back on its 300x300, then scaled to 128x128.
+  They sit in their own folder so a ring that shares a unit's name (Anna) stays apart.
 - **Other 2D art found, not used:** the unit list's 188x74 strips (`fe_assets_ui/common/unitlist/facethumb`), the Somniel
-  notebook's photos (3D renders with backgrounds, `fe_assets_ui/hub/notebook/pictures`); the emblem room's faces are the bond-ring
-  heroes'.
-- **Run:** `python scripts/fe17_portraits.py` (41 portraits; `--sheet <png>` for a labelled contact sheet). Needs
-  `pip install UnityPy`.
+  notebook's photos (3D renders with backgrounds, `fe_assets_ui/hub/notebook/pictures`), the ring book's Emblem faces
+  (`fe_assets_ui/hub/ringbook/godface/godface.bundle`, 24 Sprites of 388x388, Ephraim's not among them).
+- **Run:** `python scripts/fe17_portraits.py` (41 portraits and 123 Bond Ring faces; `--sheet <png>` for a labelled contact sheet).
+  Needs `pip install UnityPy`.

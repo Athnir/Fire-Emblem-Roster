@@ -1,8 +1,24 @@
+import type { ReactNode } from 'react'
 import { UploadSection } from '../components/BulkAssetUpload'
+import type { MatchResult } from '../logic/bulkAssetImport'
 import { matchFolder, matchPortraits, matchSkills, portraitEntries } from './art'
 import type { TelliusData } from './types'
 
-export function TelliusBulkUpload({ data, title, onClose }: { data: TelliusData; title: string; onClose: () => void }) {
+export function TelliusBulkUpload({
+  data,
+  title,
+  onClose,
+  folder,
+  children,
+}: {
+  data: TelliusData
+  title: string
+  onClose: () => void
+  /** A game whose folder holds more than portraits, skill icons and layers (Engage's Bond Ring faces): its own matcher and hint. */
+  folder?: { hint: string; match: (files: File[]) => MatchResult }
+  /** The game's own upload-by-category sections, after the skill icons. */
+  children?: ReactNode
+}) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
       <div className="max-h-[85vh] w-full max-w-lg space-y-4 overflow-y-auto rounded-lg border border-neutral-700 bg-neutral-900 p-5">
@@ -18,8 +34,11 @@ export function TelliusBulkUpload({ data, title, onClose }: { data: TelliusData;
         </p>
         <UploadSection
           title="Select an entire folder"
-          hint={`Portraits named like "ike.png"; skill icons in a "skills" folder, named like "sol.png"; children's hair layers as children/<name>/base.png and raw.png, and an Avatar's as avatar/<body>/base.png and hair1.png to hair5.png.`}
-          match={(files) => matchFolder(data, files)}
+          hint={
+            folder?.hint ??
+            `Portraits named like "ike.png"; skill icons in a "skills" folder, named like "sol.png"; children's hair layers as children/<name>/base.png and raw.png, and an Avatar's as avatar/<body>/base.png and hair1.png to hair5.png.`
+          }
+          match={folder?.match ?? ((files) => matchFolder(data, files))}
           directory
         />
         <p className="text-center text-xs text-neutral-600">— or, upload by category —</p>
@@ -33,6 +52,7 @@ export function TelliusBulkUpload({ data, title, onClose }: { data: TelliusData;
           hint={`Files named after each skill, like "sol.png" (${Object.keys(data.skills).length} skills).`}
           match={(files) => matchSkills(data, files)}
         />
+        {children}
       </div>
     </div>
   )

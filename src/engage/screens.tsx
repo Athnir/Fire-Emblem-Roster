@@ -3,7 +3,7 @@ import { useReached } from '../state/spoilerStore'
 import { chip, selectClass, useArmy, useScreenshotUnit } from './hooks'
 import { capsOf, chapterLabel, supportsOf, type Fe17Data } from './logic'
 import { FE17_STAT_LABELS, type Fe17BondRingSet, type Fe17StatsMov, type Fe17Unit } from './types'
-import { AlearPicker, SkillList, StatTable, UnitPortrait, UnitSelect } from './ui'
+import { AlearPicker, RingFace, SkillList, StatTable, UnitPortrait, UnitSelect } from './ui'
 
 function UnitDetail({ data, unit, reached }: { data: Fe17Data; unit: Fe17Unit; reached?: Set<string> }) {
   const cls = data.classes[unit.classId]
@@ -233,7 +233,6 @@ function RingStats({ stats }: { stats: Partial<Fe17StatsMov> }) {
  * rings"): forging RefineRingExecute.Do, merging SynthesisRingExecute.Do with RingMenuItem's costs, SP ExpToSkillPoint. */
 function BondRings({ data, reached }: { data: Fe17Data; reached?: Set<string> }) {
   const sets: Fe17BondRingSet[] = data.bondRings.filter((s) => !reached || reached.has(s.joinChapter))
-  const skills = data.skills
   return (
     <div className="space-y-3">
       <p className="text-xs text-neutral-500">
@@ -249,62 +248,78 @@ function BondRings({ data, reached }: { data: Fe17Data; reached?: Set<string> })
         </p>
       )}
       {sets.map((set) => (
-        <details key={set.game} className="rounded-lg border border-neutral-800 bg-neutral-900">
-          <summary className="cursor-pointer px-4 py-2 text-sm">
-            <span className="font-medium text-neutral-100">{set.game}</span>
-            <span className="text-neutral-500">
-              {' · '}
-              {set.emblem ? `${set.world} (${set.emblem})` : 'Expansion Pass, S rank only, not forged'}
-            </span>
-          </summary>
-          <div className="overflow-x-auto px-4 pb-3">
-            <table className="w-full min-w-[40rem] text-sm">
-              <thead>
-                <tr className="text-xs text-neutral-500">
-                  <th className="py-1 pr-2 text-left font-normal">Ring</th>
-                  {RING_RANKS.map((r) => (
-                    <th key={r} className="px-1 py-1 text-left font-normal">
-                      {r}
-                    </th>
-                  ))}
-                  <th className="px-1 py-1 text-left font-normal">Skill (S)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {set.rings.map((ring) => {
-                  const ringSkills = ring.ranks.flatMap((r) => r.skills ?? [])
-                  return (
-                    <tr key={ring.name} className="border-t border-neutral-800 align-top">
-                      <td className="py-1 pr-2 text-neutral-100">{ring.name}</td>
-                      {RING_RANKS.map((rank) => {
-                        const r = ring.ranks.find((x) => x.rank === rank)
-                        return (
-                          <td key={rank} className="px-1 py-1 text-neutral-300 sm:whitespace-nowrap">
-                            {r ? <RingStats stats={r.stats} /> : <span className="text-neutral-600">—</span>}
-                          </td>
-                        )
-                      })}
-                      <td className="px-1 py-1 text-neutral-300">
-                        {ringSkills.length === 0 ? (
-                          <span className="text-neutral-600">—</span>
-                        ) : (
-                          ringSkills.map((s) => (
-                            <div key={s}>
-                              <span className="text-neutral-100">{s}</span>
-                              {skills[s] && <span className="text-xs text-neutral-500">: {skills[s]}</span>}
-                            </div>
-                          ))
-                        )}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        </details>
+        <RingSet key={set.game} data={data} set={set} />
       ))}
     </div>
+  )
+}
+
+/** One game's Bond Rings, each with its hero's face. The table, and the faces read from storage, are made once the set is opened. */
+function RingSet({ data, set }: { data: Fe17Data; set: Fe17BondRingSet }) {
+  const [open, setOpen] = useState(false)
+  const skills = data.skills
+  return (
+    <details onToggle={(e) => setOpen(e.currentTarget.open)} className="rounded-lg border border-neutral-800 bg-neutral-900">
+      <summary className="cursor-pointer px-4 py-2 text-sm">
+        <span className="font-medium text-neutral-100">{set.game}</span>
+        <span className="text-neutral-500">
+          {' · '}
+          {set.emblem ? `${set.world} (${set.emblem})` : 'Expansion Pass, S rank only, not forged'}
+        </span>
+      </summary>
+      {open && (
+        <div className="overflow-x-auto px-4 pb-3">
+          <table className="w-full min-w-[40rem] text-sm">
+            <thead>
+              <tr className="text-xs text-neutral-500">
+                <th className="py-1 pr-2 text-left font-normal">Ring</th>
+                {RING_RANKS.map((r) => (
+                  <th key={r} className="px-1 py-1 text-left font-normal">
+                    {r}
+                  </th>
+                ))}
+                <th className="px-1 py-1 text-left font-normal">Skill (S)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {set.rings.map((ring) => {
+                const ringSkills = ring.ranks.flatMap((r) => r.skills ?? [])
+                return (
+                  <tr key={ring.name} className="border-t border-neutral-800 align-top">
+                    <td className="py-1 pr-2 text-neutral-100">
+                      <div className="flex items-center gap-2">
+                        <RingFace data={data} ring={ring.name} />
+                        <span>{ring.name}</span>
+                      </div>
+                    </td>
+                    {RING_RANKS.map((rank) => {
+                      const r = ring.ranks.find((x) => x.rank === rank)
+                      return (
+                        <td key={rank} className="px-1 py-1 text-neutral-300 sm:whitespace-nowrap">
+                          {r ? <RingStats stats={r.stats} /> : <span className="text-neutral-600">—</span>}
+                        </td>
+                      )
+                    })}
+                    <td className="px-1 py-1 text-neutral-300">
+                      {ringSkills.length === 0 ? (
+                        <span className="text-neutral-600">—</span>
+                      ) : (
+                        ringSkills.map((s) => (
+                          <div key={s}>
+                            <span className="text-neutral-100">{s}</span>
+                            {skills[s] && <span className="text-xs text-neutral-500">: {skills[s]}</span>}
+                          </div>
+                        ))
+                      )}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </details>
   )
 }
 

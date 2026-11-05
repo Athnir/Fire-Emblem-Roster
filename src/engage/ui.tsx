@@ -1,4 +1,5 @@
 import { Portrait } from '../components/Portrait'
+import { ringFaceId } from './art'
 import { artId, chip, selectClass } from './hooks'
 import { fmt, type Fe17Data } from './logic'
 import { useFe17Store } from './store'
@@ -8,6 +9,11 @@ import { FE17_STATS, FE17_STAT_LABELS, type Fe17Stat, type Fe17StatsMov, type Fe
 
 export function UnitPortrait({ data, unit, size = 64 }: { data: Fe17Data; unit: Fe17Unit; size?: number }) {
   return <Portrait characterId={artId(data.gameId, unit.name)} isChild={false} size={size} />
+}
+
+/** A Bond Ring's face: its hero as the Ring Chamber shows them (Bulk Upload's "rings" folder). */
+export function RingFace({ data, ring, size = 36 }: { data: Fe17Data; ring: string; size?: number }) {
+  return <Portrait characterId={ringFaceId(data.gameId, ring)} isChild={false} size={size} />
 }
 
 type Row = { label: string; values: Partial<Fe17StatsMov>; caps?: Partial<Fe17StatsMov>; suffix?: string; extra?: Partial<Record<Fe17Stat | 'mov', number>> }
