@@ -95,12 +95,10 @@ describe('Thracia 776 rules', () => {
     expect(skillsAt(data, mareeta, mareeta.classId, plan({ manuals: [sol.id], storySkill: true }))).toEqual(['Luna', 'Sol', 'Astra'])
   })
 
-  it("adds the rings at the end, held at the caps ($87:BCBF)", () => {
+  it('leaves the stat rings a unit uses out of the plan (no per-unit stat-up items, user 2026-11-05)', () => {
     const leif = unit('Leif')
-    const life = data.rings.find((r) => r.name === 'Life Ring')!
-    const stages = project(data, leif, plan({ targetLevel: 1, rings: { [life.id]: 2 } }))
-    expect(stages[stages.length - 1]).toMatchObject({ how: 'rings' })
-    expect(stages[stages.length - 1].own.hp).toBe(leif.own.hp + 14)
+    const stages = project(data, leif, { ...plan({ targetLevel: 1 }), rings: { 'any-ring': 2 } } as Parameters<typeof project>[2])
+    expect(stages.map((st) => st.own)).toEqual([leif.own])
   })
 
   it('drops the units of the picks not taken, and moves Sara to 16B on route B', () => {

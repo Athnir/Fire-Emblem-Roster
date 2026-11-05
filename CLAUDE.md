@@ -88,8 +88,10 @@ new rule, add it here.
   cap there, and the A supports, which become +5 bonds. Volug shows half-transformed for Part 1.
 - **Thracia keeps each unit's own stats apart from the class, as the game does** (user, 2026-11-02): what's shown is the class's base
   plus their own, held at 20 (HP is kept whole), so a promotion moves the shown stats by the classes' bases and leaves HP. The
-  Unit Planner toggles a mounted unit on foot (its dismounted class), adds up every holy scroll carried (a growth below 0 counts as
-  0), and counts the rings used.
+  Unit Planner toggles a mounted unit on foot (its dismounted class) and adds up every holy scroll carried (a growth below 0 counts
+  as 0).
+- **No per-unit stat-up items in the Unit Planners** (user, 2026-11-05): Engage's stat boosters and Thracia's rings are left out;
+  what's unlocked for everyone stays (Three Houses' Saint Statues, which raise the maximums).
 - **Story class changes are planner steps** (user, 2026-11-02, Thracia: Leif's Prince at the end of Ch.18, Linoan's Sage, Lara's Dancer
   before her Master Seal), as Path of Radiance's story promotions are.
 - **What the game has one copy of is flagged, not blocked** (user, 2026-11-02, Thracia's skill manuals): two plans can use it, and a

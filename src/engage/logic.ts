@@ -108,8 +108,6 @@ export interface Fe17Plan {
   bonds?: Record<string, number>
   /** Skills inherited from the emblems (two slots). */
   inherited?: string[]
-  /** How many of each stat booster used. */
-  boosters?: Record<string, number>
   expertise?: boolean
   starsphere?: boolean
 }
@@ -205,7 +203,7 @@ export interface Fe17Stage {
   level: number
   internal: number
   own: Fe17StatsMov
-  how: 'joins' | 'level' | 'change' | 'target' | 'boosters'
+  how: 'joins' | 'level' | 'change' | 'target'
 }
 
 /** A plan's steps, up to the first the game doesn't allow; `have`: the proficiencies (the plan's, unless given). */
@@ -226,7 +224,7 @@ export function legalSteps(data: Fe17Data, unit: Fe17Unit, plan: Fe17Plan, have 
 }
 
 /** Stats along a plan: averages in random mode, the game's own running totals in fixed mode. Level-ups add to the unit's own stats
- * while the shown stat is below its cap; a class change keeps them and swaps the class's bases and caps. Boosters count at the end. */
+ * while the shown stat is below its cap; a class change keeps them and swaps the class's bases and caps. */
 export function project(data: Fe17Data, unit: Fe17Unit, plan: Fe17Plan, have?: string[]): Fe17Stage[] {
   const steps = legalSteps(data, unit, plan, have)
   const cap = INTERNAL_CAP[plan.difficulty ?? 'normal']
@@ -278,7 +276,6 @@ export function project(data: Fe17Data, unit: Fe17Unit, plan: Fe17Plan, have?: s
     own = grow(own, target - level, cls)
     stages.push({ classId: cls.id, level: target, internal, own, how: 'target' })
   }
-  if (Object.values(plan.boosters ?? {}).some((n) => n > 0)) stages.push({ classId: cls.id, level: target, internal, own: boost(data, unit, cls, own, plan), how: 'boosters' })
   return stages
 }
 
@@ -317,26 +314,11 @@ export function pathTo(data: Fe17Data, unit: Fe17Unit, targetId: string, promote
   return steps
 }
 
-/** The rough stats a unit can expect in a class at a level (the way there by pathTo), with the plan's growth settings and no
- * boosters: the stages, the last the estimate. */
+/** The rough stats a unit can expect in a class at a level (the way there by pathTo), with the plan's growth settings: the stages,
+ * the last the estimate. */
 export function estimate(data: Fe17Data, unit: Fe17Unit, plan: Fe17Plan, targetId: string, level: number, promoteAt = 20): Fe17Stage[] {
   const steps = pathTo(data, unit, targetId, promoteAt)
-  return project(data, unit, { ...plan, steps, targetLevel: level, boosters: undefined }, allProficiencies(data))
-}
-
-/** Stat boosters (ItemUseImpl 0x1a4c690): each adds its amount to the unit's own stat, usable only while the stat is below its cap (a
- * +2 one point short stores one over); Boots while their bonus is under 2. */
-function boost(data: Fe17Data, unit: Fe17Unit, cls: Fe17Class, own: Fe17StatsMov, plan: Fe17Plan): Fe17StatsMov {
-  const out = { ...own }
-  const caps = capsOf(cls, unit)
-  for (const b of data.boosters) {
-    for (let i = 0; i < (plan.boosters?.[b.name] ?? 0); i++) {
-      for (const [s, v] of Object.entries(b.raises) as [Fe17Stat | 'mov', number][]) {
-        if (s === 'mov' ? out.mov - unit.own.mov < 2 : out[s] + cls.bases[s] < caps[s]) out[s] += v
-      }
-    }
-  }
-  return out
+  return project(data, unit, { ...plan, steps, targetLevel: level }, allProficiencies(data))
 }
 
 /** The emblem's sync bonus at a bond level: the stat skills it gives then, which show on top of the caps. */

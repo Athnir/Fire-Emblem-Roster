@@ -103,40 +103,6 @@ function ScrollEditor({ data, unit, total, stretches, onChange }: { data: Fe5Dat
   )
 }
 
-/** How many of each ring the unit uses; each raises its stat once, by a fixed amount, held at the caps ($87:BCBF). */
-function RingEditor({ data, rings, onChange }: { data: Fe5Data; rings: Record<string, number>; onChange: (r: Record<string, number>) => void }) {
-  return (
-    <div className="space-y-2">
-      <h4 className="text-sm font-semibold text-neutral-200">Rings</h4>
-      <p className="text-xs text-neutral-500">Each ring raises one stat once, by a fixed amount, held at the caps. They count at the end of the plan.</p>
-      <div className="grid grid-cols-1 gap-1.5 text-xs sm:grid-cols-3">
-        {data.rings.map((ring) => (
-          <label key={ring.id} className="flex items-center justify-between gap-2 rounded-md border border-neutral-800 px-2 py-1 text-neutral-300">
-            <span>
-              {ring.name} <span className="text-neutral-500">({FE5_STAT_LABELS[ring.stat]} +{ring.amount})</span>
-            </span>
-            <select
-              value={rings[ring.id] ?? 0}
-              onChange={(e) => {
-                const next = { ...rings, [ring.id]: Number(e.target.value) }
-                if (!next[ring.id]) delete next[ring.id]
-                onChange(next)
-              }}
-              className={selectClass}
-            >
-              {[0, 1, 2, 3, 4, 5].map((n) => (
-                <option key={n} value={n}>
-                  {n}
-                </option>
-              ))}
-            </select>
-          </label>
-        ))}
-      </div>
-    </div>
-  )
-}
-
 /** The skill manuals the unit uses, Mareeta's Astra, and a note when another plan uses the same manual (the game has one of each). */
 function ManualEditor({
   data,
@@ -215,7 +181,7 @@ function ManualEditor({
   )
 }
 
-/** One unit's average stats through their class changes, with the scrolls, rings and manuals they use. Saved per unit. */
+/** One unit's average stats through their class changes, with the scrolls and manuals they use. Saved per unit. */
 export function Fe5Planner({ data }: { data: Fe5Data }) {
   const { units, chapterOf, picks, reached } = useArmy(data)
   const [unitId, setUnitId] = useState(units[0]?.id ?? '')
@@ -237,7 +203,7 @@ export function Fe5Planner({ data }: { data: Fe5Data }) {
   const clashes = manualClashes(units, plansWith(allPlans))
   const label = (st: (typeof stages)[number], i: number) => {
     const cls = classShown(data, st.classId, onFoot)
-    const how = st.how === 'joins' && i === 0 ? ' (joins)' : st.how === 'seal' ? ' (Master Seal)' : st.how === 'story' ? ' (story)' : st.how === 'rings' ? ' with rings' : ''
+    const how = st.how === 'joins' && i === 0 ? ' (joins)' : st.how === 'seal' ? ' (Master Seal)' : st.how === 'story' ? ' (story)' : ''
     return `${cls.name}${onFoot && cls.id !== st.classId ? ' on foot' : ''} Lv ${st.level}${how}`
   }
   return (
@@ -328,7 +294,6 @@ export function Fe5Planner({ data }: { data: Fe5Data }) {
           <SkillList data={data} skills={skillsAt(data, unit, classShown(data, finalStage.classId, onFoot).id, plan)} />
         </div>
         <ScrollEditor data={data} unit={unit} total={levelUps(unit, plan)} stretches={plan.scrolls ?? []} onChange={(scrolls) => update({ scrolls })} />
-        <RingEditor data={data} rings={plan.rings ?? {}} onChange={(rings) => update({ rings })} />
         <ManualEditor data={data} unit={unit} plan={plan} others={clashes} picks={picks} reached={reached} onChange={update} />
       </div>
     </div>

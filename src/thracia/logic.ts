@@ -67,8 +67,6 @@ export interface Fe5Plan {
   targetLevel: number
   /** Stretches of level-ups from when the unit joins, with the holy scrolls carried through each. */
   scrolls?: ScrollStretch[]
-  /** Rings used: {ring item id: how many}. */
-  rings?: Record<string, number>
   /** Skill manuals used (item ids). */
   manuals?: string[]
   /** Mareeta's Astra from talking to Shannam. */
@@ -98,9 +96,6 @@ export function normalizePlan(unit: Fe5Unit, raw: unknown): Fe5Plan {
       const ids = Array.isArray(st.scrollIds) ? st.scrollIds.filter((x): x is string => typeof x === 'string') : typeof st.scrollId === 'string' ? [st.scrollId] : []
       return isNumber(st.levels) && st.levels > 0 ? [{ scrollIds: ids, levels: st.levels }] : []
     })
-  }
-  if (p.rings && typeof p.rings === 'object') {
-    plan.rings = Object.fromEntries(Object.entries(p.rings as Record<string, unknown>).filter((e): e is [string, number] => isNumber(e[1]) && e[1] > 0))
   }
   if (Array.isArray(p.manuals)) plan.manuals = p.manuals.filter((x): x is string => typeof x === 'string')
   if (p.storySkill === true && unit.storySkill) plan.storySkill = true
@@ -156,12 +151,12 @@ export interface Fe5Stage {
   level: number
   /** What the unit keeps (HP whole, the rest their own). */
   own: Fe5Stats
-  /** 'joins', 'story' or 'seal' where the unit comes into a class; 'rings' for the plan's rings. */
-  how?: Segment['how'] | 'rings'
+  /** 'joins', 'story' or 'seal' where the unit comes into a class. */
+  how?: Segment['how']
 }
 
-/** Average stats through a plan: the level-ups in each class, each class change (Lv 1, nothing else changes) and the rings at the
- * end, each a fixed gain held at the caps ($87:BCBF). */
+/** Average stats through a plan: the level-ups in each class and each class change (Lv 1, nothing else changes). The stat rings a
+ * unit uses are left out (user, 2026-11-05: no per-unit stat-up items in the planners). */
 export function project(data: Fe5Data, unit: Fe5Unit, plan: Fe5Plan): Fe5Stage[] {
   const scrolls = new Map(data.scrolls.map((s) => [s.id, s]))
   const carried: Fe5Scroll[][] = []
@@ -175,16 +170,6 @@ export function project(data: Fe5Data, unit: Fe5Unit, plan: Fe5Plan): Fe5Stage[]
       for (let lv = seg.from; lv < seg.to; lv++) own = levelUp(own, growthsWith(unit, carried[k++] ?? []))
       stages.push({ classId: seg.classId, level: seg.to, own: { ...own } })
     }
-  }
-  const rings = Object.entries(plan.rings ?? {}).filter(([, n]) => n > 0)
-  if (rings.length) {
-    const last = stages[stages.length - 1]
-    const withRings = { ...last.own }
-    for (const [id, n] of rings) {
-      const ring = data.rings.find((r) => r.id === id)
-      if (ring) withRings[ring.stat] = Math.min(capOf(ring.stat), withRings[ring.stat] + ring.amount * n)
-    }
-    stages.push({ classId: last.classId, level: last.level, own: withRings, how: 'rings' })
   }
   return stages
 }

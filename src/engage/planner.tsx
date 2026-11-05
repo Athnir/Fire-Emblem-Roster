@@ -89,14 +89,14 @@ function Estimate({ data, unit, plan, defaultClass, defaultLevel }: { data: Fe17
         ]}
       />
       <p className="text-xs text-neutral-500">
-        The way there: {way}{steps.length ? '' : ' (the class they join in)'}. Averages with the plan's growth settings, without boosters
-        or an Emblem; any proficiency a class needs is taken as had (an Emblem's bonds give it). The plan itself is below.
+        The way there: {way}{steps.length ? '' : ' (the class they join in)'}. Averages with the plan's growth settings, without an Emblem; any proficiency a class needs is taken as had (an Emblem's bonds give it). The plan itself is below.
       </p>
     </div>
   )
 }
 
-/** One unit's stats through their class changes, with an emblem synced, its bonds and the stat boosters. Saved per unit. */
+/** One unit's stats through their class changes, with an emblem synced and its bonds. Saved per unit. (No stat boosters: a unit's
+ * own items are left out, user 2026-11-05.) */
 export function Fe17Planner({ data }: { data: Fe17Data }) {
   const { units } = useArmy(data)
   const [unitId, setUnitId] = useState(units[0]?.id ?? '')
@@ -114,7 +114,7 @@ export function Fe17Planner({ data }: { data: Fe17Data }) {
   const bond = plan.emblem ? (plan.bonds?.[plan.emblem] ?? 1) : 0
   const sync = syncBonus(emblem, bond)
   const label = (st: Fe17Stage) =>
-    `${data.classes[st.classId].name} Lv ${st.level}${st.internal ? ` (int. ${st.internal})` : ''}${st.how === 'joins' ? ' (joins)' : st.how === 'change' ? ' (changes)' : st.how === 'boosters' ? ' + boosters' : ''}`
+    `${data.classes[st.classId].name} Lv ${st.level}${st.internal ? ` (int. ${st.internal})` : ''}${st.how === 'joins' ? ' (joins)' : st.how === 'change' ? ' (changes)' : ''}`
   const classAt = (i: number) => (i === 0 ? unit.classId : steps[i - 1].to)
   const levelAt = (i: number) => {
     if (i === 0) return unit.level
@@ -122,7 +122,7 @@ export function Fe17Planner({ data }: { data: Fe17Data }) {
     return levelAfter(data.classes[classAt(i - 1)], prev.at, data.classes[prev.to])
   }
   const setStep = (i: number, patch: Partial<{ at: number; to: string }>) => update({ steps: steps.map((s, j) => (j === i ? { ...s, ...patch } : s)) })
-  const lastLevel = last.how === 'boosters' ? stages[stages.length - 2].level : last.level
+  const lastLevel = last.level
   const fromLevel = steps.length ? levelAt(steps.length) : unit.level
   const emblems = data.emblems.filter((e) => e.levels.some((l) => l.sync.length || l.inherit.length))
   // The Pact Ring's partner can take their bond with Emblem Alear to 21 (GodBond.GetMaxLevel 0x2b4db90).
@@ -242,31 +242,6 @@ export function Fe17Planner({ data }: { data: Fe17Data }) {
               grants its proficiency for good.
             </p>
           )}
-        </div>
-        <div className="space-y-2">
-          <h4 className="text-sm font-semibold text-neutral-200">Stat boosters</h4>
-          <div className="grid grid-cols-1 gap-1.5 text-xs sm:grid-cols-3">
-            {data.boosters.map((b) => (
-              <label key={b.name} className="flex items-center justify-between gap-2 rounded-md border border-neutral-800 px-2 py-1 text-neutral-300">
-                <span>{b.name}</span>
-                <select
-                  value={plan.boosters?.[b.name] ?? 0}
-                  onChange={(e) => {
-                    const next = { ...(plan.boosters ?? {}), [b.name]: Number(e.target.value) }
-                    if (!next[b.name]) delete next[b.name]
-                    update({ boosters: next })
-                  }}
-                  className={selectClass}
-                >
-                  {levels(0, 9).map((n) => (
-                    <option key={n} value={n}>
-                      {n}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            ))}
-          </div>
         </div>
         <div className="flex flex-wrap gap-1.5">
           <button type="button" onClick={() => update({ expertise: !plan.expertise })} className={chip(!!plan.expertise)}>
