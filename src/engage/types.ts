@@ -148,7 +148,7 @@ export interface Fe17BondRingSet {
 export interface Fe17Support {
   a: string
   b: string
-  /** The highest rank: C, B or A (the Pact Ring is Alear's, after Paralogue 15). */
+  /** The highest rank: C, B or A. */
   top: string
 }
 

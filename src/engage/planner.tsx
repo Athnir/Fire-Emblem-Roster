@@ -20,7 +20,6 @@ import {
   type Fe17Stage,
 } from './logic'
 import type { Fe17Class, Fe17Unit } from './types'
-import { useFe17Store } from './store'
 import { Fe17PlanSets, SkillList, StatTable, UnitSelect } from './ui'
 
 const SEAL_NAMES = { master: 'Master Seal', second: 'Second Seal', item: 'its item' }
@@ -103,7 +102,6 @@ export function Fe17Planner({ data }: { data: Fe17Data }) {
   const unit = units.find((u) => u.id === unitId) ?? units[0]
   useScreenshotUnit(unit)
   const { plan, saved, update, reset } = useUnitPlan(unit)
-  const pactRing = useFe17Store((s) => s.picks.pactRing)
   if (!unit || !plan) return null
   const steps = legalSteps(data, unit, plan)
   const stages = project(data, unit, { ...plan, steps })
@@ -125,8 +123,6 @@ export function Fe17Planner({ data }: { data: Fe17Data }) {
   const lastLevel = last.level
   const fromLevel = steps.length ? levelAt(steps.length) : unit.level
   const emblems = data.emblems.filter((e) => e.levels.some((l) => l.sync.length || l.inherit.length))
-  // The Pact Ring's partner can take their bond with Emblem Alear to 21 (GodBond.GetMaxLevel 0x2b4db90).
-  const bondMax = emblem?.name === 'Alear' && pactRing?.partner === unit.id ? 21 : 20
   return (
     <div className="space-y-4">
       <UnitSelect data={data} units={units} value={unit.id} onChange={setUnitId} />
@@ -227,7 +223,7 @@ export function Fe17Planner({ data }: { data: Fe17Data }) {
               <>
                 <span className="text-neutral-500">bond</span>
                 <select value={bond} onChange={(e) => update({ bonds: { ...(plan.bonds ?? {}), [emblem.id]: Number(e.target.value) } })} className={selectClass}>
-                  {levels(1, bondMax).map((lv) => (
+                  {levels(1, 20).map((lv) => (
                     <option key={lv} value={lv}>
                       {lv}
                     </option>

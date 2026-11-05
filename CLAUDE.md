@@ -101,7 +101,8 @@ new rule, add it here.
   and a pair that stops before A shows where it stops.
 - **Engage and Three Houses follow Fates' tabs** (user, 2026-11-04): the Avatar as two units, the Unit Planner's growths and
   maximums before the projected stats, the Skill Planner's rows by source (a class, a skill rank, an Emblem) under the loadout,
-  saved sets in the planners, the Team Viewer table; Engage's Supports plan the Pact Ring, as Fates' Marriage Planner plans spouses.
+  saved sets in the planners, the Team Viewer table. Engage's Pact Ring is only noted on Alear's Emblem Ring (user, 2026-11-05), not
+  planned in the Supports tab.
 - **Engage and Three Houses have a Classes tab** (user, 2026-11-04): each class's fixed things, its skills and bases (the least a
   unit shows in it), growths and caps or boosts; Three Houses' adds the exam (level, seal, ranks) and a calculator for its pass chance
   from the ranks and Luck put in, as the game works it out (0x633f60).

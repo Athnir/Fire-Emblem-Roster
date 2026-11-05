@@ -1,8 +1,7 @@
 import { useRef, useState } from 'react'
 import { useReached } from '../state/spoilerStore'
 import { chip, selectClass, useArmy, useScreenshotUnit } from './hooks'
-import { capsOf, chapterLabel, isAlear, labelOf, PACT_RING_CHAPTER, pactPartners, supportsOf, type Fe17Data } from './logic'
-import { useFe17Store } from './store'
+import { capsOf, chapterLabel, labelOf, supportsOf, type Fe17Data } from './logic'
 import { FE17_STAT_LABELS, type Fe17BondRingSet, type Fe17StatsMov, type Fe17Unit } from './types'
 import { EmblemFace, RingFace, SkillChips, SkillIcon, SkillList, StatTable, UnitPortrait, UnitSelect } from './ui'
 
@@ -94,88 +93,17 @@ export function Fe17Roster({ data }: { data: Fe17Data }) {
 
 const RANKS = ['C', 'B', 'A']
 
-/** The Pact Ring planned, as Fates' Marriage Planner plans spouses: an Alear and one partner, saved with the plans. With the spoiler
- * block on, it shows once Paralogue "The Connector" is reached. */
-function PactRing({ data, units, reached }: { data: Fe17Data; units: Fe17Unit[]; reached?: Set<string> }) {
-  const ring = useFe17Store((s) => s.picks.pactRing)
-  const setRing = useFe17Store((s) => s.setPactRing)
-  const alears = units.filter(isAlear)
-  const [alearId, setAlearId] = useState(ring?.alear ?? alears[0]?.id ?? '')
-  const [partner, setPartner] = useState('')
-  if ((reached && !reached.has(PACT_RING_CHAPTER)) || alears.length === 0) return null
-  const byId = new Map(units.map((u) => [u.id, u]))
-  const options = pactPartners(data, alearId).filter((id) => byId.has(id))
-  const name = (id: string) => (byId.get(id) ? labelOf(byId.get(id)!) : id)
-  return (
-    <div className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
-      <h3 className="text-base font-semibold text-neutral-100">Pact Ring</h3>
-      <p className="text-xs text-neutral-500">
-        Alear's alone, with one partner, once Paralogue "The Connector" (after Chapter 22) is cleared: their support becomes S, and
-        their bond with Emblem Alear can reach 21. The ring's text asks for an A support.
-      </p>
-      {ring ? (
-        <div className="flex flex-wrap items-center gap-3 text-sm">
-          <span className="flex items-center gap-2 text-neutral-200">
-            {byId.get(ring.alear) && <UnitPortrait data={data} unit={byId.get(ring.alear)!} size={28} />}
-            {name(ring.alear)} <span className="text-violet-300">×</span>
-            {byId.get(ring.partner) && <UnitPortrait data={data} unit={byId.get(ring.partner)!} size={28} />}
-            {name(ring.partner)}
-          </span>
-          <button type="button" onClick={() => setRing(null)} className="text-xs text-neutral-400 hover:text-red-400">
-            Remove
-          </button>
-        </div>
-      ) : (
-        <div className="flex flex-wrap items-center gap-2">
-          <select value={alearId} onChange={(e) => setAlearId(e.target.value)} className={selectClass}>
-            {alears.map((a) => (
-              <option key={a.id} value={a.id}>
-                {labelOf(a)}
-              </option>
-            ))}
-          </select>
-          <span className="text-neutral-500">×</span>
-          <select value={partner} onChange={(e) => setPartner(e.target.value)} className={selectClass}>
-            <option value="">Partner…</option>
-            {options.map((id) => (
-              <option key={id} value={id}>
-                {name(id)}
-              </option>
-            ))}
-          </select>
-          <button
-            type="button"
-            disabled={!partner}
-            onClick={() => {
-              setRing({ alear: alearId, partner })
-              setPartner('')
-            }}
-            className="rounded-md bg-violet-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            Give the ring
-          </button>
-        </div>
-      )}
-    </div>
-  )
-}
-
-/** Who supports whom, up to which rank; the Pact Ring is Alear's alone. */
+/** Who supports whom, up to which rank. */
 export function Fe17Supports({ data }: { data: Fe17Data }) {
   const { units, reached } = useArmy(data)
   const [unitId, setUnitId] = useState(units[0]?.id ?? '')
   const unit = units.find((u) => u.id === unitId) ?? units[0]
   useScreenshotUnit(unit)
-  const ring = useFe17Store((s) => s.picks.pactRing)
   if (!unit) return null
   const byId = new Map(units.map((u) => [u.id, u]))
   const rows = supportsOf(data, unit.id).filter((s) => byId.has(s.partner))
-  // The Pact Ring's pair reaches S (shown once the ring is planned above).
-  const pact = (partner: string) => !!ring && ((ring.alear === unit.id && ring.partner === partner) || (ring.partner === unit.id && ring.alear === partner))
-  const ranks = rows.some((s) => pact(s.partner)) ? [...RANKS, 'S'] : RANKS
   return (
     <div className="space-y-4">
-      <PactRing data={data} units={units} reached={reached} />
       <UnitSelect data={data} units={units} value={unit.id} onChange={setUnitId} />
       <div className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
         <div className="text-sm text-neutral-300">
@@ -183,8 +111,7 @@ export function Fe17Supports({ data }: { data: Fe17Data }) {
           {unit.supportType}
         </div>
         <p className="text-xs text-neutral-500">
-          Each pair's ranks, C to A, from the game's support table (reliance.xml); S is the Pact Ring's, planned above. What supports give
-          in battle is in the Armory.
+          Each pair's ranks, C to A, from the game's support table (reliance.xml). What supports give in battle is in the Armory.
           {reached && ' With the spoiler block on, partners show once they join.'}
         </p>
         {rows.length === 0 ? (
@@ -194,7 +121,7 @@ export function Fe17Supports({ data }: { data: Fe17Data }) {
             <thead>
               <tr className="text-xs text-neutral-500">
                 <th className="py-1 pr-2 text-left font-normal">Partner</th>
-                {ranks.map((r) => (
+                {RANKS.map((r) => (
                   <th key={r} className="px-1 py-1 text-center font-normal">
                     {r}
                   </th>
@@ -212,9 +139,9 @@ export function Fe17Supports({ data }: { data: Fe17Data }) {
                         {labelOf(p)}
                       </button>
                     </td>
-                    {ranks.map((r) => (
-                      <td key={r} className={`px-1 py-1 text-center ${r === 'S' ? 'text-violet-300' : 'text-emerald-400'}`}>
-                        {r === 'S' ? (pact(s.partner) ? '●' : '') : RANKS.indexOf(r) <= RANKS.indexOf(s.top) ? '●' : <span className="text-neutral-700">·</span>}
+                    {RANKS.map((r) => (
+                      <td key={r} className="px-1 py-1 text-center text-emerald-400">
+                        {RANKS.indexOf(r) <= RANKS.indexOf(s.top) ? '●' : <span className="text-neutral-700">·</span>}
                       </td>
                     ))}
                   </tr>
@@ -367,6 +294,9 @@ function RingSet({ data, set }: { data: Fe17Data; set: Fe17BondRingSet }) {
 }
 
 /** Each Emblem's ring: pick one, and its bond levels show. With the spoiler block on, those whose ring has come. */
+/** The chapter that opens the Pact Ring: the end of Paralogue "The Connector" (S015) sets its permit (data-raw/fe17/README.md 2.9). */
+const PACT_RING_CHAPTER = 'CID_S015'
+
 function EmblemRings({ data, reached }: { data: Fe17Data; reached?: Set<string> }) {
   const emblems = data.emblems.filter(
     (e) => e.levels.some((l) => l.inherit.length || l.sync.length) && (!reached || reached.has(e.joinChapter)),
@@ -404,6 +334,14 @@ function EmblemRings({ data, reached }: { data: Fe17Data; reached?: Set<string> 
           reached, on top of the caps; skills can be inherited from bond 5, for SP, two at a time; a level's proficiency is the unit's
           for good once the bond reaches it.
         </p>
+        {/* The Pact Ring is noted here alone (user, 2026-11-05), once its paralogue is reached under the spoiler block. */}
+        {e.name === 'Alear' && (!reached || reached.has(PACT_RING_CHAPTER)) && (
+          <p className="text-xs text-neutral-400">
+            <span className="text-neutral-300">The Pact Ring:</span> once Paralogue "The Connector" (after Chapter 22) is cleared, Alear can
+            give it to one partner (the ring's text asks for an A support). Their support becomes S, and the partner's bond with Emblem
+            Alear can reach 21 (GodBond.GetMaxLevel 0x2b4db90).
+          </p>
+        )}
         <div className="overflow-x-auto">
           <table className="w-full min-w-[34rem] text-sm">
             <thead>
@@ -474,10 +412,9 @@ export function Fe17Info() {
         'A level with fewer than 2 points is rolled again, up to four tries, and the try with the most points is kept. In Fixed mode each stat keeps a running total that starts at the growth rate, and gains a point at every 100.',
         'Skill points: the EXP gained with an emblem ring on, half that with a bond ring, none without a ring; at most 9,999.',
       ])}
-      {section('Emblems and the Pact Ring', [
+      {section('Emblems', [
         "A base game emblem's bond stops at 10 until its paralogue is cleared; the Expansion Pass's go to 20. Inheriting opens at bond 5, two skills at a time.",
         'The engage meter needs 7 (one less at bond 20); an engage lasts 3 turns (4 from bond 11).',
-        "The Pact Ring is Alear's, with one partner, once Paralogue \"The Connector\" (after Chapter 22) is cleared; the partner's bond with Emblem Alear can then reach 21.",
       ])}
       {section('Stat boosters', [
         "Each adds its amount to the unit's own stat, but only while the stat is below its cap (a +2 one point short goes one over). Boots work twice at most.",

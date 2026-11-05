@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { FE17_CLASSES, FE17_UNITS } from '../../data/fe17/fe17Units'
 import { FE17_DATA } from '../../games/fe17'
-import { estimate, internalAfter, levelAfter, levelGain, PACT_RING_CHAPTER, pactPartners, pathTo, shownStats } from '../logic'
+import { estimate, internalAfter, levelAfter, levelGain, pathTo, shownStats } from '../logic'
 import { FE17_STATS, type Fe17Stats } from '../types'
 
 /** The level-up's re-roll straight from the routine (Unit.LevelUp 0x1a3a040), to check levelGain's averages against. */
@@ -69,15 +69,6 @@ describe('Engage: stats and class changes', () => {
     expect(internalAfter(0, 10, 1, 30)).toBe(9)
     expect(internalAfter(25, 20, 1, 30)).toBe(30)
     expect(internalAfter(20, 20, 21, 40)).toBe(19)
-  })
-})
-
-describe('the Pact Ring', () => {
-  it("is planned from an Alear's A supports, the same for both Alears, and opens with Paralogue: The Connector", () => {
-    const m = pactPartners(FE17_DATA, 'fe17-alear')
-    expect(m.length).toBeGreaterThan(30)
-    expect(pactPartners(FE17_DATA, 'fe17-alear-female')).toEqual(m)
-    expect(FE17_DATA.chapters.find((c) => c.id === PACT_RING_CHAPTER)?.label).toBe('Paralogue: The Connector')
   })
 })
 
