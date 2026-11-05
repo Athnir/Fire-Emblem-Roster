@@ -1,11 +1,13 @@
 import { useRef, useState } from 'react'
 import { useReached } from '../state/spoilerStore'
 import { chip, selectClass, useArmy, useScreenshotUnit } from './hooks'
-import { capsOf, chapterLabel, labelOf, supportsOf, type Fe17Data } from './logic'
+import { capsOf, chapterLabel, isAlear, labelOf, PACT_RING_CHAPTER, pactPartners, supportsOf, type Fe17Data } from './logic'
+import { useFe17Store } from './store'
 import { FE17_STAT_LABELS, type Fe17BondRingSet, type Fe17StatsMov, type Fe17Unit } from './types'
 import { EmblemFace, RingFace, SkillChips, SkillIcon, SkillList, StatTable, UnitPortrait, UnitSelect } from './ui'
 
 function UnitDetail({ data, unit, reached }: { data: Fe17Data; unit: Fe17Unit; reached?: Set<string> }) {
+  const ring = useFe17Store((s) => s.picks.pactRing)
   const cls = data.classes[unit.classId]
   const byId = new Map(data.units.map((u) => [u.id, u]))
   const supports = supportsOf(data, unit.id).filter((s) => {
@@ -71,7 +73,10 @@ function UnitDetail({ data, unit, reached }: { data: Fe17Data; unit: Fe17Unit; r
             {supports.map((s, i) => (
               <span key={s.partner}>
                 {i > 0 && ', '}
-                {labelOf(byId.get(s.partner)!)} <span className="text-neutral-500">{s.top}</span>
+                {labelOf(byId.get(s.partner)!)}{' '}
+                <span className="text-neutral-500">
+                  {ring && [ring.alear, ring.partner].includes(unit.id) && [ring.alear, ring.partner].includes(s.partner) ? 'S (Pact Ring)' : s.top}
+                </span>
               </span>
             ))}
           </div>
@@ -128,22 +133,93 @@ export function Fe17Roster({ data }: { data: Fe17Data }) {
 
 const RANKS = ['C', 'B', 'A']
 
+/** The Pact Ring planned, as Fates' Marriage Planner plans spouses: an Alear and one partner, saved with the plans. With the spoiler
+ * block on, it shows once Paralogue "The Connector" is reached. */
+function PactRing({ data, units, reached }: { data: Fe17Data; units: Fe17Unit[]; reached?: Set<string> }) {
+  const ring = useFe17Store((s) => s.picks.pactRing)
+  const setRing = useFe17Store((s) => s.setPactRing)
+  const alears = units.filter(isAlear)
+  const [alearId, setAlearId] = useState(ring?.alear ?? alears[0]?.id ?? '')
+  const [partner, setPartner] = useState('')
+  if ((reached && !reached.has(PACT_RING_CHAPTER)) || alears.length === 0) return null
+  const byId = new Map(units.map((u) => [u.id, u]))
+  const options = pactPartners(data, alearId).filter((id) => byId.has(id))
+  const name = (id: string) => (byId.get(id) ? labelOf(byId.get(id)!) : id)
+  return (
+    <div className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
+      <h3 className="text-base font-semibold text-neutral-100">Pact Ring</h3>
+      <p className="text-xs text-neutral-500">
+        Alear's alone, with one partner, once Paralogue "The Connector" (after Chapter 22) is cleared: their support becomes S, and
+        their bond with Emblem Alear can reach 21. The ring's text asks for an A support.
+      </p>
+      {ring ? (
+        <div className="flex flex-wrap items-center gap-3 text-sm">
+          <span className="flex items-center gap-2 text-neutral-200">
+            {byId.get(ring.alear) && <UnitPortrait data={data} unit={byId.get(ring.alear)!} size={28} />}
+            {name(ring.alear)} <span className="text-violet-300">×</span>
+            {byId.get(ring.partner) && <UnitPortrait data={data} unit={byId.get(ring.partner)!} size={28} />}
+            {name(ring.partner)}
+          </span>
+          <button type="button" onClick={() => setRing(null)} className="text-xs text-neutral-400 hover:text-red-400">
+            Remove
+          </button>
+        </div>
+      ) : (
+        <div className="flex flex-wrap items-center gap-2">
+          <select value={alearId} onChange={(e) => setAlearId(e.target.value)} className={selectClass}>
+            {alears.map((a) => (
+              <option key={a.id} value={a.id}>
+                {labelOf(a)}
+              </option>
+            ))}
+          </select>
+          <span className="text-neutral-500">×</span>
+          <select value={partner} onChange={(e) => setPartner(e.target.value)} className={selectClass}>
+            <option value="">Partner…</option>
+            {options.map((id) => (
+              <option key={id} value={id}>
+                {name(id)}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            disabled={!partner}
+            onClick={() => {
+              setRing({ alear: alearId, partner })
+              setPartner('')
+            }}
+            className="rounded-md bg-violet-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Give the ring
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 /** Who supports whom, up to which rank; the Pact Ring is Alear's alone. */
 export function Fe17Supports({ data }: { data: Fe17Data }) {
   const { units, reached } = useArmy(data)
   const [unitId, setUnitId] = useState(units[0]?.id ?? '')
   const unit = units.find((u) => u.id === unitId) ?? units[0]
   useScreenshotUnit(unit)
+  const ring = useFe17Store((s) => s.picks.pactRing)
   if (!unit) return null
   const byId = new Map(units.map((u) => [u.id, u]))
   const rows = supportsOf(data, unit.id).filter((s) => byId.has(s.partner))
+  // The Pact Ring's pair reaches S (shown once the ring is planned above).
+  const pact = (partner: string) => !!ring && ((ring.alear === unit.id && ring.partner === partner) || (ring.partner === unit.id && ring.alear === partner))
+  const ranks = rows.some((s) => pact(s.partner)) ? [...RANKS, 'S'] : RANKS
   return (
     <div className="space-y-4">
+      <PactRing data={data} units={units} reached={reached} />
       <UnitSelect data={data} units={units} value={unit.id} onChange={setUnitId} />
       <div className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
         <p className="text-xs text-neutral-500">
-          Each pair's ranks, C to A, from the game's support table (reliance.xml). The Pact Ring's rank is Alear's alone, with one partner,
-          once Paralogue "The Connector" (after Chapter 22) is cleared. What supports give in battle is in the Armory.
+          Each pair's ranks, C to A, from the game's support table (reliance.xml); S is the Pact Ring's, planned above. What supports give
+          in battle is in the Armory.
           {reached && ' With the spoiler block on, partners show once they join.'}
         </p>
         {rows.length === 0 ? (
@@ -153,7 +229,7 @@ export function Fe17Supports({ data }: { data: Fe17Data }) {
             <thead>
               <tr className="text-xs text-neutral-500">
                 <th className="py-1 pr-2 text-left font-normal">Partner</th>
-                {RANKS.map((r) => (
+                {ranks.map((r) => (
                   <th key={r} className="px-1 py-1 text-center font-normal">
                     {r}
                   </th>
@@ -171,9 +247,9 @@ export function Fe17Supports({ data }: { data: Fe17Data }) {
                         {labelOf(p)}
                       </button>
                     </td>
-                    {RANKS.map((r) => (
-                      <td key={r} className="px-1 py-1 text-center text-emerald-400">
-                        {RANKS.indexOf(r) <= RANKS.indexOf(s.top) ? '●' : <span className="text-neutral-700">·</span>}
+                    {ranks.map((r) => (
+                      <td key={r} className={`px-1 py-1 text-center ${r === 'S' ? 'text-violet-300' : 'text-emerald-400'}`}>
+                        {r === 'S' ? (pact(s.partner) ? '●' : '') : RANKS.indexOf(r) <= RANKS.indexOf(s.top) ? '●' : <span className="text-neutral-700">·</span>}
                       </td>
                     ))}
                   </tr>

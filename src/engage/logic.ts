@@ -316,6 +316,18 @@ export function inheritable(data: Fe17Data): { name: string; emblem: string; lev
   return out
 }
 
+/** The chapter that opens the Pact Ring: the end of Paralogue "The Connector" (S015, after Chapter 22) sets the permit
+ * (UnitReliancePermitAPlus; data-raw/fe17/README.md 2.9). */
+export const PACT_RING_CHAPTER = 'CID_S015'
+
+/** Who an Alear can give the Pact Ring: one partner, from those with an A support (as the ring's text says; the code's check for it
+ * wasn't found, data-raw/fe17/README.md, unconfirmed 3). */
+export function pactPartners(data: Fe17Data, alearId: string): string[] {
+  return supportsOf(data, alearId)
+    .filter((s) => s.top === 'A')
+    .map((s) => s.partner)
+}
+
 /** A unit's supports, with each partner and the highest rank. */
 export function supportsOf(data: Fe17Data, unitId: string): { partner: string; top: string }[] {
   return data.supports.filter((s) => s.a === unitId || s.b === unitId).map((s) => ({ partner: s.a === unitId ? s.b : s.a, top: s.top }))

@@ -3,9 +3,12 @@ import { persist } from 'zustand/middleware'
 
 import { ALEAR_FEMALE, type Fe17Plan } from './logic'
 
-/** The Roster's story picks: none yet. `alear` was Alear's gender before both Alears were listed (2026-11-04); a plan made for the
- * female Alear then is moved to her own unit (`migrate`). */
-export type Fe17Picks = { alear?: 'm' | 'f' }
+/** The Pact Ring planned (the Supports tab, as Fates' Marriage Planner): which Alear, and the partner. */
+export type Fe17PactRing = { alear: string; partner: string }
+
+/** The picks saved with the plans: the Pact Ring. `alear` was Alear's gender before both Alears were listed (2026-11-04); a plan made
+ * for the female Alear then is moved to her own unit (`migrate`). */
+export type Fe17Picks = { alear?: 'm' | 'f'; pactRing?: Fe17PactRing }
 
 /** Saves from before both Alears were listed: Alear's plan, made for the gender picked, goes to the female Alear's unit if she was
  * the one picked. */
@@ -21,7 +24,8 @@ interface Fe17State {
   /** Alear's gender ('m' or 'f'). */
   picks: Fe17Picks
   setPlan: (unitId: string, plan: Fe17Plan | null) => void
-  setPick: (choiceId: keyof Fe17Picks, value: string | null) => void
+  setPick: (choiceId: 'alear', value: string | null) => void
+  setPactRing: (ring: Fe17PactRing | null) => void
   /** Replaces the plans and picks (loading a saved set). */
   load: (plans: Record<string, Fe17Plan>, picks: Fe17Picks) => void
 }
@@ -45,6 +49,13 @@ export const useFe17Store = create<Fe17State>()(
           if (value === null) delete picks[choiceId]
           else picks[choiceId] = value
           return { picks: picks as Fe17Picks }
+        }),
+      setPactRing: (ring) =>
+        set((state) => {
+          const picks = { ...state.picks }
+          if (ring) picks.pactRing = ring
+          else delete picks.pactRing
+          return { picks }
         }),
       load: (plans, picks) => set({ plans: { ...plans }, picks: { ...picks } }),
     }),
