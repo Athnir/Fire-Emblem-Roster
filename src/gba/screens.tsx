@@ -476,6 +476,8 @@ function withClassGrowths(data: GbaData, unit: GbaUnit, cls: GbaClass): GbaStats
   for (const s of growingOf(data)) out[s] = growthIn(unit, cls, s)
   return out
 }
+/** The kinds of weapon a class can use, or none (a Dancer, a Transporter). */
+const weaponsText = (cls: GbaClass) => (cls.weapons?.length ? cls.weapons.join(', ') : 'none')
 const isPromotion = (data: GbaData, from: GbaClass, to: GbaClass) => optionsOf(data, from).some((c) => c.id === to.id)
 
 interface Step {
@@ -666,6 +668,7 @@ export function GbaPlanner({ data: game }: { data: GbaData }) {
                         <option key={o.id} value={o.id}>
                           {o.name}
                           {reclassing ? (isPromotion(data, from, o) ? ' (promotion)' : ' (reclass)') : ''}
+                          {o.weapons ? `: ${weaponsText(o)}` : ''}
                         </option>
                       ))}
                     </select>
@@ -741,6 +744,12 @@ export function GbaPlanner({ data: game }: { data: GbaData }) {
             ...(unit.caps ? [{ label: 'Maximums (their own)', values: unit.caps }] : classIds.map((id) => ({ label: `Caps (${data.classes[id].name})`, values: data.classes[id].caps }))),
           ]}
         />
+        {classIds.some((id) => data.classes[id].weapons) && (
+          <p className="text-sm text-neutral-300">
+            <span className="text-neutral-500">Weapons: </span>
+            {classIds.map((id) => `${data.classes[id].name}: ${weaponsText(data.classes[id])}`).join(' · ')}
+          </p>
+        )}
         {Object.keys(unit.ranks).length > 0 && (
           <p className="text-sm text-neutral-300">
             <span className="text-neutral-500">Weapon ranks as they join: </span>

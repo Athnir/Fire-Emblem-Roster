@@ -92,6 +92,8 @@ export interface GbaClass {
   autoPromote?: boolean
   /** No promotion item works on the class; the story promotes it, at whatever level (The Binding Blade's Lord): when and how. */
   storyPromotion?: string
+  /** The kinds of weapon the class can use, in the game's order (Sword, Anima, Staff...). */
+  weapons?: string[]
   /** What promoting into this class adds (HP to Res), when the game keeps it in the class data; otherwise the difference between
    * the two classes' bases. */
   gains?: Partial<GbaStats>

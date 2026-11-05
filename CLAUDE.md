@@ -125,6 +125,11 @@ new rule, add it here.
 - **A skill that comes in levels shows its top level alone** (user, 2026-11-04): Sword Prowess Lv 1-4 beside Lv 5, Sword Agility
   1-4 beside 5, Unyielding beside Unyielding++ (the game replaces a lower level with a higher), unless the tickbox shows every level.
   The chains are the game's own upgrade groups.
+- **A class's weapons show in the Unit Planner** (user, 2026-11-05): each class in the plan, and each choice at a promotion
+  (The Sacred Stones' Sage: Staff, Anima, Light; Mage Knight: Staff, Anima), from the game's class data. A class with none (a
+  Dancer, a Transporter) says so.
+- **Picture settings live only in the Roster** (user, 2026-11-05): the Avatar's looks and hair colour sit with the portraits, as
+  Fates' Corrin's do; the planners keep only what changes stats (Awakening's asset and flaw).
 - **Every game's Roster is Fates'** (user, 2026-11-05): who the unit is, and nothing to plan. The portrait and name, the class and
   level they join in (and their class set, reclass set or promotions), how and when they join, the story's notes on them, fixed
   traits (affinity, leadership, holy blood, crests), and their personal skill (Genealogy's and Thracia's own skills; Path of

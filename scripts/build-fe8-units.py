@@ -16,6 +16,7 @@ OUT = os.path.join(ROOT, 'src', 'data', 'fe8', 'fe8Units.ts')
 r = rom('fe8')
 R = r.R
 WEAPONS = ('sword', 'lance', 'axe', 'bow', 'staff', 'anima', 'light', 'dark')
+WEAPON_LABELS = {'sword': 'Sword', 'lance': 'Lance', 'axe': 'Axe', 'bow': 'Bow', 'staff': 'Staff', 'anima': 'Anima', 'light': 'Light', 'dark': 'Dark'}
 RANKS = [(251, 'S'), (181, 'A'), (121, 'B'), (71, 'C'), (31, 'D'), (1, 'E')]
 AFFINITIES = {1: 'Fire', 2: 'Thunder', 3: 'Wind', 4: 'Ice', 5: 'Dark', 6: 'Light', 7: 'Anima'}
 # The promotion options, two bytes per class (read at 0x080CC7D0): each class's one or two classes to promote to.
@@ -62,7 +63,11 @@ def klass(k):
     return {'bases': dict(zip(('hp', 'str', 'skl', 'spd', 'def', 'res', 'con', 'mov'), R[e + 0x0B:e + 0x13])),
             'caps': dict(zip(('hp', 'str', 'skl', 'spd', 'def', 'res', 'con'), R[e + 0x13:e + 0x1A])),
             'gains': dict(zip(('hp', 'str', 'skl', 'spd', 'def', 'res'), R[e + 0x22:e + 0x28])),
-            'options': options, 'promoted': bool(abilities & PROMOTED), 'trainee': bool(abilities & TRAINEE)}
+            'options': options, 'promoted': bool(abilities & PROMOTED), 'trainee': bool(abilities & TRAINEE),
+            # The weapons the class can use: those its ranks (+0x2C-0x33) start above 0.
+            'weapons': [WEAPON_LABELS[w] for w, v in zip(WEAPONS, R[e + 0x2C:e + 0x34]) if v]
+            # A dragonstone carries the Manakete lock (item attribute 0x400), which a class with the 0x40000 ability opens.
+            + (['Dragonstone'] if abilities & 0x40000 else [])}
 
 
 def rank(points):
@@ -152,6 +157,7 @@ def main():
         kd = klass(k)
         out_classes[str(k)] = {
             'id': str(k), 'name': cnames.get(k, f'Class {k}'), 'bases': {**kd['bases'], 'lck': 0}, 'caps': {**kd['caps'], 'lck': 30},
+            'weapons': kd['weapons'],
             **({'promotesTo': str(kd['options'][0]), 'promotions': [str(o) for o in kd['options']]} if kd['options'] else {}),
             **({'gains': kd['gains']} if k in targets else {}),
             # A trainee class stops at Lv 10 and promotes then (Serenes Forest; the ability bit is the game's).

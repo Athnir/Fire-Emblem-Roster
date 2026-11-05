@@ -16,6 +16,7 @@ OUT = os.path.join(ROOT, 'src', 'data', 'fe7', 'fe7Units.ts')
 r = rom('fe7')
 R = r.R
 WEAPONS = ('sword', 'lance', 'axe', 'bow', 'staff', 'anima', 'light', 'dark')
+WEAPON_LABELS = {'sword': 'Sword', 'lance': 'Lance', 'axe': 'Axe', 'bow': 'Bow', 'staff': 'Staff', 'anima': 'Anima', 'light': 'Light', 'dark': 'Dark'}
 # Weapon experience for each rank (the Armory's data-raw/fe7/README.md).
 RANKS = [(251, 'S'), (181, 'A'), (121, 'B'), (71, 'C'), (31, 'D'), (1, 'E')]
 # Affinity ids 1-7, by the support screen's order (the Armory's build-gba-supports.py).
@@ -73,7 +74,9 @@ def klass(k):
     # Only into a promoted class: Merlinus's two Transporter classes (the tent and the wagon) point at each other.
     target = R[e + 5]
     promotes = target if not promoted and target and r.u32(r.cfg['classes'] + 84 * target + 0x28) & PROMOTED else 0
-    return {'bases': bases, 'caps': caps, 'gains': gains, 'promotes': promotes, 'promoted': promoted}
+    # The weapons the class can use: those its ranks (+0x2C-0x33) start above 0.
+    weapons = [WEAPON_LABELS[w] for w, v in zip(WEAPONS, R[e + 0x2C:e + 0x34]) if v]
+    return {'bases': bases, 'caps': caps, 'gains': gains, 'promotes': promotes, 'promoted': promoted, 'weapons': weapons}
 
 
 def rank(points):
@@ -148,7 +151,7 @@ def main():
         kd = klass(k)
         out_classes[str(k)] = {'id': str(k), 'name': cnames.get(k, f'Class {k}'), 'bases': {**kd['bases'], 'lck': 0},
                                'caps': {**kd['caps'], 'lck': 30}, **({'promotesTo': str(kd['promotes'])} if kd['promotes'] else {}),
-                               **({'gains': kd['gains']} if kd['promoted'] else {})}
+                               **({'gains': kd['gains']} if kd['promoted'] else {}), 'weapons': kd['weapons']}
 
     # Supports: Eliwood's and Hector's stories only (the support code skips Lyn's, 0x080266E4). The character's support data
     # (24 bytes): 7 partner ids, 7 starting points, 7 points gained per turn, then the partner count.

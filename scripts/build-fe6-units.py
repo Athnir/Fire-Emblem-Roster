@@ -15,6 +15,7 @@ ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 OUT = os.path.join(ROOT, 'src', 'data', 'fe6', 'fe6Units.ts')
 R = rom.R
 WEAPONS = ('sword', 'lance', 'axe', 'bow', 'staff', 'anima', 'light', 'dark')
+WEAPON_LABELS = {'sword': 'Sword', 'lance': 'Lance', 'axe': 'Axe', 'bow': 'Bow', 'staff': 'Staff', 'anima': 'Anima', 'light': 'Light', 'dark': 'Dark'}
 # Affinity ids 1-7, named by their order in the later GBA games (the game shows only icons; the Armory's notes).
 AFFINITIES = {1: 'Fire', 2: 'Thunder', 3: 'Wind', 4: 'Ice', 5: 'Dark', 6: 'Light', 7: 'Anima'}
 AFFINITY_TABLE = 0x66350C  # 8 bytes per affinity: id, Atk, Def, Hit, Avoid, Crit, Dodge, 0; up to a 0 id
@@ -58,7 +59,12 @@ def klass(k):
     bases = dict(zip(('hp', 'str', 'skl', 'spd', 'def', 'res', 'con', 'mov'), R[e + 0x0B:e + 0x13]))
     caps = dict(zip(('hp', 'str', 'skl', 'spd', 'def', 'res', 'con'), R[e + 0x13:e + 0x1A]))
     promoted = bool(rom.u32(e + 0x24) & 0x100)
-    return {'bases': bases, 'caps': caps, 'promotes': 0 if promoted else R[e + 5]}
+    # The weapons the class can use: those its ranks (+0x28-0x2F) start above 0.
+    weapons = [WEAPON_LABELS[w] for w, v in zip(WEAPONS, R[e + 0x28:e + 0x30]) if v]
+    # A dragonstone carries the Manakete lock (item attribute 0x400), which a class with the 0x40000 ability opens.
+    if rom.u32(e + 0x24) & 0x40000:
+        weapons.append('Dragonstone')
+    return {'bases': bases, 'caps': caps, 'promotes': 0 if promoted else R[e + 5], 'weapons': weapons}
 
 
 def rank(points):
@@ -103,7 +109,7 @@ def main():
         kd = klass(k)
         out_classes[str(k)] = {'id': str(k), 'name': cnames.get(k, f'Class {k}'), 'bases': {**kd['bases'], 'lck': 0},
                                'caps': {**kd['caps'], 'lck': 30}, **({'promotesTo': str(kd['promotes'])} if kd['promotes'] else {}),
-                               **({'storyPromotion': STORY_PROMOTIONS[k]} if k in STORY_PROMOTIONS else {})}
+                               **({'storyPromotion': STORY_PROMOTIONS[k]} if k in STORY_PROMOTIONS else {}), 'weapons': kd['weapons']}
 
     ids = {int(u['id'][4:]) for u in units}
     supports, seen = [], set()

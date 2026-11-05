@@ -66,7 +66,7 @@ def main():
             'name': NAMES.get(jid) or j['name'], 'bases': {**dict(zip(STATS, map(signed, r[8:16]))), 'mov': r[0x29]},
             'growths': dict(zip(STATS, map(signed, r[0x10:0x18]))), 'caps': dict(zip(STATS, r[0x20:0x28])),
             'wexp': list(r[0x2c:0x32]), 'promoted': bool(r[0x39] & 0x08), 'to': job_ptr(o, 0x40), 'from': job_ptr(o, 0x3c),
-            'set': r[0x34], 'column': signed(r[0x35]),
+            'set': r[0x34], 'column': signed(r[0x35]), 'kinds': r[0x36],
         }
 
     J = {jid: job(jid) for jid in by_jid}
@@ -126,7 +126,11 @@ def main():
     classes = {}
     for jid in sorted(used, key=lambda x: by_jid[x][0]['index']):
         v = J[jid]
-        c = {'id': cid[jid], 'name': v['name'], 'bases': v['bases'], 'caps': v['caps'], 'growths': v['growths'], 'promoted': v['promoted']}
+        c = {'id': cid[jid], 'name': v['name'], 'bases': v['bases'], 'caps': v['caps'], 'growths': v['growths'], 'promoted': v['promoted'],
+             # The weapons the class can use (the equip check, arm9 0x203c834): those it has weapon experience in, a dragonstone with the
+             # manakete kind (+0x36 0x40), a ballista with the ballistician kind (0x08).
+             'weapons': [w.capitalize() for k, w in enumerate(WEAPONS) if v['wexp'][k]] + (['Dragonstone'] if v['kinds'] & 0x40 else [])
+             + (['Ballista'] if v['kinds'] & 0x08 else [])}
         if promotions[jid]:
             c['promotesTo'] = cid[promotions[jid][0]]
             c['promotions'] = [cid[x] for x in promotions[jid]]

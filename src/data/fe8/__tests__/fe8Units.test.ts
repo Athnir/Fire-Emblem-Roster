@@ -121,3 +121,15 @@ describe('Sacred Stones units', () => {
     expect(FE8_SUPPORTS.length).toBeGreaterThan(80)
   })
 })
+
+describe('Sacred Stones class weapons (the class record +0x2C-0x33, user 2026-11-05)', () => {
+  const weaponsOf = (name: string) => Object.values(FE8_CLASSES).find((c) => c.name === name)?.weapons
+  it("gives each class Serenes Forest's weapons: a Sage Anima, Light and Staff, a Mage Knight Anima and Staff", () => {
+    expect(weaponsOf('Sage')).toEqual(['Staff', 'Anima', 'Light'])
+    expect(weaponsOf('Mage Knight')).toEqual(['Staff', 'Anima'])
+    expect(weaponsOf('Great Knight')).toEqual(['Sword', 'Lance', 'Axe'])
+    expect(weaponsOf('Manakete')).toEqual(['Dragonstone'])
+    expect(weaponsOf('Dancer')).toEqual([])
+  })
+})
+

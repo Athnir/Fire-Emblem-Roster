@@ -112,7 +112,7 @@ function HairLine({ data, child, spouses }: { data: Fe13Data; child: Fe13Unit; s
     <div className="flex items-center gap-1.5 text-xs text-neutral-500">
       <span>
         {hair.from ? `Hair from ${hair.from.name}` : child.id === 'fe13-lucina' ? 'Hair: always her own' : 'Hair: their own'}
-        {fromAvatar && !hair.hex ? " (pick the Avatar's hair colour above)" : ''}
+        {fromAvatar && !hair.hex ? " (pick the Avatar's hair colour in the Roster)" : ''}
       </span>
       <Swatch hex={hair.hex} />
     </div>
@@ -132,8 +132,9 @@ const STAT_NAMES: Record<Fe13Stat, string> = {
 
 const AVATARS: Fe13AvatarId[] = ['fe13-avatar-m', 'fe13-avatar-f']
 
-/** The Avatar's asset and flaw, for both Avatars, and each one's hair colour (`genders`: whose) from the game's own palette. */
-export function AvatarBuild({ palette, genders = AVATARS }: { palette?: string[]; genders?: Fe13AvatarId[] }) {
+/** The Avatar's asset and flaw, for both Avatars (`stats`; the planners), and each one's hair colour (`genders`: whose) from the game's
+ * own palette (`palette`; the Roster only, with the portraits, as Fates' Roster has Corrin's looks, user 2026-11-05). */
+export function AvatarBuild({ palette, genders = AVATARS, stats = true }: { palette?: string[]; genders?: Fe13AvatarId[]; stats?: boolean }) {
   const avatar = useFe13Store((s) => s.avatar)
   const setAvatar = useFe13Store((s) => s.setAvatar)
   const pick = (label: string, key: 'asset' | 'flaw', other: Fe13Stat | null) => (
@@ -155,15 +156,19 @@ export function AvatarBuild({ palette, genders = AVATARS }: { palette?: string[]
   )
   return (
     <div className="space-y-1">
-      <div className="flex flex-wrap items-end gap-2">
-        <span className="pb-1 text-sm font-semibold text-neutral-200">Avatar</span>
-        {pick('Asset', 'asset', avatar.flaw)}
-        {pick('Flaw', 'flaw', avatar.asset)}
-      </div>
-      <p className="text-xs text-neutral-500">
-        Changes both Avatars' bases, growths and modifiers, and so what Morgan and the Avatar's other children inherit (the game's
-        PersonalityData table). None is the person record's own numbers.
-      </p>
+      {stats && (
+        <>
+          <div className="flex flex-wrap items-end gap-2">
+            <span className="pb-1 text-sm font-semibold text-neutral-200">Avatar</span>
+            {pick('Asset', 'asset', avatar.flaw)}
+            {pick('Flaw', 'flaw', avatar.asset)}
+          </div>
+          <p className="text-xs text-neutral-500">
+            Changes both Avatars' bases, growths and modifiers, and so what Morgan and the Avatar's other children inherit (the game's
+            PersonalityData table). None is the person record's own numbers.
+          </p>
+        </>
+      )}
       {palette &&
         palette.length > 0 &&
         genders.map((id) => {
@@ -315,7 +320,7 @@ function UnitDetail({ data, unit }: { data: Fe13Data; unit: Fe13Unit }) {
       {isAvatar(unit) && (
         <div className="space-y-3">
           <AvatarLooks avatarId={unit.id as Fe13AvatarId} />
-          <AvatarBuild palette={data.avatarHair} genders={[unit.id as Fe13AvatarId]} />
+          <AvatarBuild palette={data.avatarHair} genders={[unit.id as Fe13AvatarId]} stats={false} />
         </div>
       )}
       {unit.parent && unit.id === 'fe13-lucina' && (
@@ -675,7 +680,7 @@ export function Fe13Planner({ data: raw }: { data: Fe13Data }) {
     <div className="space-y-4">
       <UnitSelect data={data} value={unit.id} onChange={setUnitId} />
       <div className={panel}>
-        {(unit.id.startsWith('fe13-avatar') || isMorgan(unit)) && <AvatarBuild palette={data.avatarHair} />}
+        {(unit.id.startsWith('fe13-avatar') || isMorgan(unit)) && <AvatarBuild />}
         <div className="space-y-2 text-sm text-neutral-300">
           {rows.map(({ i, step, from, fromLevel: lv, options }) => (
             <div key={i} className="flex flex-wrap items-end gap-2">
@@ -1109,7 +1114,7 @@ export function Fe13MarriagePlanner({ data: raw }: { data: Fe13Data }) {
   return (
     <div className="space-y-6">
       <div className={panel}>
-        <AvatarBuild palette={data.avatarHair} />
+        <AvatarBuild />
         <h3 className="text-base font-semibold text-neutral-100">New Marriage</h3>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <select
@@ -1283,7 +1288,7 @@ export function Fe13ParentChecker({ data: raw }: { data: Fe13Data }) {
               ))}
           </select>
         </label>
-        {child && isMorgan(child) && <AvatarBuild palette={data.avatarHair} />}
+        {child && isMorgan(child) && <AvatarBuild />}
         {child && (
           <label className="flex flex-col gap-1 text-xs text-neutral-400">
             Add a candidate other parent

@@ -35,11 +35,19 @@ def main():
         })
         used.add(u['class'])
     used |= {by_id[c]['promotesTo'] for c in used if by_id[c].get('promotesTo')}
+    # The weapons a class can use: the groups whose class lists (6:$A3DA) have it. Heal is a group of its own; it's a staff.
+    group_names = {'Swords': 'Sword', 'Lances': 'Lance', 'Bows': 'Bow', 'Ballistae': 'Ballista', 'Axes': 'Axe', 'Stones': 'Dragonstone',
+                   'Tomes': 'Tome', 'Heal': 'Staff', 'Staves': 'Staff'}
+    weapons_of = {}
+    for g in data['weaponGroups']:
+        for k in g['classes']:
+            if group_names[g['group']] not in weapons_of.setdefault(k, []):
+                weapons_of[k].append(group_names[g['group']])
     classes = {}
     for k in sorted(used):
         c = by_id[k]
         entry = {'id': str(k), 'name': c['name'], 'bases': {**{s: c['bases'].get(s, 0) for s in STATS}},
-                 'caps': c['caps'], 'maxLevel': c['maxLevel']}
+                 'caps': c['caps'], 'maxLevel': c['maxLevel'], 'weapons': weapons_of.get(k, [])}
         if c.get('promotesTo'):
             entry['promotesTo'] = str(c['promotesTo'])
         if k in targets:
