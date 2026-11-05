@@ -2,10 +2,17 @@ import { useState } from 'react'
 import { AllLevelsToggle, Loadout, SkillRow, type PoolSkill } from '../components/SkillPool'
 import { topLevels } from '../logic/skillChains'
 import { useAllLevels } from '../state/allLevelsStore'
-import { useArmy, useScreenshotUnit, useSpoiler, useUnitPlan } from './hooks'
+import { chip, useArmy, useScreenshotUnit, useSpoiler, useUnitPlan } from './hooks'
 import { canTake, CLASS_TIERS, classesFor, kindOf, starsOf, labelOf, learnsOf, MAX_ABILITIES, MAX_ARTS, personalNow, type Fe16Data } from './logic'
 import { FE16_RANKS, FE16_SKILL_LABELS, FE16_SKILLS } from './types'
 import { Fe16PlanSets, SkillIcon, UnitSelect } from './ui'
+
+type SkillView = 'both' | 'weapon' | 'class'
+const SKILL_VIEWS: { id: SkillView; label: string }[] = [
+  { id: 'both', label: 'Both' },
+  { id: 'weapon', label: 'Weapon skills' },
+  { id: 'class', label: 'Class mastery' },
+]
 
 /** The abilities and combat arts a unit equips, laid out as Fates' Skill Planner: the personal ability, the loadouts, then everything
  * they can learn, a row for each skill's ranks, their budding talent and each class they can master. Saved with their plan. */
@@ -17,6 +24,7 @@ export function Fe16SkillPlanner({ data }: { data: Fe16Data }) {
   useScreenshotUnit(unit)
   const { plan, update } = useUnitPlan(unit)
   const [allLevels, setAllLevels] = useAllLevels(data.gameId)
+  const [view, setView] = useState<SkillView>('both')
   if (!unit || !plan) return null
 
   const chosen = { ability: plan.abilities ?? [], art: plan.arts ?? [] }
@@ -39,6 +47,13 @@ export function Fe16SkillPlanner({ data }: { data: Fe16Data }) {
   const all = [...chosen.ability, ...chosen.art]
   const learns = learnsOf(data, unit).filter((l) => l.kind !== 'spell')
   const classes = classesFor(data, unit).filter((c) => (canTake(c, unit) || c.id === unit.classId) && (c.mastery.length > 0 || c.alsoTeaches))
+  // A view shows the weapon skills, the class mastery skills, or both (user, 2026-11-05); a box with a skill chosen in it stays, in full,
+  // whichever view, until its last chosen skill is taken off.
+  const has = (names: string[]) => names.some((n) => all.includes(n))
+  const rankNames = (sk: string) => [...learns.filter((l) => l.skill === sk).map((l) => l.name), ...(unit.budding?.skill === sk ? [unit.budding.name] : [])]
+  const classNames = (c: (typeof classes)[number]) => [...(c.alsoTeaches ?? []), ...c.mastery]
+  const showRanks = (sk: string) => view !== 'class' || has(rankNames(sk))
+  const showClass = (c: (typeof classes)[number]) => view !== 'weapon' || has(classNames(c))
 
   return (
     <div className="space-y-4">
@@ -65,12 +80,19 @@ export function Fe16SkillPlanner({ data }: { data: Fe16Data }) {
 
       <div className="space-y-2 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
         <h3 className="text-base font-semibold text-neutral-100">What {labelOf(unit)} can learn</h3>
+        <div className="flex flex-wrap gap-1.5">
+          {SKILL_VIEWS.map((v) => (
+            <button key={v.id} type="button" onClick={() => setView(v.id)} className={chip(view === v.id)}>
+              {v.label}
+            </button>
+          ))}
+        </div>
         <AllLevelsToggle on={allLevels} onChange={setAllLevels} example="Sword Prowess Lv 1 to 5" />
         <p className="text-xs text-neutral-500">
           By skill, then by the rank that teaches it; a budding talent (✦) once the weakness it starts as is trained. ★ marks a skill
           that isn't standard (half the units or fewer can learn it), ★★ one three units or fewer can; personal abilities aren't counted.
         </p>
-        {FE16_SKILLS.map((sk) => {
+        {FE16_SKILLS.filter(showRanks).map((sk) => {
           // What the ranks teach, starred by how few units can learn it (starsOf).
           const here = shown(learns.filter((l) => l.skill === sk).map((l) => ({ ...skill(l.name, undefined, starsOf(data, l.name)), rank: l.rank })))
           const tiers: { label: string; skills: PoolSkill[] }[] = FE16_RANKS.map((r) => ({ label: r, skills: here.filter((h) => h.rank === r) }))
@@ -87,11 +109,11 @@ export function Fe16SkillPlanner({ data }: { data: Fe16Data }) {
             />
           )
         })}
-        {CLASS_TIERS.filter((t) => classes.some((c) => c.tier === t)).map((t) => (
+        {CLASS_TIERS.filter((t) => classes.some((c) => c.tier === t && showClass(c))).map((t) => (
           <div key={t} className="space-y-2 pt-2">
             <h4 className="text-sm font-semibold text-neutral-200">{t} classes</h4>
             {classes
-              .filter((c) => c.tier === t)
+              .filter((c) => c.tier === t && showClass(c))
               .map((c) => (
                 <SkillRow
                   key={c.id}

@@ -110,6 +110,9 @@ new rule, add it here.
 - **The Unit Planner estimates any class at any level** (user, 2026-11-04, as Fates' Projected Stats): pick a class the unit can be
   in and a level, and see that class's growths and maximums and the rough stats there, by the shortest way from the class they join
   in (Engage: promoted at Lv 20 unless set). It doesn't change the plan.
+- **Skill Planners open small** (user, 2026-11-05): Engage's Emblem rows start closed, opened one at a time or all at once; Three
+  Houses' show both, the weapon skills or the class mastery skills, and a box with a chosen skill stays shown, in full, whatever the
+  view, until its last chosen skill is taken off.
 - **A skill that comes in levels shows its top level alone** (user, 2026-11-04): Sword Prowess Lv 1-4 beside Lv 5, Sword Agility
   1-4 beside 5, Unyielding beside Unyielding++ (the game replaces a lower level with a higher), unless the tickbox shows every level.
   The chains are the game's own upgrade groups.

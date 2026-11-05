@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { AllLevelsToggle, Loadout, SkillRow, type PoolSkill } from '../components/SkillPool'
 import { topLevels } from '../logic/skillChains'
 import { useAllLevels } from '../state/allLevelsStore'
-import { useArmy, useScreenshotUnit, useUnitPlan } from './hooks'
+import { chip, useArmy, useScreenshotUnit, useUnitPlan } from './hooks'
 import { inheritable, labelOf, type Fe17Data } from './logic'
 import { EmblemFace, Fe17PlanSets, SkillIcon, UnitSelect } from './ui'
 
@@ -19,6 +19,8 @@ export function Fe17SkillPlanner({ data }: { data: Fe17Data }) {
   useScreenshotUnit(unit)
   const { plan, update } = useUnitPlan(unit)
   const [allLevels, setAllLevels] = useAllLevels(data.gameId)
+  // Every ring starts closed (user, 2026-11-05): open one, or all at once.
+  const [open, setOpen] = useState<Set<string>>(new Set())
   if (!unit || !plan) return null
 
   const chosen = plan.inherited ?? []
@@ -54,9 +56,32 @@ export function Fe17SkillPlanner({ data }: { data: Fe17Data }) {
 
       <div className="space-y-2 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
         <h3 className="text-base font-semibold text-neutral-100">What the Emblems teach</h3>
-        <p className="text-xs text-neutral-500">Each skill once the bond with its Emblem reaches the level shown, for its SP.</p>
+        <p className="text-xs text-neutral-500">Each skill once the bond with its Emblem reaches the level shown, for its SP. Open a ring to see what it teaches.</p>
         <AllLevelsToggle on={allLevels} onChange={setAllLevels} example="Sword Agility 1 to 5" />
-        {emblems.map((e) => {
+        <div className="flex flex-wrap items-center gap-1.5">
+          <button type="button" onClick={() => setOpen(new Set(emblems.map((e) => e.id)))} className={chip(emblems.every((e) => open.has(e.id)))}>
+            Open all
+          </button>
+          <button type="button" onClick={() => setOpen(new Set())} className={chip(open.size === 0)}>
+            Close all
+          </button>
+          {emblems.map((e) => (
+            <button
+              key={e.id}
+              type="button"
+              onClick={() => {
+                const next = new Set(open)
+                if (next.has(e.id)) next.delete(e.id)
+                else next.add(e.id)
+                setOpen(next)
+              }}
+              className={chip(open.has(e.id))}
+            >
+              {e.name}
+            </button>
+          ))}
+        </div>
+        {emblems.filter((e) => open.has(e.id)).map((e) => {
           const items = e.levels.flatMap((lv) => lv.inherit.map((s) => skill(s.name, `Bond ${lv.level} · ${s.sp} SP`)))
           return (
             <SkillRow
