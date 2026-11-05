@@ -281,7 +281,11 @@ def build():
         if mount:
             cls['mount'] = mount
         if n in GENERAL:
-            cls['exam'] = {'seal': cert['item']['name'] if cert['item'] else None, 'ranks': ranks_of(cert['ranks'])}
+            cls['exam'] = {'seal': cert['item']['name'] if cert['item'] else None, 'ranks': ranks_of(cert['ranks']), 'cost': cert['cost']}
+            # The pass rate (0x633f60) takes a beginner exam's (tier 1) smallest shortfall, any one skill being enough; the others add
+            # every skill's up.
+            if c['tier'] == 1:
+                cls['exam']['anyOne'] = True
         # The growths a unit joining partway is levelled with (classdata +0x13 HP, +0x1e Str to Cha: 0x3d4260).
         cls['joinGrowths'] = stats(c['enemy_growths'], extra=['mov'])
         if n in GIVEN:

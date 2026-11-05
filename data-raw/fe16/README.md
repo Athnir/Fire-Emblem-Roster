@@ -105,6 +105,18 @@ riding). GameData +0x2427c is the chapter, +0x2449c the difficulty, +0x2449e the
   certified; the DLC classes the Expansion Pass. The Emperor, Great Lord and Barbarossa are certified by a ceremony (script
   command 2790) at the start of Crimson Flower's and Azure Moon's Chapter 16 and Verdant Wind's 17, with no level or seal;
   Enlightened One in Chapter 11; the Dancer for the White Heron Cup's winner only (`0x1ffaf0`); the Death Knight 91 is Jeritza's.
+- **Certification exams** (`0x64e590`, the rate `0x633f60`): the exam needs the class not yet certified, the Thief first for the
+  Trickster, the level (classdata section 2: 5/10/20/30, DLC 20), one exam a day (unit +0xdf bit 1), the seal, and a rate of at least
+  30 (`0x1a274c8`). The rate: classdata section 1 +0 is the cost per rank short (40; 32 for the two-skill advanced classes and the
+  DLC's; 20 Master), +4..+14 the ranks asked (0 none); each skill's shortfall is max(asked − the unit's rank, 0) in ranks (E 0 to S+
+  11, each "+" a rank; EXP within a rank isn't read, and going past adds nothing); a beginner exam (tier 1, section 0 +0x45) takes the
+  smallest, the others the sum; rate = round(100 − shortfall × cost + Luck / 2) held at 0-100, Luck the unit's own (+0x52, no class
+  boost; the 50% at `0x1a271e4`). Tiers 0 and 6 have no rate (Noble, Commoner, Verrat). The roll (`0x64efa4`) is one LCG draw,
+  ((S × 1103515245 + 12345) >> 16) % 100 from the day's seed (GameData +0x250d0) plus the class, tier and person, a pass at
+  roll ≤ rate (so 65% passes on 66 of 100); the seed changes only with the day (`0x3de7b0`, unconfirmed), so a reload gives the same
+  result. The seal is taken before the roll (`0x3d2440`, the convoy `0x40ce00`). Master exams also need professor level C (GameData
+  +0x25623 bit 4, `0x3dca00`). The generator writes the cost as `exam.cost` and a beginner exam as `exam.anyOne`; the Classes tab's
+  calculator works the rate out.
 - **Who can be the Dancer**: the Cup is in Chapter 9 (the Ethereal Moon) on every route: each chapter's flow record (file 7) has a
   monastery script at +14, Chapter 9's is 39 everywhere, `LO00_09.bsi` (archive file 274), the only script with
   `ChooseForHeronCup` (command 2640), quest 24. It has an event group per candidate, each needing the person in the army and alive:

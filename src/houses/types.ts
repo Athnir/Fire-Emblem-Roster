@@ -129,7 +129,14 @@ export interface Fe16Class {
   types: string[]
   gender: 'any' | 'male' | 'female'
   /** Its certification exam: the seal and the skill ranks it asks for. */
-  exam?: { seal: string | null; ranks: Partial<Record<Fe16Skill, string>> }
+  exam?: {
+    seal: string | null
+    ranks: Partial<Record<Fe16Skill, string>>
+    /** The pass rate lost per rank short (classdata section 1 +0). */
+    cost?: number
+    /** A beginner exam: the skill closest to its rank counts alone. */
+    anyOne?: true
+  }
   /** What mastering it teaches. */
   mastery: string[]
   /** What winning the White Heron Cup teaches with the class (the Dancer: Sword Avo +20 and Sword Dance, 0x1ffaf0). */

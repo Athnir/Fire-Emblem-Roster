@@ -416,7 +416,8 @@ def classes():
             'class_spells': [spell_ref(s) for s in r[83:85] if s not in (38, 255)],
             'mastery_exp': r[74],
             'certification': {
-                'unk0': g[0], 'item': None if g[1] == 255 else {'id': 1000 + g[1], 'name': D.global_item_name(1000 + g[1])},
+                # +0: the pass rate lost per rank short (0x634024: 40, 32 for the two-skill advanced and DLC classes, 20 Master).
+                'cost': g[0], 'item': None if g[1] == 255 else {'id': 1000 + g[1], 'name': D.global_item_name(1000 + g[1])},
                 'exam': g[2], 'gender': {0: 'M', 1: 'F', 2: 'any'}.get(g[3], g[3]),
                 'ranks': {SKILLS[k]: rank(g[4 + k]) for k in range(11) if g[4 + k]},
             },

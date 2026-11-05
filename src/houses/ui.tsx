@@ -33,7 +33,7 @@ export function SkillChips({ data, skills, size = 16 }: { data: Fe16Data; skills
   )
 }
 
-type Row = { label: string; values: Fe16Stats & { mov?: number }; caps?: Partial<Fe16Stats>; suffix?: string; mov?: boolean }
+type Row = { label: string; values: Partial<Fe16Stats> & { mov?: number }; caps?: Partial<Fe16Stats>; suffix?: string; mov?: boolean }
 
 /** Rows of stats, a column per stat (and Mov where a row has it); a stat at its cap is green. */
 export function StatTable({ rows }: { rows: Row[] }) {
@@ -58,14 +58,18 @@ export function StatTable({ rows }: { rows: Row[] }) {
               <td className="whitespace-nowrap py-1 pr-2 text-xs text-neutral-400">{row.label}</td>
               {FE16_STATS.map((s) => {
                 const cap = row.caps?.[s]
+                const v = row.values[s]
                 return (
-                  <td key={s} className={`px-1 py-1 text-right tabular-nums ${cap !== undefined && row.values[s] >= cap ? 'text-emerald-400' : 'text-neutral-200'}`}>
-                    {fmt(row.values[s])}
-                    {row.suffix ?? ''}
+                  <td key={s} className={`px-1 py-1 text-right tabular-nums ${cap !== undefined && v !== undefined && v >= cap ? 'text-emerald-400' : 'text-neutral-200'}`}>
+                    {v === undefined ? '' : `${fmt(v)}${row.suffix ?? ''}`}
                   </td>
                 )
               })}
-              {mov && <td className="px-1 py-1 text-right tabular-nums text-neutral-200">{row.mov && row.values.mov !== undefined ? fmt(row.values.mov) : ''}</td>}
+              {mov && (
+                <td className="px-1 py-1 text-right tabular-nums text-neutral-200">
+                  {row.mov && row.values.mov !== undefined ? `${fmt(row.values.mov)}${row.suffix ?? ''}` : ''}
+                </td>
+              )}
             </tr>
           ))}
         </tbody>

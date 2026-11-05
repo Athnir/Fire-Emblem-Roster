@@ -219,6 +219,23 @@ export function helpOf(data: Fe16Data, l: Pick<Fe16Learn, 'kind' | 'name'>): str
 
 
 /** The game's limits: five abilities and three combat arts equipped (the personal ability and the class's own come on their own). */
+/** The lowest pass rate an exam can be taken at (0x1a274c8). */
+export const EXAM_MIN_RATE = 30
+
+/**
+ * A certification exam's pass rate (0x633f60): 100, less the exam's cost for each rank short of what it asks (each "+" a rank; a
+ * beginner exam takes its closest skill alone, the others add every skill's shortfall up), plus half the unit's own Luck (no class
+ * boost), rounded, held at 0 to 100. Only the ranks count, not the EXP within them; going past a rank adds nothing.
+ */
+export function examRate(cls: Fe16Class, have: Partial<Record<Fe16Skill, string>>, luck: number): number {
+  const exam = cls.exam
+  if (!exam?.cost) return 0
+  const gaps = (Object.entries(exam.ranks) as [Fe16Skill, string][]).map(([sk, r]) => Math.max(rankIndex(r) - rankIndex(have[sk] ?? 'E'), 0))
+  const gap = gaps.length === 0 ? 0 : exam.anyOne ? Math.min(...gaps) : gaps.reduce((a, b) => a + b, 0)
+  const raw = 100 - gap * exam.cost + luck / 2
+  return raw < 0 ? 0 : Math.min(100, Math.round(raw))
+}
+
 /** The classes' tiers, in the order the exams climb. */
 export const CLASS_TIERS: Fe16Class['tier'][] = ['Starting', 'Beginner', 'Intermediate', 'Advanced', 'Master', 'Unique', 'DLC']
 

@@ -100,6 +100,9 @@ new rule, add it here.
 - **Engage and Three Houses follow Fates' tabs** (user, 2026-11-04): the Avatar as two units, the Unit Planner's growths and
   maximums before the projected stats, the Skill Planner's rows by source (a class, a skill rank, an Emblem) under the loadout,
   saved sets in the planners, the Team Viewer table; Engage's Supports plan the Pact Ring, as Fates' Marriage Planner plans spouses.
+- **Engage and Three Houses have a Classes tab** (user, 2026-11-04): each class's fixed things, its skills and bases (the least a
+  unit shows in it), growths and caps or boosts; Three Houses' adds the exam (level, seal, ranks) and a calculator for its pass chance
+  from the ranks and Luck put in, as the game works it out (0x633f60).
 - **The Unit Planner estimates any class at any level** (user, 2026-11-04, as Fates' Projected Stats): pick a class the unit can be
   in and a level, and see that class's growths and maximums and the rough stats there, by the shortest way from the class they join
   in (Engage: promoted at Lv 20 unless set). It doesn't change the plan.

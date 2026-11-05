@@ -7935,7 +7935,8 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
     "abilities": [],
     "exam": {
       "seal": "Beginner Seal",
-      "ranks": {}
+      "ranks": {},
+      "cost": 0
     },
     "joinGrowths": {
       "hp": 0,
@@ -7999,7 +8000,8 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
     "abilities": [],
     "exam": {
       "seal": "Beginner Seal",
-      "ranks": {}
+      "ranks": {},
+      "cost": 0
     },
     "joinGrowths": {
       "hp": 0,
@@ -8066,7 +8068,9 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "seal": "Beginner Seal",
       "ranks": {
         "sword": "D"
-      }
+      },
+      "cost": 40,
+      "anyOne": true
     },
     "joinGrowths": {
       "hp": 10,
@@ -8133,7 +8137,9 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "seal": "Beginner Seal",
       "ranks": {
         "lance": "D"
-      }
+      },
+      "cost": 40,
+      "anyOne": true
     },
     "joinGrowths": {
       "hp": 10,
@@ -8202,7 +8208,9 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
         "axe": "D",
         "bow": "D",
         "brawl": "D"
-      }
+      },
+      "cost": 40,
+      "anyOne": true
     },
     "joinGrowths": {
       "hp": 10,
@@ -8270,7 +8278,9 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "ranks": {
         "reason": "D",
         "faith": "D"
-      }
+      },
+      "cost": 40,
+      "anyOne": true
     },
     "joinGrowths": {
       "hp": 10,
@@ -8336,7 +8346,8 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "seal": "Intermediate Seal",
       "ranks": {
         "sword": "C"
-      }
+      },
+      "cost": 40
     },
     "joinGrowths": {
       "hp": 20,
@@ -8405,7 +8416,8 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "seal": "Intermediate Seal",
       "ranks": {
         "sword": "C"
-      }
+      },
+      "cost": 40
     },
     "joinGrowths": {
       "hp": 20,
@@ -8472,7 +8484,8 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "ranks": {
         "axe": "C",
         "armor": "D"
-      }
+      },
+      "cost": 40
     },
     "joinGrowths": {
       "hp": 20,
@@ -8545,7 +8558,8 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "ranks": {
         "lance": "C",
         "riding": "D"
-      }
+      },
+      "cost": 40
     },
     "joinGrowths": {
       "hp": 20,
@@ -8611,7 +8625,8 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "seal": "Intermediate Seal",
       "ranks": {
         "axe": "C"
-      }
+      },
+      "cost": 40
     },
     "joinGrowths": {
       "hp": 30,
@@ -8679,7 +8694,8 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "seal": "Intermediate Seal",
       "ranks": {
         "bow": "C"
-      }
+      },
+      "cost": 40
     },
     "joinGrowths": {
       "hp": 10,
@@ -8747,7 +8763,8 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "seal": "Intermediate Seal",
       "ranks": {
         "brawl": "C"
-      }
+      },
+      "cost": 40
     },
     "joinGrowths": {
       "hp": 30,
@@ -8815,7 +8832,8 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "seal": "Intermediate Seal",
       "ranks": {
         "reason": "C"
-      }
+      },
+      "cost": 40
     },
     "joinGrowths": {
       "hp": 10,
@@ -8884,7 +8902,8 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "seal": "Dark Seal",
       "ranks": {
         "reason": "C"
-      }
+      },
+      "cost": 40
     },
     "joinGrowths": {
       "hp": 10,
@@ -8953,7 +8972,8 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "seal": "Intermediate Seal",
       "ranks": {
         "faith": "C"
-      }
+      },
+      "cost": 40
     },
     "joinGrowths": {
       "hp": 10,
@@ -9023,7 +9043,8 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "ranks": {
         "sword": "B",
         "axe": "C"
-      }
+      },
+      "cost": 32
     },
     "joinGrowths": {
       "hp": 50,
@@ -9092,7 +9113,8 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "seal": "Advanced Seal",
       "ranks": {
         "sword": "A"
-      }
+      },
+      "cost": 40
     },
     "joinGrowths": {
       "hp": 40,
@@ -9164,7 +9186,8 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "ranks": {
         "sword": "B",
         "bow": "C"
-      }
+      },
+      "cost": 32
     },
     "joinGrowths": {
       "hp": 30,
@@ -9234,7 +9257,8 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "ranks": {
         "axe": "B",
         "armor": "B"
-      }
+      },
+      "cost": 32
     },
     "joinGrowths": {
       "hp": 50,
@@ -9309,7 +9333,8 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "ranks": {
         "lance": "B",
         "riding": "B"
-      }
+      },
+      "cost": 32
     },
     "joinGrowths": {
       "hp": 40,
@@ -9384,7 +9409,8 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "ranks": {
         "axe": "B",
         "flying": "C"
-      }
+      },
+      "cost": 32
     },
     "joinGrowths": {
       "hp": 40,
@@ -9453,7 +9479,8 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "seal": "Advanced Seal",
       "ranks": {
         "axe": "A"
-      }
+      },
+      "cost": 40
     },
     "joinGrowths": {
       "hp": 50,
@@ -9522,7 +9549,8 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "seal": "Advanced Seal",
       "ranks": {
         "bow": "A"
-      }
+      },
+      "cost": 40
     },
     "joinGrowths": {
       "hp": 30,
@@ -9592,7 +9620,8 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "seal": "Advanced Seal",
       "ranks": {
         "brawl": "A"
-      }
+      },
+      "cost": 40
     },
     "joinGrowths": {
       "hp": 50,
@@ -9661,7 +9690,8 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "seal": "Advanced Seal",
       "ranks": {
         "reason": "A"
-      }
+      },
+      "cost": 40
     },
     "joinGrowths": {
       "hp": 30,
@@ -9731,7 +9761,8 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "seal": "Dark Seal",
       "ranks": {
         "reason": "A"
-      }
+      },
+      "cost": 40
     },
     "joinGrowths": {
       "hp": 30,
@@ -9802,7 +9833,8 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "seal": "Advanced Seal",
       "ranks": {
         "faith": "A"
-      }
+      },
+      "cost": 40
     },
     "joinGrowths": {
       "hp": 30,
@@ -9879,7 +9911,8 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
         "sword": "C",
         "lance": "A",
         "flying": "B+"
-      }
+      },
+      "cost": 20
     },
     "joinGrowths": {
       "hp": 40,
@@ -9956,7 +9989,8 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
         "lance": "C",
         "axe": "A",
         "flying": "A"
-      }
+      },
+      "cost": 20
     },
     "joinGrowths": {
       "hp": 40,
@@ -10026,7 +10060,8 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "ranks": {
         "sword": "A",
         "reason": "B+"
-      }
+      },
+      "cost": 20
     },
     "joinGrowths": {
       "hp": 40,
@@ -10104,7 +10139,8 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
         "axe": "B+",
         "armor": "A",
         "riding": "B+"
-      }
+      },
+      "cost": 20
     },
     "joinGrowths": {
       "hp": 50,
@@ -10180,7 +10216,8 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
         "lance": "C",
         "bow": "A",
         "riding": "A"
-      }
+      },
+      "cost": 20
     },
     "joinGrowths": {
       "hp": 40,
@@ -10257,7 +10294,8 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
         "lance": "C",
         "reason": "B+",
         "riding": "A"
-      }
+      },
+      "cost": 20
     },
     "joinGrowths": {
       "hp": 40,
@@ -10334,7 +10372,8 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
         "lance": "C",
         "faith": "B+",
         "riding": "A"
-      }
+      },
+      "cost": 20
     },
     "joinGrowths": {
       "hp": 35,
@@ -10406,7 +10445,8 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "ranks": {
         "axe": "A",
         "brawl": "A"
-      }
+      },
+      "cost": 20
     },
     "joinGrowths": {
       "hp": 60,
@@ -10477,7 +10517,8 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "ranks": {
         "reason": "A",
         "faith": "A"
-      }
+      },
+      "cost": 20
     },
     "joinGrowths": {
       "hp": 30,
@@ -10552,7 +10593,8 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "ranks": {
         "lance": "C",
         "flying": "D"
-      }
+      },
+      "cost": 40
     },
     "joinGrowths": {
       "hp": 30,
@@ -10624,7 +10666,8 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "ranks": {
         "sword": "B",
         "faith": "B"
-      }
+      },
+      "cost": 32
     },
     "joinGrowths": {
       "hp": 30,
@@ -10698,7 +10741,8 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "ranks": {
         "brawl": "B+",
         "faith": "C+"
-      }
+      },
+      "cost": 32
     },
     "joinGrowths": {
       "hp": 50,
@@ -10774,7 +10818,8 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "ranks": {
         "reason": "B+",
         "flying": "C"
-      }
+      },
+      "cost": 32
     },
     "joinGrowths": {
       "hp": 30,
@@ -10851,7 +10896,8 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "ranks": {
         "reason": "B",
         "riding": "B"
-      }
+      },
+      "cost": 32
     },
     "joinGrowths": {
       "hp": 20,

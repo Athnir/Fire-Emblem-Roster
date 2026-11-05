@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { FE16_DATA } from '../../games/fe16'
-import { canTake, learnable, personalNow } from '../logic'
+import { canTake, examRate, learnable, personalNow } from '../logic'
 import { pathTo } from '../plan'
 
 const unit = (id: string) => FE16_DATA.units.find((u) => u.id === id)!
@@ -48,5 +48,19 @@ describe('Three Houses classes', () => {
       { at: 10, to: '15' },
       { at: 20, to: '29' },
     ])
+  })
+})
+
+describe('the certification exams', () => {
+  const cls = (name: string) => Object.values(FE16_DATA.classes).find((c) => c.name === name)!
+  it("works out the pass rate as the game does (0x633f60): the cost per rank short, a beginner's closest skill, half the Luck", () => {
+    expect([cls('Swordmaster').exam?.cost, cls('Paladin').exam?.cost, cls('Gremory').exam?.cost, cls('Fighter').exam?.anyOne]).toEqual([40, 32, 20, true])
+    expect(examRate(cls('Swordmaster'), { sword: 'B+' }, 9)).toBe(65)
+    expect(examRate(cls('Paladin'), { lance: 'B', riding: 'C' }, 6)).toBe(39)
+    expect(examRate(cls('Fighter'), { axe: 'E', bow: 'E+', brawl: 'E' }, 5)).toBe(63)
+    expect(examRate(cls('Gremory'), { reason: 'B', faith: 'B+' }, 12)).toBe(46)
+    expect(examRate(cls('Gremory'), { reason: 'C', faith: 'B+' }, 12)).toBe(6)
+    // Past the rank adds nothing; the rate stops at 100.
+    expect(examRate(cls('Swordmaster'), { sword: 'S+' }, 40)).toBe(100)
   })
 })

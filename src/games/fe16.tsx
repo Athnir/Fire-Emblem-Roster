@@ -14,6 +14,7 @@ import {
 import { fe16Art } from '../houses/art'
 import { labelOf, type Fe16Data } from '../houses/logic'
 import { Fe16BulkViewer } from '../houses/bulk'
+import { Fe16Classes } from '../houses/classes'
 import { Fe16Planner } from '../houses/planner'
 import { Fe16Info, Fe16Roster, Fe16SpoilerBar, Fe16Supports } from '../houses/screens'
 import { Fe16SkillPlanner } from '../houses/skills'
@@ -48,6 +49,7 @@ const fe16: GameParts = {
     { id: 'roster', label: 'Roster', component: () => <Fe16Roster data={FE16_DATA} /> },
     { id: 'unit', label: 'Unit Planner', component: () => <Fe16Planner data={FE16_DATA} /> },
     { id: 'supports', label: 'Supports', component: () => <Fe16Supports data={FE16_DATA} /> },
+    { id: 'classes', label: 'Classes', component: () => <Fe16Classes data={FE16_DATA} /> },
     { id: 'skills', label: 'Skill Planner', component: () => <Fe16SkillPlanner data={FE16_DATA} /> },
     { id: 'viewer', label: 'Bulk Viewer', component: () => <Fe16BulkViewer data={FE16_DATA} /> },
     { id: 'info', label: 'Info', component: () => <Fe16Info /> },
