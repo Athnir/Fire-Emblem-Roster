@@ -1,40 +1,43 @@
 import { useState } from 'react'
 import { armyWith, plansWith, selectClass, useSpoiler } from './hooks'
 import { labelOf, type Fe16Data } from './logic'
-import { project, shownStats } from './plan'
+import { capsOf, growthsIn, project, shownStats } from './plan'
 import { useFe16Builds, useFe16Store } from './store'
-import { SkillChips, StatGrid, UnitPortrait } from './ui'
+import { Fe16PlanSets, SkillChips, StatGrid, UnitPortrait } from './ui'
 
-/** As Fates' Team Viewer: the plans and picks, now or in a saved set, with every unit's final class, stats, abilities and combat arts
- * at once; and the saved sets themselves. */
+/** As Fates' Team Viewer: the plans and picks, now or in a saved set, with every unit's final class, stats, growths, maximums,
+ * abilities and combat arts at once: a table on a wide screen, a card each on a phone; and the saved sets themselves. */
 export function Fe16BulkViewer({ data }: { data: Fe16Data }) {
   const current = { plans: useFe16Store((s) => s.plans), picks: useFe16Store((s) => s.picks) }
-  const loadSet = useFe16Store((s) => s.load)
   const sets = useFe16Builds((s) => s.sets)
-  const save = useFe16Builds((s) => s.save)
-  const rename = useFe16Builds((s) => s.rename)
-  const deleteSet = useFe16Builds((s) => s.deleteSet)
   const { chapter } = useSpoiler(data)
   const [source, setSource] = useState('current')
-  const [name, setName] = useState('')
   const set = sets.find((s) => s.id === source)
   const { plans, picks } = set ?? current
   const planOf = plansWith(plans)
-  const units = armyWith(data, picks, chapter)
-  const rows = units.map((u) => {
+  const rows = armyWith(data, picks, chapter).map((u) => {
     const plan = planOf(u)
     const stages = project(data, u, plan, picks)
     const final = stages[stages.length - 1]
     const cls = data.classes[final.classId]
-    return { unit: u, cls, level: final.level, stats: shownStats(cls, final.own), skills: [...(plan.abilities ?? []), ...(plan.arts ?? [])] }
+    return {
+      unit: u,
+      cls,
+      level: final.level,
+      stats: shownStats(cls, final.own),
+      growths: growthsIn(u, cls),
+      caps: capsOf(data, u, plan.statues),
+      skills: [...(plan.abilities ?? []), ...(plan.arts ?? [])],
+    }
   })
+  const skills = (r: (typeof rows)[number]) => (r.skills.length ? <SkillChips data={data} skills={r.skills} size={14} /> : null)
   return (
     <div className="space-y-4">
       <div className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
         <h3 className="text-base font-semibold text-neutral-100">Team Viewer</h3>
         <p className="text-xs text-neutral-500">
-          Everyone's final class, stats, abilities and combat arts under the current plans and picks, or a saved set. Save the current
-          plans and picks as a set to keep a playthrough, and load one back into the Roster and the planners.
+          Everyone's final class and level, their stats then, their growths in that class and their own maximums, and their abilities
+          and combat arts, under the current plans and picks or a saved set.
         </p>
         <label className="flex flex-col gap-1 text-xs text-neutral-400">
           Show
@@ -47,64 +50,47 @@ export function Fe16BulkViewer({ data }: { data: Fe16Data }) {
             ))}
           </select>
         </label>
-        <div className="flex flex-wrap items-center gap-2">
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Save the current as… (e.g. Azure Moon run)"
-            className="min-w-[12rem] flex-1 rounded-md border border-neutral-700 bg-neutral-800 px-2 py-1 text-sm text-neutral-200"
-          />
-          <button
-            type="button"
-            disabled={!name.trim()}
-            onClick={() => {
-              save(name.trim(), current.plans, current.picks)
-              setName('')
-            }}
-            className="rounded-md bg-violet-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            Save set
-          </button>
-        </div>
-        {set && (
-          <div className="flex flex-wrap gap-3 text-xs">
-            <button
-              type="button"
-              onClick={() => {
-                if (window.confirm(`Replace the current plans and picks with "${set.name}"?`)) {
-                  loadSet(set.plans, set.picks)
-                  setSource('current')
-                }
-              }}
-              className="text-violet-300 hover:text-violet-200"
-            >
-              Load into the Roster and the planners
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                const next = window.prompt('Rename set', set.name)
-                if (next && next.trim()) rename(set.id, next.trim())
-              }}
-              className="text-neutral-400 hover:text-neutral-200"
-            >
-              Rename
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                deleteSet(set.id)
-                setSource('current')
-              }}
-              className="text-neutral-400 hover:text-red-400"
-            >
-              Delete
-            </button>
-          </div>
-        )}
       </div>
-      <div className="space-y-3">
+      <div data-export-table className="hidden overflow-x-auto rounded-lg border border-neutral-800 bg-neutral-900 sm:block">
+        <table className="w-full min-w-[1000px] border-collapse text-sm">
+          <thead>
+            <tr className="border-b border-neutral-800 text-left text-xs uppercase tracking-wide text-neutral-500">
+              <th className="px-3 py-2">Unit</th>
+              <th className="px-3 py-2">Class</th>
+              <th className="px-3 py-2">Skills</th>
+              <th className="px-3 py-2">Stats</th>
+              <th className="px-3 py-2">Growth %</th>
+              <th className="px-3 py-2">Max Stats</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.unit.id} className="border-b border-neutral-800 align-top last:border-0">
+                <td className="px-3 py-2">
+                  <span className="flex items-center gap-2 whitespace-nowrap text-neutral-200">
+                    <UnitPortrait data={data} unit={r.unit} size={28} />
+                    {labelOf(r.unit)}
+                  </span>
+                </td>
+                <td className="whitespace-nowrap px-3 py-2 text-neutral-300">
+                  {r.cls.name} Lv {r.level}
+                </td>
+                <td className="px-3 py-2 text-xs text-neutral-400">{skills(r)}</td>
+                <td className="px-3 py-2">
+                  <StatGrid values={r.stats} />
+                </td>
+                <td className="px-3 py-2">
+                  <StatGrid values={r.growths} suffix="%" />
+                </td>
+                <td className="px-3 py-2">
+                  <StatGrid values={r.caps} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div data-export-cards className="space-y-3 sm:hidden">
         {rows.map((r) => (
           <div key={r.unit.id} className="space-y-2 rounded-lg border border-neutral-800 bg-neutral-900 p-3 text-sm">
             <div className="flex items-center gap-2">
@@ -114,15 +100,16 @@ export function Fe16BulkViewer({ data }: { data: Fe16Data }) {
                 · {r.cls.name} Lv {r.level}
               </span>
             </div>
-            {r.skills.length > 0 && (
-              <div className="text-xs text-neutral-400">
-                <SkillChips data={data} skills={r.skills} size={14} />
-              </div>
-            )}
+            {r.skills.length > 0 && <div className="text-xs text-neutral-400">{skills(r)}</div>}
             <StatGrid values={r.stats} />
+            <div className="text-xs text-neutral-500">Growth %</div>
+            <StatGrid values={r.growths} suffix="%" />
+            <div className="text-xs text-neutral-500">Max Stats</div>
+            <StatGrid values={r.caps} />
           </div>
         ))}
       </div>
+      <Fe16PlanSets />
     </div>
   )
 }

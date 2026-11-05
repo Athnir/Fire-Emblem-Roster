@@ -1,10 +1,11 @@
 import { AssetIcon } from '../components/AssetIcon'
+import { PlanSets } from '../components/PlanSets'
 import { Portrait } from '../components/Portrait'
 import { topLevels } from '../logic/skillChains'
 import { skillIconId } from '../tellius/art'
 import { artId, chip, selectClass } from './hooks'
 import { fmt, groupOf, groupsFor, helpOf, labelOf, learnsOf, type Fe16Choice, type Fe16Data, type Fe16Picks } from './logic'
-import { useFe16Store } from './store'
+import { useFe16Builds, useFe16Store } from './store'
 import { FE16_SKILL_LABELS, FE16_SKILLS, FE16_STATS, FE16_STAT_LABELS, type Fe16Learn, type Fe16Stats, type Fe16Unit } from './types'
 
 // Three Houses' shared components.
@@ -176,5 +177,25 @@ export function LearnTable({ data, unit, everyone = false, allLevels = false }: 
         )
       })}
     </div>
+  )
+}
+
+/** Saved sets of every unit's plan and the Roster's picks (as Fates' Build Sets), at the foot of the planners and the Bulk Viewer. */
+export function Fe16PlanSets() {
+  const plans = useFe16Store((s) => s.plans)
+  const picks = useFe16Store((s) => s.picks)
+  const load = useFe16Store((s) => s.load)
+  const { sets, save, rename, deleteSet } = useFe16Builds()
+  return (
+    <PlanSets
+      sets={sets}
+      onSave={(name) => save(name, plans, picks)}
+      onLoad={(id) => {
+        const set = sets.find((x) => x.id === id)
+        if (set) load(set.plans, set.picks)
+      }}
+      onRename={rename}
+      onDelete={deleteSet}
+    />
   )
 }

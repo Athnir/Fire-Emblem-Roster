@@ -5,7 +5,7 @@ import { useAllLevels } from '../state/allLevelsStore'
 import { useArmy, useScreenshotUnit, useSpoiler, useUnitPlan } from './hooks'
 import { canTake, classesFor, kindOf, labelOf, learnsOf, MAX_ABILITIES, MAX_ARTS, personalNow, type Fe16Data } from './logic'
 import { FE16_SKILL_LABELS, FE16_SKILLS } from './types'
-import { SkillIcon, UnitSelect } from './ui'
+import { Fe16PlanSets, SkillIcon, UnitSelect } from './ui'
 
 /** The abilities and combat arts a unit equips, laid out as Fates' Skill Planner: the personal ability, the loadouts, then everything
  * they can learn, a row for each skill's ranks, their budding talent and each class they can master. Saved with their plan. */
@@ -100,6 +100,7 @@ export function Fe16SkillPlanner({ data }: { data: Fe16Data }) {
           />
         ))}
       </div>
+      <Fe16PlanSets />
     </div>
   )
 }

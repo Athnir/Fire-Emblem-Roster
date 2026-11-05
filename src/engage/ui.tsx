@@ -1,8 +1,10 @@
 import { AssetIcon } from '../components/AssetIcon'
+import { PlanSets } from '../components/PlanSets'
 import { Portrait } from '../components/Portrait'
 import { emblemFaceId, FEMALE_ALEAR, ringFaceId, skillIconId } from './art'
 import { artId, selectClass } from './hooks'
 import { ALEAR_FEMALE, fmt, labelOf, type Fe17Data } from './logic'
+import { useFe17Builds, useFe17Store } from './store'
 import { FE17_STATS, FE17_STAT_LABELS, type Fe17Stat, type Fe17StatsMov, type Fe17Unit } from './types'
 
 // Engage's shared components.
@@ -94,13 +96,16 @@ export function StatTable({ rows }: { rows: Row[] }) {
 }
 
 /** Stats in a fixed-width grid, so "Save as image" keeps the spacing. */
-export function StatGrid({ values }: { values: Fe17StatsMov }) {
+export function StatGrid({ values, suffix = '' }: { values: Partial<Fe17StatsMov>; suffix?: string }) {
   return (
     <div className="grid grid-cols-[repeat(4,4.75rem)] whitespace-nowrap text-xs">
-      {COLS.map((s) => (
+      {COLS.filter((s) => values[s] !== undefined).map((s) => (
         <span key={s} className="pb-0.5 pr-2">
           <span className="text-neutral-500">{FE17_STAT_LABELS[s]} </span>
-          <span className="tabular-nums text-neutral-200">{fmt(values[s])}</span>
+          <span className="tabular-nums text-neutral-200">
+            {fmt(values[s]!)}
+            {suffix}
+          </span>
         </span>
       ))}
     </div>
@@ -143,5 +148,25 @@ export function SkillList({ data, skills }: { data: Fe17Data; skills: string[] }
         </li>
       ))}
     </ul>
+  )
+}
+
+/** Saved sets of every unit's plan and the Roster's picks (as Fates' Build Sets), at the foot of the planners and the Bulk Viewer. */
+export function Fe17PlanSets() {
+  const plans = useFe17Store((s) => s.plans)
+  const picks = useFe17Store((s) => s.picks)
+  const load = useFe17Store((s) => s.load)
+  const { sets, save, rename, deleteSet } = useFe17Builds()
+  return (
+    <PlanSets
+      sets={sets}
+      onSave={(name) => save(name, plans, picks)}
+      onLoad={(id) => {
+        const set = sets.find((x) => x.id === id)
+        if (set) load(set.plans, set.picks)
+      }}
+      onRename={rename}
+      onDelete={deleteSet}
+    />
   )
 }

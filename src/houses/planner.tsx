@@ -5,6 +5,7 @@ import {
   capsOf,
   canChange,
   certifiedBy,
+  growthsIn,
   isMounted,
   joinOptions,
   legalSteps,
@@ -17,7 +18,7 @@ import {
 } from './plan'
 import { useFe16Store } from './store'
 import { FE16_SKILL_LABELS, FE16_STATS, type Fe16Class, type Fe16Skill, type Fe16Stats, type Fe16Unit } from './types'
-import { SkillChips, StatTable, UnitSelect } from './ui'
+import { Fe16PlanSets, SkillChips, StatTable, UnitSelect } from './ui'
 
 const TIERS = ['Starting', 'Beginner', 'Intermediate', 'Advanced', 'Master', 'DLC', 'Unique'] as const
 /** Which Saint Statue raises which maximums isn't traced to a name: the statues by the stats they raise (at level 9). */
@@ -202,7 +203,23 @@ export function Fe16Planner({ data }: { data: Fe16Data }) {
           can go past them. Changing into a class, or passing its exam, lifts any stat below the class's base to it for good. The numbers
           are averages and can run a little off.
         </p>
-        <StatTable rows={stages.map(row)} />
+        <div className="space-y-1">
+          <h4 className="text-sm font-semibold text-neutral-200">Growths and maximums</h4>
+          <StatTable
+            rows={[
+              ...[...new Set([start.classId, finalCls.id])].map((id) => ({
+                label: `Growths as a ${data.classes[id].name}${id === start.classId ? ' (joins)' : ''}`,
+                values: growthsIn(unit, data.classes[id]),
+                suffix: '%',
+              })),
+              { label: 'Maximums (their own)', values: caps },
+            ]}
+          />
+        </div>
+        <div className="space-y-1">
+          <h4 className="text-sm font-semibold text-neutral-200">Projected stats</h4>
+          <StatTable rows={stages.map(row)} />
+        </div>
         {Object.keys(needed).length > 0 && (
           <div className="space-y-1 text-sm">
             <h4 className="text-sm font-semibold text-neutral-200">Skill levels the exams need</h4>
@@ -239,6 +256,7 @@ export function Fe16Planner({ data }: { data: Fe16Data }) {
           )}
         </div>
       </div>
+      <Fe16PlanSets />
     </div>
   )
 }

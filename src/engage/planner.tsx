@@ -4,6 +4,7 @@ import {
   capsOf,
   changesFrom,
   classSkill,
+  growthsIn,
   INTERNAL_CAP,
   legalSteps,
   levelAfter,
@@ -15,7 +16,7 @@ import {
   type Fe17Difficulty,
   type Fe17Stage,
 } from './logic'
-import { UnitSelect, StatTable, SkillList } from './ui'
+import { Fe17PlanSets, SkillList, StatTable, UnitSelect } from './ui'
 
 const SEAL_NAMES = { master: 'Master Seal', second: 'Second Seal', item: 'its item' }
 const levels = (from: number, to: number) => Array.from({ length: Math.max(0, to - from + 1) }, (_, i) => from + i)
@@ -199,12 +200,28 @@ export function Fe17Planner({ data }: { data: Fe17Data }) {
           Growth is the unit's own plus the class's; a stat at its cap gains nothing. A class change starts again at Lv 1 and keeps the
           unit's own stats, so the shown ones move by the classes' bases.
         </p>
-        <StatTable
-          rows={stages.map((st, i) => {
-            const cls = data.classes[st.classId]
-            return { label: label(st), values: shownStats(cls, unit, st.own), caps: capsOf(cls, unit), extra: i === stages.length - 1 ? sync : undefined }
-          })}
-        />
+        <div className="space-y-1">
+          <h4 className="text-sm font-semibold text-neutral-200">Growths and maximums</h4>
+          <StatTable
+            rows={[...new Set([unit.classId, finalCls.id])].flatMap((id) => {
+              const cls = data.classes[id]
+              const as = id === unit.classId ? `as a ${cls.name} (joins)` : `as a ${cls.name}`
+              return [
+                { label: `Growths ${as}`, values: growthsIn(unit, cls, plan), suffix: '%' },
+                { label: `Maximums ${as}`, values: capsOf(cls, unit) },
+              ]
+            })}
+          />
+        </div>
+        <div className="space-y-1">
+          <h4 className="text-sm font-semibold text-neutral-200">Projected stats</h4>
+          <StatTable
+            rows={stages.map((st, i) => {
+              const cls = data.classes[st.classId]
+              return { label: label(st), values: shownStats(cls, unit, st.own), caps: capsOf(cls, unit), extra: i === stages.length - 1 ? sync : undefined }
+            })}
+          />
+        </div>
         <div className="space-y-1">
           <h4 className="text-sm font-semibold text-neutral-200">Skills as a {finalCls.name}</h4>
           <SkillList
@@ -218,6 +235,7 @@ export function Fe17Planner({ data }: { data: Fe17Data }) {
           )}
         </div>
       </div>
+      <Fe17PlanSets />
     </div>
   )
 }

@@ -4,7 +4,7 @@ import { topLevels } from '../logic/skillChains'
 import { useAllLevels } from '../state/allLevelsStore'
 import { useArmy, useScreenshotUnit, useUnitPlan } from './hooks'
 import { inheritable, labelOf, type Fe17Data } from './logic'
-import { EmblemFace, SkillIcon, UnitSelect } from './ui'
+import { EmblemFace, Fe17PlanSets, SkillIcon, UnitSelect } from './ui'
 
 /** The skill slots inheriting fills (Unit.EquipSkillMax). */
 const SLOTS = 2
@@ -72,6 +72,7 @@ export function Fe17SkillPlanner({ data }: { data: Fe17Data }) {
           )
         })}
       </div>
+      <Fe17PlanSets />
     </div>
   )
 }
