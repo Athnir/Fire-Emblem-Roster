@@ -19,7 +19,8 @@ export function classLabel(data: Fe17Data, cls: Fe17Class): string {
   return `${cls.name} (${[...new Set(who.map((u) => u.name))].join(', ')})`
 }
 
-const weaponText = (w: Fe17Class['weapons'][number]) => `${w.weapon} ${w.rank}${w.use !== 'always' ? ` (${w.use})` : ''}`
+const weaponText = (w: Fe17Class['weapons'][number]) =>
+  `${w.weapon} ${w.rank}${w.plus ? ' (+1 with innate proficiency)' : ''}${w.use !== 'always' ? ` (${w.use})` : ''}`
 
 /** One class's fixed things: who can be in it, its weapons, what it needs to change into, its skills, and its bases (the least a unit
  * shows in it), growths and caps. */

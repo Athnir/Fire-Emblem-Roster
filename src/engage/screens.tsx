@@ -6,15 +6,10 @@ import { useFe17Store } from './store'
 import { FE17_STAT_LABELS, type Fe17BondRingSet, type Fe17StatsMov, type Fe17Unit } from './types'
 import { EmblemFace, RingFace, SkillChips, SkillIcon, SkillList, StatTable, UnitPortrait, UnitSelect } from './ui'
 
-function UnitDetail({ data, unit, reached }: { data: Fe17Data; unit: Fe17Unit; reached?: Set<string> }) {
-  const ring = useFe17Store((s) => s.picks.pactRing)
+/** Who the unit is (user, 2026-11-05, as Three Houses' Roster): their growths, proficiencies, SP and supports are in the planners and
+ * the Supports tab, their class's weapons in the Classes tab. */
+function UnitDetail({ data, unit }: { data: Fe17Data; unit: Fe17Unit }) {
   const cls = data.classes[unit.classId]
-  const byId = new Map(data.units.map((u) => [u.id, u]))
-  const supports = supportsOf(data, unit.id).filter((s) => {
-    const p = byId.get(s.partner)
-    return p && (!reached || reached.has(p.joinChapter))
-  })
-  const ranks = cls.weapons.map((w) => `${w.weapon} ${w.rank}${w.plus ? (unit.innate.includes(w.weapon) ? ' (+1: innate)' : '') : ''}${w.use !== 'always' ? ` (${w.use})` : ''}`)
   return (
     <div className="space-y-4 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
       <div className="flex flex-col items-start gap-4 sm:flex-row">
@@ -35,19 +30,6 @@ function UnitDetail({ data, unit, reached }: { data: Fe17Data; unit: Fe17Unit; r
               {unit.protected === 'always' ? "Can't be lost: they retreat instead." : `Can't be lost ${unit.protected}: they retreat instead.`}
             </div>
           )}
-          <div>
-            <span className="text-neutral-500">Proficiency: </span>
-            {unit.innate.join(', ')} (innate){unit.proficiencies.filter((w) => !unit.innate.includes(w)).length > 0 && `; also ${unit.proficiencies.filter((w) => !unit.innate.includes(w)).join(', ')}`}
-          </div>
-          <div>
-            <span className="text-neutral-500">Weapons: </span>
-            {ranks.join(', ')}
-          </div>
-          <div>
-            <span className="text-neutral-500">SP: </span>
-            {unit.sp} · <span className="text-neutral-500">Support type: </span>
-            {unit.supportType}
-          </div>
         </div>
       </div>
       <div className="space-y-1">
@@ -57,38 +39,17 @@ function UnitDetail({ data, unit, reached }: { data: Fe17Data; unit: Fe17Unit; r
       <StatTable
         rows={[
           { label: `Joins (${cls.name})`, values: unit.joinStats, caps: capsOf(cls, unit) },
-          { label: 'Growths', values: unit.growths, suffix: '%' },
-          { label: 'Cap modifiers', values: unit.capMods },
           { label: `Caps (${cls.name})`, values: capsOf(cls, unit) },
         ]}
       />
-      <p className="text-xs text-neutral-500">
-        The game keeps a unit's own stats apart from the class: what shows is the class's base plus their own, held at the class's cap plus
-        their modifier. So a class change moves every stat by the classes' bases.
-      </p>
-      {supports.length > 0 && (
-        <div className="space-y-1 text-sm text-neutral-300">
-          <h4 className="text-sm font-semibold text-neutral-200">Supports</h4>
-          <div>
-            {supports.map((s, i) => (
-              <span key={s.partner}>
-                {i > 0 && ', '}
-                {labelOf(byId.get(s.partner)!)}{' '}
-                <span className="text-neutral-500">
-                  {ring && [ring.alear, ring.partner].includes(unit.id) && [ring.alear, ring.partner].includes(s.partner) ? 'S (Pact Ring)' : s.top}
-                </span>
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
+      <p className="text-xs text-neutral-500">The caps are the class's plus the unit's own modifiers.</p>
     </div>
   )
 }
 
 /** Every unit by the chapter they join; tapping one shows their data below. */
 export function Fe17Roster({ data }: { data: Fe17Data }) {
-  const { units, reached } = useArmy(data)
+  const { units } = useArmy(data)
   const [selectedId, setSelectedId] = useState(units[0]?.id ?? '')
   const detailRef = useRef<HTMLDivElement>(null)
   const selected = units.find((u) => u.id === selectedId) ?? units[0]
@@ -125,7 +86,7 @@ export function Fe17Roster({ data }: { data: Fe17Data }) {
         })}
       </div>
       <div ref={detailRef} className="scroll-mt-4">
-        {selected && <UnitDetail data={data} unit={selected} reached={reached} />}
+        {selected && <UnitDetail data={data} unit={selected} />}
       </div>
     </div>
   )
@@ -217,6 +178,10 @@ export function Fe17Supports({ data }: { data: Fe17Data }) {
       <PactRing data={data} units={units} reached={reached} />
       <UnitSelect data={data} units={units} value={unit.id} onChange={setUnitId} />
       <div className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
+        <div className="text-sm text-neutral-300">
+          <span className="text-neutral-500">Support type: </span>
+          {unit.supportType}
+        </div>
         <p className="text-xs text-neutral-500">
           Each pair's ranks, C to A, from the game's support table (reliance.xml); S is the Pact Ring's, planned above. What supports give
           in battle is in the Armory.

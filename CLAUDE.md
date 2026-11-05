@@ -109,8 +109,9 @@ new rule, add it here.
 - **A skill that comes in levels shows its top level alone** (user, 2026-11-04): Sword Prowess Lv 1-4 beside Lv 5, Sword Agility
   1-4 beside 5, Unyielding beside Unyielding++ (the game replaces a lower level with a higher), unless the tickbox shows every level.
   The chains are the game's own upgrade groups.
-- **Three Houses' Roster keeps to who the unit is** (user, 2026-11-04): no supports, growths, skill levels or skills there (the
-  planners and the Supports tab have them). Each unit is a Noble or a Commoner, never both. In the Skill Planner a skill's ranks are
+- **Three Houses' and Engage's Rosters keep to who the unit is** (user, 2026-11-04 and 11-05): no supports, growths, skill levels
+  or skills there (the planners and the Supports tab have them; Engage's proficiencies in the Unit Planner, SP in the Skill Planner,
+  support type in the Supports tab, the class's weapons in the Classes tab). Each unit is a Noble or a Commoner, never both. In the Skill Planner a skill's ranks are
   tiers and the classes are grouped by tier. What the ranks (or a budding talent) teach is starred by how many units can learn it,
   any way but as a personal ability (user, 2026-11-05): ★ half the units or fewer, ★★ three or fewer. A dark magic skill and its
   black magic twin work the same and count as one (Black and Dark Tomefaire, Magic Range +1: every unit learns one, no star).

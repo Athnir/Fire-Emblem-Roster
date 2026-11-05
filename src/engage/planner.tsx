@@ -207,7 +207,10 @@ export function Fe17Planner({ data }: { data: Fe17Data }) {
           >
             + Add a class change
           </button>
-          <p className="text-xs text-neutral-500">Proficient in: {have.join(', ')}. A class asks for its weapons; emblem bonds add more.</p>
+          <p className="text-xs text-neutral-500">
+            Proficient in: {have.join(', ')}; innate: {unit.innate.join(', ')} (a class's rank in an innate weapon is one higher). A class
+            asks for its weapons; emblem bonds add more.
+          </p>
         </div>
         <div className="space-y-2">
           <h4 className="text-sm font-semibold text-neutral-200">Emblem synced</h4>
