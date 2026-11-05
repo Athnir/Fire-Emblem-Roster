@@ -14,6 +14,8 @@ new rule, add it here.
   one of its readers (`scripts/*_rom.py`, `fe13_*.py` and the rest) is needed, copy it into this repo's `scripts/`.
 - **One game picker; every tool for that game sits in the same tabs.** No extra menus or tool-picker steps. A game with nothing
   like a tool (no marriages, no skills) has no tab for it.
+- **The picker lists the games in the series' order, by number** (user, 2026-11-04): "14. Fire Emblem Fates", and each mainline
+  game the app doesn't have (Gaiden, New Mystery of the Emblem, Fortune's Weave) in its place, greyed out.
 - **Every game gets a Bulk Viewer** (user, 2026-11-02): at least the Team Viewer, with saved sets of plans; a game with a second
   generation adds the Parent Checker. The games still without one get theirs in their review.
 - **Rules too long for the tabs go in an Info tab** (user, 2026-11-02, Thracia's rescue, capture and fatigue): the user checks them by
@@ -36,7 +38,7 @@ new rule, add it here.
 - **Placeholders are plain blanks** (a silhouette, an empty icon), never drawn icons: the pixel sprites are the Armory's look.
 - **Never commit or push game art, dumped game files, or ROMs.**
 - **Every game's art can be loaded at once** (user, 2026-11-03): the home screen's Bulk Upload takes one folder or .zip with a
-  folder per game named by its id (`fates`, `fe9`...), each laid out as that game's own Bulk Upload takes it, so a name two games
+  folder per game named by its number (`fe9`, `fe14` for Fates...), each laid out as that game's own Bulk Upload takes it, so a name two games
   share (Ike, Marth) can't land in the wrong one. A game's `art` (GameParts) says how its folder is matched and what it can hold.
   Each game's portraits come from a script reading the user's dump into `data-raw/<game>/art/`; `scripts/pack_art.py` packs them
   into the user's personal zip (`Documents\FE Games\FE Roster Art.zip`), never into the repo.

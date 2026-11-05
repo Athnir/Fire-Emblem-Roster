@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { fileToDataUrl, putAllAssetEntries } from '../data/assetStorage'
-import { GAMES } from '../games'
+import { artFolder, GAMES } from '../games'
 import { expandZips, type MatchedFile } from '../logic/bulkAssetImport'
 import { useEditSessionStore } from '../state/editSessionStore'
 
@@ -22,22 +22,24 @@ interface Sorted {
 
 const pathOf = (f: File) => ((f as File & { webkitRelativePath?: string }).webkitRelativePath || f.name).replace(/\\/g, '/').toLowerCase().split('/')
 
-/** Each file goes to the game whose id names a folder on its path ("art/fe9/ike.png" is Path of Radiance's), so the same name in
- * two games (Ike, Marth) can't land in the wrong one; each game's own matcher then reads its folder. */
+/** Each file goes to the game whose folder is on its path ("art/fe9/ike.png" is Path of Radiance's), so the same name in two games
+ * (Ike, Marth) can't land in the wrong one; each game's own matcher then reads its folder. A game's folder is "fe" and its number
+ * (artFolder), or its id ("fates", as Fates' was named before). */
 async function sortFiles(files: File[]): Promise<Sorted> {
-  const ids = new Set(GAMES.map((g) => g.id))
+  const folders = new Map(GAMES.flatMap((g) => [[g.id, g.id], [artFolder(g), g.id]] as const))
   const byGame = new Map<string, { file: File; rel: string }[]>()
   const loose: string[] = []
   for (const file of files) {
     const parts = pathOf(file)
-    const at = parts.findIndex((p) => ids.has(p))
+    const at = parts.findIndex((p) => folders.has(p))
     if (at === -1 || at === parts.length - 1) {
       if (!/^\.|thumbs\.db$|desktop\.ini$/.test(parts[parts.length - 1])) loose.push(parts.join('/'))
       continue
     }
-    const list = byGame.get(parts[at]) ?? []
+    const id = folders.get(parts[at]) as string
+    const list = byGame.get(id) ?? []
     list.push({ file, rel: parts.slice(at + 1).join('/') })
-    byGame.set(parts[at], list)
+    byGame.set(id, list)
   }
   const games: GameResult[] = []
   for (const game of GAMES) {

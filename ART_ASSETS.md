@@ -159,7 +159,7 @@ Then:
 python scripts/pack_art.py
 ```
 
-packs them into `Documents\FE Games\FE Roster Art.zip`: a folder per game named by its id (`fates`, `fe9`, ...), each laid out as
+packs them into `Documents\FE Games\FE Roster Art.zip`: a folder per game named by its number (`fe9`, `fe14` for Fates, ...), each laid out as
 that game's own Bulk Upload takes it. Copy the zip to the device, open the app's home screen (pick "Home" in the game list), tap
 **Bulk Upload: every game**, then **Pick a .zip**. It lists each game's matches and what's missing before storing anything. A name
 two games share (Ike, Marth, Anna) goes to the game whose folder it's in. Pixel-art portraits are scaled up by a whole number in

@@ -8,7 +8,7 @@ import { ExportImageButton } from './components/ExportImageButton'
 import { Home } from './components/Home'
 import { IosInstallBanner } from './components/IosInstallBanner'
 import { LocalDataWarningBanner } from './components/LocalDataWarningBanner'
-import { GAMES, type GameParts } from './games'
+import { gameLabel, GAMES, pickerList, type GameParts } from './games'
 import { usePlannerStore } from './state/plannerStore'
 import { useSpoilerStore } from './state/spoilerStore'
 
@@ -20,9 +20,9 @@ function storedGameId(): string {
     const id = localStorage.getItem(GAME_KEY)
     if (id && GAMES.some((g) => g.id === id)) return id
   } catch {
-    // Storage can be off (private windows); the first game is the default.
+    // Storage can be off (private windows); Fates is the default.
   }
-  return GAMES[0].id
+  return 'fates'
 }
 
 function App() {
@@ -94,11 +94,18 @@ function App() {
               className="rounded-md border border-neutral-700 bg-neutral-800 px-2 py-1.5 text-sm text-neutral-200"
             >
               <option value="">Home</option>
-              {GAMES.map((g) => (
-                <option key={g.id} value={g.id}>
-                  {g.title}
-                </option>
-              ))}
+              {/* Every game in the series' order, the ones the app doesn't have shown in their place but not pickable. */}
+              {pickerList().map((e) =>
+                e.game ? (
+                  <option key={e.game.id} value={e.game.id}>
+                    {gameLabel(e.game)}
+                  </option>
+                ) : (
+                  <option key={e.missing.title} value={`missing:${e.missing.title}`} disabled>
+                    {gameLabel(e.missing)} ({e.missing.why})
+                  </option>
+                ),
+              )}
             </select>
           </div>
           <div className="flex flex-wrap items-center gap-2">

@@ -81,7 +81,8 @@ def main():
     os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
     counts = {}
     with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED) as z:
-        for game, files in [('fates', fates_files())] + [(g, game_files(g)) for g in GAMES]:
+        # Fates' folder is named by its number, as the others are (the app still reads one named "fates").
+        for game, files in [('fe14', fates_files())] + [(g, game_files(g)) for g in GAMES]:
             n = 0
             for rel, path, portrait in files:
                 z.writestr(f'{game}/{rel}', scaled(path) if portrait else open(path, 'rb').read())
