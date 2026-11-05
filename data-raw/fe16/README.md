@@ -141,3 +141,29 @@ straight from the NSPs (the files aren't copied into `romfs/`). Each unit's port
   (`scripts/g1t.py`) holding one 512x512 BC3 texture, stored linear (not block-linear swizzled), decoded with texture2ddecoder.
 - **Run:** `python scripts/fe16_portraits.py` (41 portraits, scaled to 256x256; `--sheet <png>` for a labelled contact sheet).
   Needs `pip install texture2ddecoder` (it comes with UnityPy).
+
+## Ability and combat art icons (`scripts/fe16_icons.py`)
+
+The same way: PNGs to `data-raw/fe16/art/skills/` (git-ignored), straight from the NSPs. No data file says where an icon is; the
+1.2.0 program (the update's `main` NSO) does, and the script checks the instruction words it rests on before reading.
+
+- **Sprites:** a UI sprite id names a 16-byte record: u16 texture, u16 index, u16 x, y, w, h, u16 the texture's w, h. The id's
+  range picks the bank (`0x5c5540`): 0-725 bank 0, from 31572 bank 9; their records are at the pointers `main.bin` keeps at
+  `0x1ab0b78` (bank 0 at `0xd52d64`, 725 records; bank 9 at `0x11991c4`, 75).
+- **Textures:** bank 0's are archive file 6026 + the language (`0x69b010`; 6027 US English, which differs from the Japanese 6026
+  only in sprites 464-467, none of them icons), a G1T of 15 BC3 textures; bank 9's the update's
+  `/patch4/nx/ui/700_patch/700_patch.g1t.gz` (file 31503, INFO1 entry 343). BC3, stored linear, one mip.
+- **An ability** (`0x5d9160`): `fixed_skill.bin` section 0 +8 is its icon number i; the sprite is 146 + i below 238 (bank 0's
+  texture 2, the 2048x2048 icon sheet, 96x96 cells) and 31335 + i from 238 on (bank 9's texture 1: the DLC's abilities). Several
+  abilities share one (seven personal abilities use Hunter's Boon's). Ability 0xF0, a "TBD", gets 146 whatever its record says.
+  Six abilities, the two "On Hold" ones and four monster abilities, point at the sheet's empty-slot tile; it's written for them,
+  as the game would draw it (no unit or class has them).
+- **A combat art** (`0x5d8fe0`): `fixed_data.bin` section 7 +13, its weapon bits. One weapon gives sprite 548 + the weapon (sword,
+  lance, axe, bow, gauntlets), several (Swap, Shove, Smite and the other arts any weapon can use) 546, a star: every art of a
+  weapon has that weapon's round red icon, as the game shows it.
+- **Spells** have no icon of their own (their +13 is 255): none is written, and the screens show them without one.
+- **Names:** the unit's-name rule with each "+" spelled out (`src/tellius/art.ts` `skillIconId`), as the game has both Alert
+  Stance and Alert Stance+ (and Swordbreaker+, the Lineage+ abilities, Professor's Guidance+), each with its own icon:
+  `alert_stance_plus.png`, `hp_plus5.png`.
+- **Run:** `python scripts/fe16_icons.py` (331: the 251 named abilities and 80 combat arts, at their native 96x96; `--sheet <png>`
+  for a contact sheet).

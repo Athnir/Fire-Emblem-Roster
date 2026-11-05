@@ -1,4 +1,6 @@
+import { AssetIcon } from '../components/AssetIcon'
 import { Portrait } from '../components/Portrait'
+import { skillIconId } from '../tellius/art'
 import { artId, chip, selectClass } from './hooks'
 import { fmt, groupOf, groupsFor, helpOf, labelOf, learnsOf, type Fe16Choice, type Fe16Data, type Fe16Picks } from './logic'
 import { useFe16Store } from './store'
@@ -8,6 +10,26 @@ import { FE16_SKILL_LABELS, FE16_SKILLS, FE16_STATS, FE16_STAT_LABELS, type Fe16
 
 export function UnitPortrait({ data, unit, size = 64 }: { data: Fe16Data; unit: Fe16Unit; size?: number }) {
   return <Portrait characterId={artId(data.gameId, labelOf(unit))} isChild={false} size={size} />
+}
+
+/** An ability's or combat art's icon, as the game draws it (Bulk Upload's "skills" folder): an ability's square, with a "+" in its
+ * corner where it has one, a combat art's round. Spells have none of their own. */
+export function SkillIcon({ data, skill, size = 20 }: { data: Fe16Data; skill: string; size?: number }) {
+  return <AssetIcon type="skill" iconId={skillIconId(data.gameId, skill)} label={skill} size={size} shape={skill in data.arts ? 'round' : 'square'} />
+}
+
+/** Abilities and combat arts in a row that wraps, each with its icon. */
+export function SkillChips({ data, skills, size = 16 }: { data: Fe16Data; skills: string[]; size?: number }) {
+  return (
+    <span className="inline-flex flex-wrap gap-x-2 gap-y-0.5 align-top">
+      {skills.map((s) => (
+        <span key={s} className="inline-flex items-center gap-1 whitespace-nowrap">
+          <SkillIcon data={data} skill={s} size={size} />
+          {s}
+        </span>
+      ))}
+    </span>
+  )
 }
 
 type Row = { label: string; values: Fe16Stats & { mov?: number }; caps?: Partial<Fe16Stats>; suffix?: string; mov?: boolean }
@@ -137,6 +159,11 @@ export function LearnTable({ data, unit, everyone = false }: { data: Fe16Data; u
             {here.map((l, i) => (
               <span key={`${l.rank}-${l.name}`} title={`${KIND[l.kind]}: ${helpOf(data, l) ?? ''}`}>
                 {i > 0 && ', '}
+                {l.kind !== 'spell' && (
+                  <span className="mr-1 inline-block align-middle">
+                    <SkillIcon data={data} skill={l.name} size={16} />
+                  </span>
+                )}
                 <span className={own.has(`${l.skill}/${l.rank}/${l.name}`) ? 'text-violet-300' : 'text-neutral-200'}>{l.name}</span>
                 <span className="text-neutral-500"> {l.rank}</span>
               </span>

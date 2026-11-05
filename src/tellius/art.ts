@@ -24,6 +24,22 @@ export function matchSkills(data: TelliusData, files: File[]): MatchResult {
   return matchByStem(files, skillEntries(data), (stem) => assetKeys.skillIcon(`${data.gameId}/${stem}`))
 }
 
+/** The id a skill's icon is kept and looked up by in a game with skills whose names differ only by a "+" (Engage's Lunar Brace and
+ * Lunar Brace+, Three Houses' Alert Stance and Alert Stance+): the name as a portrait's, each "+" spelled out
+ * ('fe17/lunar_brace_plus'), so each keeps an icon of its own. */
+export function skillIconId(gameId: string, skill: string): string {
+  return artId(gameId, skill.replace(/\+/g, ' plus'))
+}
+
+export function skillIconEntries(gameId: string, skills: string[]) {
+  return skills.map((s) => ({ id: skillIconId(gameId, s).slice(gameId.length + 1), label: s }))
+}
+
+/** Skill icons by file name, "+" spelled out ("lunar_brace_plus.png"). */
+export function matchSkillIcons(gameId: string, skills: string[], files: File[]): MatchResult {
+  return matchByStem(files, skillIconEntries(gameId, skills), (id) => assetKeys.skillIcon(`${gameId}/${id}`))
+}
+
 const pathOf = (f: File) => ((f as File & { webkitRelativePath?: string }).webkitRelativePath || f.name).replace(/\\/g, '/').toLowerCase().split('/')
 
 /** A child's portrait in layers, for a game that tints children's hair (Awakening): children/<name>/base.png, the portrait without

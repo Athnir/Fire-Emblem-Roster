@@ -44,6 +44,8 @@ new rule, add it here.
   them (`scripts/fe17_models.py`), since its only 2D art of the units ends at the neck. Each Bond Ring shows its hero's face, and
   each Emblem Ring its Emblem's, from the Somniel's ring book (user, 2026-11-04; Ephraim's, which the book lacks, drawn from his
   model). Alear picked female shows her own portrait and Emblem face; skills show the game's icons.
+- **Three Houses' abilities and combat arts show the game's icons** (user, 2026-11-04): an ability's square one, a combat art its
+  weapon's round one, as the game draws them; spells have none of their own.
 
 ## Data sources
 

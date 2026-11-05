@@ -22,7 +22,7 @@ import {
 } from './logic'
 import { useFe16Store } from './store'
 import { FE16_SKILL_LABELS, FE16_SKILLS, type Fe16Unit } from './types'
-import { ChoicePicker, LearnTable, StatTable, UnitPortrait, UnitSelect } from './ui'
+import { ChoicePicker, LearnTable, SkillIcon, StatTable, UnitPortrait, UnitSelect } from './ui'
 
 /** The ranks a unit starts with, their strengths and weaknesses, and a budding talent. */
 function SkillRanks({ data, unit }: { data: Fe16Data; unit: Fe16Unit }) {
@@ -110,10 +110,13 @@ function UnitDetail({ data, unit, picks, chapter }: { data: Fe16Data; unit: Fe16
       <div className="space-y-1 text-sm">
         <h4 className="text-sm font-semibold text-neutral-200">Personal ability</h4>
         {unit.personal.map((p, i) => (
-          <div key={p}>
-            <span className="font-medium text-neutral-200">{p}</span>
-            {unit.personal.length > 1 && <span className="text-neutral-500"> ({i === 0 ? 'Part I' : 'Part II'})</span>}
-            {data.abilities[p] && <span className="text-neutral-400">: {data.abilities[p]}</span>}
+          <div key={p} className="flex items-start gap-2">
+            <SkillIcon data={data} skill={p} />
+            <span>
+              <span className="font-medium text-neutral-200">{p}</span>
+              {unit.personal.length > 1 && <span className="text-neutral-500"> ({i === 0 ? 'Part I' : 'Part II'})</span>}
+              {data.abilities[p] && <span className="text-neutral-400">: {data.abilities[p]}</span>}
+            </span>
           </div>
         ))}
       </div>

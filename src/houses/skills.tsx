@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { useArmy, useScreenshotUnit, useUnitPlan } from './hooks'
 import { learnable, MAX_ABILITIES, MAX_ARTS, type Fe16Data, type Fe16Source } from './logic'
-import { UnitSelect } from './ui'
+import { SkillIcon, UnitSelect } from './ui'
 
 function Picker({
+  data,
   title,
   items,
   chosen,
@@ -11,6 +12,7 @@ function Picker({
   help,
   onChange,
 }: {
+  data: Fe16Data
   title: string
   items: Fe16Source[]
   chosen: string[]
@@ -40,7 +42,10 @@ function Picker({
                 on ? 'border-violet-500 bg-violet-950/50 text-violet-200' : 'border-neutral-700 bg-neutral-800 text-neutral-300 hover:border-neutral-600'
               }`}
             >
-              <span>{it.name}</span>
+              <span className="flex items-center gap-1.5">
+                <SkillIcon data={data} skill={it.name} size={18} />
+                {it.name}
+              </span>
               <span className="text-[10px] leading-tight text-neutral-500">{it.from.join(', ')}</span>
             </button>
           )
@@ -73,6 +78,7 @@ export function Fe16SkillPlanner({ data }: { data: Fe16Data }) {
           and the class's own abilities come on their own. Hover for what each does.
         </p>
         <Picker
+          data={data}
           title="Abilities"
           items={abilities}
           chosen={chosenAbilities}
@@ -80,13 +86,16 @@ export function Fe16SkillPlanner({ data }: { data: Fe16Data }) {
           help={(n) => data.abilities[n]}
           onChange={(next) => update({ abilities: next })}
         />
-        <Picker title="Combat arts" items={arts} chosen={chosenArts} max={MAX_ARTS} help={(n) => data.arts[n]} onChange={(next) => update({ arts: next })} />
+        <Picker data={data} title="Combat arts" items={arts} chosen={chosenArts} max={MAX_ARTS} help={(n) => data.arts[n]} onChange={(next) => update({ arts: next })} />
         {(chosenAbilities.length > 0 || chosenArts.length > 0) && (
           <ul className="space-y-1 text-sm">
             {[...chosenAbilities.map((n) => [n, data.abilities[n]]), ...chosenArts.map((n) => [n, data.arts[n]])].map(([n, h]) => (
-              <li key={n}>
-                <span className="font-medium text-neutral-200">{n}</span>
-                {h && <span className="text-neutral-400">: {h}</span>}
+              <li key={n} className="flex items-start gap-2">
+                <SkillIcon data={data} skill={n} />
+                <span>
+                  <span className="font-medium text-neutral-200">{n}</span>
+                  {h && <span className="text-neutral-400">: {h}</span>}
+                </span>
               </li>
             ))}
           </ul>

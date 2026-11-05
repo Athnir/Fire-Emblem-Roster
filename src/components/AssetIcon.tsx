@@ -12,6 +12,9 @@ interface Props {
   iconId: string
   label?: string
   size?: number
+  /** Overrides the category's shape, for a game whose icons aren't drawn round (Three Houses' abilities, square with a badge in a
+   * corner). */
+  shape?: 'round' | 'square'
 }
 
 function keyFor(type: AssetIconType, iconId: string): string {
@@ -34,7 +37,7 @@ function staticUrlFor(type: AssetIconType, iconId: string): string | undefined {
  * winning lets someone override a specific pre-extracted icon without touching the pipeline.
  * Shape is per-category: circle for skills, rounded-square for weapons, matching in-game styling.
  */
-export function AssetIcon({ type, iconId, label, size = 32 }: Props) {
+export function AssetIcon({ type, iconId, label, size = 32, shape }: Props) {
   const editModeEnabled = usePlannerStore((state) => state.editModeEnabled)
   const assetEpoch = useEditSessionStore((state) => state.assetEpoch)
   const [dataUrl, setDataUrl] = useState<string | undefined>(undefined)
@@ -64,7 +67,7 @@ export function AssetIcon({ type, iconId, label, size = 32 }: Props) {
   }, [key, version, assetEpoch])
 
   const crop = getIconCrop(key)
-  const shapeClass = type === 'skill' ? 'rounded-full' : 'rounded-md'
+  const shapeClass = (shape ?? (type === 'skill' ? 'round' : 'square')) === 'round' ? 'rounded-full' : 'rounded-md'
   const effectiveUrl = dataUrl ?? (!staticFailed ? staticUrl : undefined)
 
   const content = (

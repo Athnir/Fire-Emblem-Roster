@@ -1,6 +1,6 @@
 import { assetKeys } from '../data/assetStorage'
 import { matchByStem, type GameArt, type MatchResult } from '../logic/bulkAssetImport'
-import { telliusArt } from '../tellius/art'
+import { matchSkillIcons, skillIconEntries, telliusArt } from '../tellius/art'
 import type { TelliusData } from '../tellius/types'
 import { artId } from './hooks'
 import type { Fe17BondRingSet } from './types'
@@ -28,11 +28,9 @@ export function emblemFaceId(gameId: string, emblem: string): string {
   return `${gameId}/emblems/${stem(gameId, emblem)}`
 }
 
-/** The id a skill's icon is kept and looked up by: the name as a portrait's, each "+" spelled out ('fe17/lunar_brace_plus'), as
- * Engage has both Lunar Brace and Lunar Brace+ (and Unyielding++), which would otherwise share one. */
-export function skillIconId(gameId: string, skill: string): string {
-  return artId(gameId, skill.replace(/\+/g, ' plus'))
-}
+// A skill's icon is kept as the "+" games' are (src/tellius/art.ts skillIconId): Engage has both Lunar Brace and Lunar Brace+ (and
+// Unyielding++), which would otherwise share one.
+export { matchSkillIcons, skillIconId } from '../tellius/art'
 
 function ringEntries(gameId: string, sets: Fe17BondRingSet[]) {
   return sets.flatMap((s) => s.rings.map((r) => ({ id: stem(gameId, r.name), label: `${r.name} (Bond Ring)` })))
@@ -40,10 +38,6 @@ function ringEntries(gameId: string, sets: Fe17BondRingSet[]) {
 
 function emblemEntries(gameId: string, emblems: string[]) {
   return emblems.map((e) => ({ id: stem(gameId, e), label: `${e} (Emblem)` }))
-}
-
-function skillEntries(gameId: string, skills: string[]) {
-  return skills.map((s) => ({ id: skillIconId(gameId, s).slice(gameId.length + 1), label: s }))
 }
 
 /** Bond Ring faces by file name ("caeda.png"). */
@@ -54,11 +48,6 @@ export function matchRingFaces(gameId: string, sets: Fe17BondRingSet[], files: F
 /** Emblem faces by file name ("sigurd.png"). */
 export function matchEmblemFaces(gameId: string, emblems: string[], files: File[]): MatchResult {
   return matchByStem(files, emblemEntries(gameId, emblems), (id) => assetKeys.portrait(`${gameId}/emblems/${id}`))
-}
-
-/** Skill icons by file name ("lunar_brace_plus.png"). */
-export function matchSkillIcons(gameId: string, skills: string[], files: File[]): MatchResult {
-  return matchByStem(files, skillEntries(gameId, skills), (id) => assetKeys.skillIcon(`${gameId}/${id}`))
 }
 
 const inFolder = (f: File, folder: string) =>
@@ -83,7 +72,7 @@ export function fe17Art(data: TelliusData, sets: Fe17BondRingSet[], emblems: str
       ...portraits.expected,
       ...ringEntries(data.gameId, sets).map((e) => `rings/${e.id}.png`),
       ...emblemEntries(data.gameId, emblems).map((e) => `emblems/${e.id}.png`),
-      ...skillEntries(data.gameId, skills).map((e) => `skills/${e.id}.png`),
+      ...skillIconEntries(data.gameId, skills).map((e) => `skills/${e.id}.png`),
     ],
   }
 }
