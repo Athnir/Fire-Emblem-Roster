@@ -850,43 +850,38 @@ export function GbaSupports({ data: game }: { data: GbaData }) {
                 points. Turns are counted from the start. A unit can hold five support levels at most. The bonus is what each level adds
                 with the partner within 3 tiles (both affinities summed and halved).
               </p>
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[30rem] text-sm">
-                  <thead>
-                    <tr className="text-xs text-neutral-500">
-                      <th className="py-1 text-left font-normal">Partner</th>
-                      <th className="py-1 text-left font-normal">Affinity</th>
-                      <th className="px-1 py-1 text-right font-normal">Start</th>
-                      <th className="px-1 py-1 text-right font-normal">/ turn</th>
-                      <th className="px-1 py-1 text-right font-normal">C</th>
-                      <th className="px-1 py-1 text-right font-normal">B</th>
-                      <th className="px-1 py-1 text-right font-normal">A</th>
-                      <th className="py-1 pl-2 text-left font-normal">Per level</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {partners.map(({ partner, support }) => (
-                      <tr key={partner.id} className="border-t border-neutral-800">
-                        <td className="py-1">
-                          <button type="button" onClick={() => setUnitId(partner.id)} className="flex items-center gap-2 text-neutral-200 hover:text-violet-300">
-                            <UnitPortrait data={data} unit={partner} size={28} />
-                            {partner.name}
-                          </button>
+              {/* C, B and A in view on a phone, no sideways scroll (user, 2026-11-05): the affinity, the points and the bonus go under
+                  the partner's name. */}
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-xs text-neutral-500">
+                    <th className="py-1 text-left font-normal">Partner (affinity, points: start + a turn, bonus per level)</th>
+                    <th className="w-9 py-1 text-right font-normal">C</th>
+                    <th className="w-9 py-1 text-right font-normal">B</th>
+                    <th className="w-9 py-1 text-right font-normal">A</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {partners.map(({ partner, support }) => (
+                    <tr key={partner.id} className="border-t border-neutral-800 align-top">
+                      <td className="py-1 pr-1">
+                        <button type="button" onClick={() => setUnitId(partner.id)} className="flex items-center gap-1.5 text-left text-neutral-200 hover:text-violet-300">
+                          <UnitPortrait data={data} unit={partner} size={24} />
+                          {partner.name}
+                        </button>
+                        <div className="text-xs text-neutral-500">
+                          {partner.affinity} · {support.start} + {support.perTurn} a turn · {bonus(unit.affinity ?? '', partner.affinity ?? '')}
+                        </div>
+                      </td>
+                      {turnsFor(data.supportLevels, support).map((t, i) => (
+                        <td key={i} className="w-9 py-1 text-right tabular-nums text-neutral-200">
+                          {t ?? '–'}
                         </td>
-                        <td className="py-1 text-neutral-400">{partner.affinity}</td>
-                        <td className="px-1 py-1 text-right tabular-nums text-neutral-300">{support.start}</td>
-                        <td className="px-1 py-1 text-right tabular-nums text-neutral-300">{support.perTurn}</td>
-                        {turnsFor(data.supportLevels, support).map((t, i) => (
-                          <td key={i} className="px-1 py-1 text-right tabular-nums text-neutral-200">
-                            {t ?? '–'}
-                          </td>
-                        ))}
-                        <td className="py-1 pl-2 text-xs text-neutral-400">{bonus(unit.affinity ?? '', partner.affinity ?? '')}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </>
           )}
         </div>

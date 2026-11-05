@@ -892,13 +892,14 @@ export function Fe13Supports({ data: raw }: { data: Fe13Data }) {
         <p className="text-xs text-neutral-500">
           The support points each level needs, from the unit's own support list (the person data). Only an S support leads to marriage.
         </p>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[20rem] text-sm">
+        {/* Every level in view on a phone, no sideways scroll (user, 2026-11-05). */}
+        <div>
+          <table className="w-full text-sm">
             <thead>
               <tr className="text-xs text-neutral-500">
                 <th className="py-1 text-left font-normal">Partner</th>
                 {['C', 'B', 'A', 'S'].map((l) => (
-                  <th key={l} className="px-1 py-1 text-right font-normal">
+                  <th key={l} className="w-8 py-1 text-right font-normal">
                     {l}
                   </th>
                 ))}
@@ -910,14 +911,14 @@ export function Fe13Supports({ data: raw }: { data: Fe13Data }) {
                 if (!partner) return null
                 return (
                   <tr key={s.partner} className="border-t border-neutral-800">
-                    <td className="py-1">
-                      <button type="button" onClick={() => setUnitId(partner.id)} className="flex items-center gap-2 text-neutral-200 hover:text-violet-300">
-                        <UnitPortrait unit={partner} size={28} />
+                    <td className="py-1 pr-1">
+                      <button type="button" onClick={() => setUnitId(partner.id)} className="flex items-center gap-1.5 text-left text-neutral-200 hover:text-violet-300">
+                        <UnitPortrait unit={partner} size={24} />
                         {partner.name}
                       </button>
                     </td>
                     {s.levels.map((v, i) => (
-                      <td key={i} className="px-1 py-1 text-right tabular-nums text-neutral-300">
+                      <td key={i} className="w-8 py-1 text-right tabular-nums text-neutral-300">
                         {v ?? '–'}
                       </td>
                     ))}

@@ -15,7 +15,6 @@ import {
   routeOf,
   SPLIT_CHAPTER,
   supportsOf,
-  topTalk,
   type Fe16Data,
   type Fe16Picks,
 } from './logic'
@@ -250,14 +249,14 @@ export function Fe16Supports({ data }: { data: Fe16Data }) {
         {rows.length === 0 ? (
           <p className="text-sm text-neutral-500">No supports.</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[24rem] text-sm">
+          // Every level in view on a phone, no sideways scroll (user, 2026-11-05): narrow level columns, the partner's name wraps.
+          <div>
+            <table className="w-full text-sm">
               <thead>
                 <tr className="text-xs text-neutral-500">
-                  <th className="py-1 pr-2 text-left font-normal">Partner</th>
-                  <th className="px-1 py-1 text-left font-normal">Top</th>
+                  <th className="py-1 pr-1 text-left font-normal">Partner</th>
                   {TALKS.map((t) => (
-                    <th key={t} className="px-1 py-1 text-center font-normal">
+                    <th key={t} className="w-[1.4rem] py-1 text-center font-normal">
                       {t}
                     </th>
                   ))}
@@ -268,20 +267,25 @@ export function Fe16Supports({ data }: { data: Fe16Data }) {
                   const partner = byId.get(s.partner)
                   return (
                     <tr key={s.partner} className="border-t border-neutral-800">
-                      <td className="py-1 pr-2">
-                        {partner ? (
-                          <button type="button" onClick={() => setUnitId(partner.id)} className="flex items-center gap-2 text-left text-neutral-200 hover:text-violet-300">
-                            <UnitPortrait data={data} unit={partner} size={24} />
-                            {labelOf(partner)}
-                          </button>
-                        ) : (
-                          <span className="text-neutral-400">{s.npc} (not a unit)</span>
-                        )}
-                        {s.pairedEnding && <span className="ml-1 text-pink-400">♥</span>}
+                      <td className="py-1 pr-1">
+                        <div className="flex items-center gap-1.5">
+                          {partner ? (
+                            <button type="button" onClick={() => setUnitId(partner.id)} className="flex items-center gap-1.5 text-left text-neutral-200 hover:text-violet-300">
+                              <UnitPortrait data={data} unit={partner} size={20} />
+                              <span>
+                                {labelOf(partner)}
+                                {s.pairedEnding && <span className="ml-1 text-pink-400">♥</span>}
+                              </span>
+                            </button>
+                          ) : (
+                            <span className="text-neutral-400">
+                              {s.npc} (not a unit){s.pairedEnding && <span className="ml-1 text-pink-400">♥</span>}
+                            </span>
+                          )}
+                        </div>
                       </td>
-                      <td className="px-1 py-1 text-neutral-200">{topTalk(s.talks)}</td>
                       {TALKS.map((t) => (
-                        <td key={t} className="px-1 py-1 text-center text-emerald-400">
+                        <td key={t} className="w-[1.4rem] py-1 text-center text-emerald-400">
                           {s.talks.includes(t) ? '●' : <span className="text-neutral-700">·</span>}
                         </td>
                       ))}

@@ -190,8 +190,6 @@ export function supportsOf(data: Fe16Data, unitId: string): { partner: string; n
     .map((s) => ({ partner: s.a === unitId ? s.b : s.a, npc: s.npc, talks: s.talks, pairedEnding: !!s.pairedEnding }))
 }
 
-/** The highest support conversation. */
-export const topTalk = (talks: string[]) => talks[talks.length - 1] ?? ''
 
 /** A stat as shown: its decimals dropped (user, 2026-11-05: an estimate shows 20, not 20.4). */
 export const fmt = (n: number) => String(Math.trunc(n))

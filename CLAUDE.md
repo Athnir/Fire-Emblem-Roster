@@ -174,7 +174,8 @@ reveals it. What that means for each tab is settled with the user as each game i
 
 ## Look and layout
 
-- **Everything fits a phone screen.**
+- **Everything fits a phone screen.** A support table shows every level (C, B, A, S and any half levels) without scrolling sideways
+  (user, 2026-11-05): narrow level columns, the partner's name wrapping, other facts under the name.
 - **Wording works for every game** ("Lord", not "Corrin", in shared screens).
 
 ## Process
