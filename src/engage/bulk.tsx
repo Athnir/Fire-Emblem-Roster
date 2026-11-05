@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useReached } from '../state/spoilerStore'
+import { isPlanned } from '../logic/planned'
 import { armyWith, plansWith, selectClass } from './hooks'
-import { capsOf, growthsIn, labelOf, project, shownStats, type Fe17Data } from './logic'
+import { capsOf, defaultPlan, growthsIn, labelOf, project, shownStats, type Fe17Data } from './logic'
 import { useFe17Builds, useFe17Store } from './store'
 import { Fe17PlanSets, SkillChips, StatGrid, UnitPortrait } from './ui'
 
@@ -17,7 +18,11 @@ export function Fe17BulkViewer({ data }: { data: Fe17Data }) {
   // Only the units with a plan, as Fates' Team Viewer shows only the units in its sets (user, 2026-11-05).
   const plans = set?.plans ?? current
   const rows = armyWith(data, reached)
-    .filter((u) => plans[u.id])
+    .filter((u) => {
+      // Normal difficulty is the untouched setting, picked or not.
+      const p = plans[u.id]
+      return isPlanned(p && p.difficulty === 'normal' ? { ...p, difficulty: undefined } : p, defaultPlan(u))
+    })
     .map((u) => {
     const plan = planOf(u)
     const stages = project(data, u, plan)

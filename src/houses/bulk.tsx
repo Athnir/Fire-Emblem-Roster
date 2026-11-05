@@ -1,7 +1,8 @@
 import { useState } from 'react'
+import { isPlanned } from '../logic/planned'
 import { armyWith, plansWith, selectClass, useSpoiler } from './hooks'
 import { labelOf, type Fe16Data } from './logic'
-import { capsOf, growthsIn, project, shownStats } from './plan'
+import { capsOf, defaultPlan, growthsIn, project, shownStats } from './plan'
 import { useFe16Builds, useFe16Store } from './store'
 import { Fe16PlanSets, SkillChips, StatGrid, UnitPortrait } from './ui'
 
@@ -17,7 +18,7 @@ export function Fe16BulkViewer({ data }: { data: Fe16Data }) {
   const planOf = plansWith(plans)
   // Only the units with a plan, as Fates' Team Viewer shows only the units in its sets (user, 2026-11-05).
   const rows = armyWith(data, picks, chapter)
-    .filter((u) => plans[u.id])
+    .filter((u) => isPlanned(plans[u.id], defaultPlan(u)))
     .map((u) => {
     const plan = planOf(u)
     const stages = project(data, u, plan, picks)

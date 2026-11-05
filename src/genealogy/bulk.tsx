@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { luckExtra, pairingChoices, profilesWith, selectClass } from './hooks'
+import { isPlanned } from '../logic/planned'
+import { defaultPlan, luckExtra, pairingChoices, profilesWith, selectClass } from './hooks'
 import { capsOf, excludedUnits, loveFor, project, weaponRanks, type Fe4Data } from './logic'
 import { useFe4Builds, useFe4Store } from './store'
 import { StatGrid, UnitPortrait, WrapWarning } from './ui'
@@ -99,7 +100,7 @@ function TeamViewer({ data }: { data: Fe4Data }) {
   const left = excludedUnits(data, picks, pairings)
   // Only the units with a plan, as Fates' Team Viewer shows only the units in its sets (user, 2026-11-05).
   const rows = data.units
-    .filter((u) => u.generation === gen && !left.has(u.id) && plans[u.id])
+    .filter((u) => u.generation === gen && !left.has(u.id) && isPlanned(plans[u.id], defaultPlan(data, u)))
     .flatMap((u) => {
       const p = profile(u)
       if (!p) return []

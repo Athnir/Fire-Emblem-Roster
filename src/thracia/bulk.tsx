@@ -1,6 +1,7 @@
 import { useState } from 'react'
+import { isPlanned } from '../logic/planned'
 import { armyWith, plansWith, selectClass, useReached } from './hooks'
-import { manualClashes, project, ranksOf, ranksText, shownStats, skillsAt, type Fe5Data, type Fe5Plan } from './logic'
+import { defaultPlan, manualClashes, project, ranksOf, ranksText, shownStats, skillsAt, type Fe5Data, type Fe5Plan } from './logic'
 import { useFe5Builds, useFe5Store } from './store'
 import { StatGrid, UnitPortrait } from './ui'
 
@@ -23,7 +24,7 @@ export function Fe5BulkViewer({ data }: { data: Fe5Data }) {
   const clashes = manualClashes(units, planOf)
   // Only the units with a plan, as Fates' Team Viewer shows only the units in its sets (user, 2026-11-05).
   const rows = units
-    .filter((u) => plans[u.id])
+    .filter((u) => isPlanned(plans[u.id], defaultPlan(u)))
     .map((u) => {
     const stages = project(data, u, planOf(u))
     const final = stages[stages.length - 1]
