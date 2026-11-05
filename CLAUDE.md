@@ -49,6 +49,12 @@ new rule, add it here.
   model). Skills show the game's icons.
 - **The Avatar is two units, a man and a woman, as Fates' Corrins are** (user, 2026-11-04): both always listed, no gender pick
   (Engage's two Alears, each with her or his own portrait; Three Houses' two Byleths). The Emblem Alear shows both faces.
+- **Genealogy's holy blood is a round window, the app's own drawing** (user, 2026-11-05): a slot for each of the 13 lines, each always
+  in the same spot (Baldr at the top, then the game's order clockwise). A line the unit has fills in, the whole glass for major blood
+  and a ring of its colour for minor. Colours go by element (fire red, thunder yellow, wind green, light gold, dark purple, staff
+  white; the sword, lance, axe and bow lines a colour each, all 13 different), and each slot shows an icon for its weapon's kind (a
+  lightning bolt, a longsword), not the holy weapon itself. The window is a stand-in until the user's own artwork comes: never a
+  generated image, and then the fills and icons go into its blanks (`src/genealogy/HolyBlood.tsx`: `BASIS`, the slots).
 - **Three Houses' abilities and combat arts show the game's icons** (user, 2026-11-04): an ability's square one, a combat art its
   weapon's round one, as the game draws them; spells have none of their own.
 

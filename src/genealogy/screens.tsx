@@ -3,6 +3,7 @@ import { chapterLabel, luckExtra, pairingChoices, selectClass, useArmy, useProfi
 import { excludedUnits, FE4_MAX_LEVEL, loveFor, NO_HUSBAND, project, promoteLevelOf, ringBonus, skillsWith, type Fe4Data, type Fe4Plan } from './logic'
 import { useFe4Store } from './store'
 import { FE4_STATS, type Fe4Choice, type Fe4Unit } from './types'
+import { HolyBloodWindow } from './HolyBlood'
 import { StatTable, UnitPortrait, UnitSelect, WeaponsLine, WrapWarning } from './ui'
 
 function joinText(data: Fe4Data, u: Fe4Unit): string {
@@ -58,12 +59,6 @@ function UnitDetail({ data, unit }: { data: Fe4Data; unit: Fe4Unit }) {
               husband, or has died, by Ch.6 ($84:BAA1).
             </div>
           )}
-          {p && p.blood.length > 0 && (
-            <div>
-              <span className="text-neutral-500">Holy blood: </span>
-              {p.blood.map((b) => `${b.blood} (${b.level})`).join(', ')}
-            </div>
-          )}
           {p?.leadership ? (
             <div>
               <span className="text-neutral-500">Leadership: </span>
@@ -73,6 +68,12 @@ function UnitDetail({ data, unit }: { data: Fe4Data; unit: Fe4Unit }) {
           {unit.protection && <div className="text-neutral-400">{PROTECTION[unit.protection]}</div>}
         </div>
       </div>
+      {p && p.blood.length > 0 && (
+        <div className="space-y-1">
+          <h4 className="text-sm font-semibold text-neutral-200">Holy blood</h4>
+          <HolyBloodWindow lines={data.bloods} blood={p.blood} />
+        </div>
+      )}
       {p ? (
         p.skills.length > 0 && (
           <div className="space-y-1 text-sm text-neutral-300">
