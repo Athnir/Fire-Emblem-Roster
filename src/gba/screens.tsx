@@ -748,6 +748,9 @@ export function GbaPlanner({ data: game }: { data: GbaData }) {
           <p className="text-sm text-neutral-300">
             <span className="text-neutral-500">Weapons: </span>
             {classIds.map((id) => `${data.classes[id].name}: ${weaponsText(data.classes[id])}`).join(' · ')}
+            {[...new Set(classIds.map((id) => data.classes[id].weaponsNote).filter(Boolean))].map((note) => (
+              <span key={note} className="text-neutral-500"> ({note})</span>
+            ))}
           </p>
         )}
         {Object.keys(unit.ranks).length > 0 && (

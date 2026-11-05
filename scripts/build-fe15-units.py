@@ -13,6 +13,7 @@ import fates_text
 from fates_lz import decompress
 from fe13_bin import Bin
 import fe15_joins as J
+from class_weapons import fe15_class_weapons
 from fe15_recruitment import RECRUITMENT
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
@@ -175,6 +176,7 @@ def main():
             if c not in used:
                 used.add(c)
                 todo.append(c)
+    class_weapons = fe15_class_weapons(app_ids=True, split_magic=True)
     classes = {}
     for n in sorted(used, key=lambda x: jid[x]):
         j = job(n)
@@ -187,6 +189,9 @@ def main():
             'id': f'j{jid[n]}', 'name': j['name'], 'bases': {**dict(zip(STATS, raw[36:43])), 'mov': raw[43]}, 'caps': {},
             **({'promotesTo': f'j{jid[nexts[0]]}', 'promotions': [f'j{jid[c]}' for c in nexts]} if nexts else {}),
             **({'promoteLevel': level} if nexts and level else {}),
+            # The weapons the class can use: Job.bin's 武器 mask (the equip check, 0x44fe64; scripts/class_weapons.py).
+            'weapons': class_weapons[f'j{jid[n]}'],
+            **({'weaponsNote': "the spells are the unit's own, learned by level"} if any('Magic' in w for w in class_weapons[f'j{jid[n]}']) else {}),
         }
     supports = read_supports({pb.str(o): nm for nm, o in people.items() if nm in RECRUITMENT})
     stories = [{'id': 'alm', 'label': "Alm's army"}, {'id': 'celica', 'label': "Celica's army"}]

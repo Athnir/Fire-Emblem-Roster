@@ -9,6 +9,7 @@ import os
 
 import fe3_names as fn
 import fe3_rom as r
+from class_weapons import fe3_class_weapons, fe3_on_foot
 from fe3_joins import BOOKS, CHARACTERS, joins
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
@@ -100,13 +101,25 @@ def main():
     for k in list(used):
         if k in promo:
             used.add(promo[k])
+    # The weapons each class can use: those whose item lists name it ($83:EE68; scripts/class_weapons.py), and what a mounted class
+    # gets off as indoors ($93:D9BD).
+    weapons = fe3_class_weapons()
+    on_foot, _women = fe3_on_foot()
+
+    def foot_note(k):
+        if k not in on_foot:
+            return {}
+        man, woman = on_foot[k]
+        who = cnames.get(man) if man == woman or weapons[man] == weapons[woman] else f"{cnames.get(man)} (a woman: {cnames.get(woman)})"
+        return {'weaponsNote': f"indoors on foot, as a {who}: {', '.join(weapons[man])}"}
+
     classes = {}
     for k in sorted(used):
         c = klass(k)
         classes[str(k)] = {'id': str(k), 'name': cnames.get(k, f'Class {k}'), 'bases': {s: c[s] for s in ('hp', 'str', 'skl', 'spd', 'wlv',
                                                                                                            'def', 'res', 'mov')},
                            'caps': {**{s: CAP for s in ('str', 'skl', 'spd', 'lck', 'wlv', 'def', 'res')}, 'hp': HP_CAP},
-                           **({'promotesTo': str(promo[k])} if k in promo else {})}
+                           **({'promotesTo': str(promo[k])} if k in promo else {}), 'weapons': weapons[k], **foot_note(k)}
 
     # The supports ($88:CD31): [giver name id][receiver name id][bonus], for the books' units who are both there.
     bonuses = []

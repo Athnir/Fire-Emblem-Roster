@@ -94,6 +94,8 @@ export interface GbaClass {
   storyPromotion?: string
   /** The kinds of weapon the class can use, in the game's order (Sword, Anima, Staff...). */
   weapons?: string[]
+  /** What else about its weapons: Mystery of the Emblem's mounted classes on foot indoors. */
+  weaponsNote?: string
   /** What promoting into this class adds (HP to Res), when the game keeps it in the class data; otherwise the difference between
    * the two classes' bases. */
   gains?: Partial<GbaStats>

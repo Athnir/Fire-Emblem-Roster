@@ -14,7 +14,8 @@ per character, not per class), +68-+74 growths. Everything matches Serenes Fores
 
 ## Classes: `Data/Job.bin`, 160 bytes per JID
 
-+4 the name label, +36-+43 bases (HP, Atk, Skl, Spd, Lck, Def, Res, Mov), +88 the class it changes from (the class tree: a Villager
++4 the name label, +34 (u16, `武器`) the weapons it can use (a bit per item kind: 2 sword, 4 lance, 8 axe, 16 bow, 32 black magic, 64
+white magic, 128 monster weapons; the equip check 0x44fe64, `scripts/class_weapons.py`), +36-+43 bases (HP, Atk, Skl, Spd, Lck, Def, Res, Mov), +88 the class it changes from (the class tree: a Villager
 branches into five classes for men, four for women). The level each class must reach to change isn't in these records; it's Serenes
 Forest's (`CHANGE_LEVEL` in the generator), as is the rule: a class change lifts every stat but Res that's below the new class's bases
 to them, and starts again at Lv 1. A Dread Fighter's change back to Villager, and the Pitchfork, aren't shown.

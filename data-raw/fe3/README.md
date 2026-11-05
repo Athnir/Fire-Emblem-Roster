@@ -48,10 +48,19 @@ for Minerva).
 - Where a talk is started by the recruit (Catria and Palla talk to Marth), that's said.
 - What's left to the player (Arran or Samson, Book 2's Tiki and Sheena) is in Serenes Forest's words and says so.
 
+## Weapons each class can use (`scripts/class_weapons.py`)
+
+- No per-class table: every item names its classes. The check ($83:EE68) takes item +12 to a u16 pointer at $88:A4B1, a list of class
+  ids ended by FF, against the unit's class; then a weapon level (+2) with bit 7 is locked to the name ids at $88:A48E and skips the
+  weapon-level check, and any other needs +2 at or below the unit's weapon level. A class can use a kind when some item of it lists the
+  class. Dragonstones are the 7 items at $83:84A6. Indoors ($93:D9BD) Cavaliers, Paladins, Pegasus and Dragon Knights get off as
+  Knights (the women, $93:FFE5, as Knight (F)), a Horseman as a Hunter.
+- Items from 0x57 on (the non-weapons) compare +2 with the unit's level instead: the promotion items need Lv 10. Xane (name 0x28) can't
+  use one ($83:EF9B).
+
 ## Not read yet
 
-- The promotion items' level (taken as Serenes Forest's: from Lv 10); Merric's own Bishop class (27), which Serenes Forest gives other
-  gains, isn't the one the promotion table names.
+- Merric's own Bishop class (27), which Serenes Forest gives other gains, isn't the one the promotion table names.
 
 ## Portraits (`scripts/snes_portraits.py`)
 
