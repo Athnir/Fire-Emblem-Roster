@@ -372,6 +372,7 @@ function UnitDetail({ data, unit }: { data: GbaData; unit: GbaUnit }) {
             {cls.name} · Lv {unit.level}
             {promo.length > 0 && <span className="text-neutral-500"> · promotes to {promo.map((c) => c.name).join(' or ')}</span>}
           </div>
+          {cls.storyPromotion && <div className="text-neutral-400">{cls.storyPromotion}</div>}
           {unit.reclass && (
             <div>
               <span className="text-neutral-500">Reclass set: </span>
@@ -671,7 +672,10 @@ export function GbaPlanner({ data: game }: { data: GbaData }) {
                   </label>
                 ) : null}
                 <label className="space-y-1">
-                  <span className="block text-xs text-neutral-500">{options.length > 1 ? 'When' : `Promote to ${options[0].name}`}</span>
+                  <span className="block text-xs text-neutral-500">
+                    {options.length > 1 ? 'When' : `Promote to ${options[0].name}`}
+                    {from.storyPromotion ? ' (by the story)' : ''}
+                  </span>
                   {from.autoPromote ? (
                     <span className="block py-1 text-neutral-400">At Lv {maxLevelOf(from)} (automatic)</span>
                   ) : (
@@ -684,7 +688,7 @@ export function GbaPlanner({ data: game }: { data: GbaData }) {
                       className={selectClass}
                     >
                       <option value="">{reclassing ? "Don't change" : "Don't promote"}</option>
-                      {levels(Math.max(promoting ? minLevelOf(from) : fromLevel, fromLevel), maxLevelOf(from)).map((lv) => (
+                      {levels(Math.max(promoting && !from.storyPromotion ? minLevelOf(from) : fromLevel, fromLevel), maxLevelOf(from)).map((lv) => (
                         <option key={lv} value={lv}>
                           At Lv {lv}
                         </option>
@@ -711,6 +715,7 @@ export function GbaPlanner({ data: game }: { data: GbaData }) {
             </button>
           )}
         </div>
+        {offers.map(({ from }) => from.storyPromotion && <p key={from.id} className="text-xs text-neutral-400">{from.name}: {from.storyPromotion}</p>)}
         <p className="text-xs text-neutral-500">
           {data.catchUp ? 'Average stats, from the level-up rule below.' : 'Average stats: each level adds the growth rate.'}{' '}
           {data.growthScale ? `${data.growthScale.text} ` : ''}Stats stop at the{' '}

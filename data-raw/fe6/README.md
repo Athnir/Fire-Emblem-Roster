@@ -14,7 +14,15 @@ anima, light, dark), +0x1C-0x22 growths (HP, Str, Skl, Spd, Def, Res, Lck), +0x2
 ## Classes: `0x60A0E8`, 72 bytes
 
 +5 the class it promotes to, +0x0B-0x12 bases (HP, Str, Skl, Spd, Def, Res, Con, Mov), +0x13-0x19 caps (HP, Str, Skl, Spd, Def, Res,
-Con; Luck is 30).
+Con; Luck is 30), +0x24 abilities (0x100: a promoted class).
+
+- A promoted class's +5 points back at the class it comes from (Great Lord's at Lord, Hero's at Mercenary): in every pair exactly the
+  promoted side has the 0x100 bit, so the generator reads +5 only on a class without it.
+- A promotion item (0x08023770) needs Lv 10 and the unit's class in the item's list, by item id - 0x5F: the Hero Crest 0x086615E2
+  (Mercenary, Myrmidon, Fighter, Brigand, Pirate), the Knight Crest 0x086615EA (Cavalier, Knight), Orion's Bolt 0x086615EF (Archer,
+  Nomad), the Elysian Whip 0x086615F4 (Pegasus Knight, Wyvern Rider), the Guiding Ring 0x086615F8 (Priest, Cleric, Mage, Shaman,
+  Troubadour). The Lord is in none: Ch.21's and Ch.21x's endings give Roy the Binding Blade and promote him with it (0x0806D0E4 calls
+  the promotion routine 0x08027DB4, whose stat step 0x0802529C takes the old class's bases off), at whatever level he is.
 
 ## Supports
 
@@ -33,7 +41,7 @@ earliest) and Dayan's level (12, Serenes').
 ## Not read yet
 
 - The trial maps' bonus units (Hector, Eliwood...): the game's code adds them once it has been cleared.
-- Hard mode's bonus stats; the promotion item level and gains (taken as Serenes': from Lv 10, the difference in bases).
+- Hard mode's bonus stats; the promotion gains in full (taken as Serenes': the difference in bases; 0x0802529C starts that way).
 
 ## Portraits (`scripts/gba_portraits.py`)
 

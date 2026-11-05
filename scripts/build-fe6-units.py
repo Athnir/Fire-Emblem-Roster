@@ -25,6 +25,10 @@ CATH = 53
 CATH_NOTE = 'Talk to her with Roy in three chapters (she appears in 6, 8, 12, 16, 20 and 22); she joins on the third talk.'
 # Hugh asks for gold; the less he's paid, the lower his stats (Serenes Forest).
 NOTES = {39: 'He asks to be paid: 10,000 gold, or less for lower stats (Serenes Forest).'}
+# Classes no promotion item works on, promoted by the story instead. A promotion item needs Lv 10 and the unit's class in its list
+# (0x8023770: the Hero Crest's to the Guiding Ring's, 0x086615E2-0x086615F8); the Lord is in none. Ch.21's and Ch.21x's endings give
+# Roy the Binding Blade and promote him with it (0x0806D0E4, the promotion routine 0x08027DB4), whatever his level.
+STORY_PROMOTIONS = {1: "Only by the story: at the end of Ch.21 (or Ch.21x), whatever level he's reached, when he takes up the Binding Blade. No promotion item works on a Lord."}
 # Levels the scripts' runs don't give (Dayan arrives as a green unit the plain run skips): Serenes Forest's.
 LEVELS = {6: 12}
 # The trial maps' bonus units (Hector, Eliwood...) are added by the game's code once it has been cleared; no group or script
@@ -48,11 +52,13 @@ def personal(c):
 
 def klass(k):
     """+0x0B-0x12 bases (HP, Str, Skl, Spd, Def, Res, Con, Mov), +0x13-0x19 caps (HP, Str, Skl, Spd, Def, Res, Con), +5 the class it
-    promotes to, +0x28-0x2F weapon ranks."""
+    promotes to, +0x24 abilities (0x100: a promoted class), +0x28-0x2F weapon ranks. A promoted class's +5 points back at the class it
+    comes from (Great Lord's at Lord, Hero's at Mercenary: every pair, the 0x100 bit on the promoted side), so it promotes to nothing."""
     e = rom.CLASSES + 72 * k
     bases = dict(zip(('hp', 'str', 'skl', 'spd', 'def', 'res', 'con', 'mov'), R[e + 0x0B:e + 0x13]))
     caps = dict(zip(('hp', 'str', 'skl', 'spd', 'def', 'res', 'con'), R[e + 0x13:e + 0x1A]))
-    return {'bases': bases, 'caps': caps, 'promotes': R[e + 5]}
+    promoted = bool(rom.u32(e + 0x24) & 0x100)
+    return {'bases': bases, 'caps': caps, 'promotes': 0 if promoted else R[e + 5]}
 
 
 def rank(points):
@@ -96,7 +102,8 @@ def main():
     for k in sorted(used):
         kd = klass(k)
         out_classes[str(k)] = {'id': str(k), 'name': cnames.get(k, f'Class {k}'), 'bases': {**kd['bases'], 'lck': 0},
-                               'caps': {**kd['caps'], 'lck': 30}, **({'promotesTo': str(kd['promotes'])} if kd['promotes'] else {})}
+                               'caps': {**kd['caps'], 'lck': 30}, **({'promotesTo': str(kd['promotes'])} if kd['promotes'] else {}),
+                               **({'storyPromotion': STORY_PROMOTIONS[k]} if k in STORY_PROMOTIONS else {})}
 
     ids = {int(u['id'][4:]) for u in units}
     supports, seen = [], set()

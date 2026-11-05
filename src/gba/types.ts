@@ -90,6 +90,8 @@ export interface GbaClass {
   promoteLevel?: number
   /** The class promotes by itself on reaching its last level (The Sacred Stones' trainees). */
   autoPromote?: boolean
+  /** No promotion item works on the class; the story promotes it, at whatever level (The Binding Blade's Lord): when and how. */
+  storyPromotion?: string
   /** What promoting into this class adds (HP to Res), when the game keeps it in the class data; otherwise the difference between
    * the two classes' bases. */
   gains?: Partial<GbaStats>

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { GBA_GROWING, GBA_STATS } from '../../../gba/types'
-import { FE6_CHAPTERS, FE6_SUPPORTS, FE6_UNITS } from '../fe6Units'
+import { FE6_CHAPTERS, FE6_CLASSES, FE6_SUPPORTS, FE6_UNITS } from '../fe6Units'
 
 // Serenes Forest's Binding Blade tables, copied here to check the data built from the ROM against them.
 // Its trial-map units aren't read yet (the game's code adds them once it has been cleared), so they're left out here.
@@ -47,5 +47,19 @@ describe('Binding Blade units', () => {
     const keys = FE6_SUPPORTS.map((s) => [s.a, s.b].sort().join('|'))
     expect(new Set(keys).size).toBe(keys.length)
     expect(FE6_SUPPORTS.length).toBeGreaterThan(100)
+  })
+
+  it('promotes once: a promoted class promotes to nothing (its +5 points back at the base class)', () => {
+    for (const cls of Object.values(FE6_CLASSES)) {
+      const to = cls.promotesTo ? FE6_CLASSES[cls.promotesTo] : undefined
+      if (to) expect(to.promotesTo, `${cls.name} -> ${to.name}`).toBeUndefined()
+    }
+  })
+
+  it('promotes Roy only by the story (no promotion item lists the Lord)', () => {
+    const lord = FE6_CLASSES[unitByName.get('Roy')!.classId]
+    expect(lord.name).toBe('Lord')
+    expect(lord.storyPromotion).toMatch(/Ch\.21/)
+    expect(FE6_CLASSES[lord.promotesTo!].name).toBe('Great Lord')
   })
 })
