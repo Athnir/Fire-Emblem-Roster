@@ -97,6 +97,14 @@ new rule, add it here.
 - **When units leave and come back shows in the Roster** (user, 2026-11-02, Thracia), and stays blank under the spoiler block.
 - **Support levels are written out with their half levels** (user, 2026-11-03, Three Houses): C+, B+ and A+ where a pair has them,
   and a pair that stops before A shows where it stops.
+- **Engage and Three Houses follow Fates' tabs** (user, 2026-11-04): the Avatar as two units, the Unit Planner's growths and
+  maximums before the projected stats, the Skill Planner's rows by source (a class, a skill rank, an Emblem) under the loadout,
+  saved sets in the planners, the Team Viewer table; Engage's Supports plan the Pact Ring, as Fates' Marriage Planner plans spouses.
+- **A skill that comes in levels shows its top level alone** (user, 2026-11-04): Sword Prowess Lv 1-4 beside Lv 5, Sword Agility
+  1-4 beside 5, Unyielding beside Unyielding++ (the game replaces a lower level with a higher), unless the tickbox shows every level.
+  The chains are the game's own upgrade groups.
+- **A class only some can be in keeps its skills to them** (user, 2026-11-04): Three Houses' Dancer and its dances, Sword Avo +20
+  and Sword Dance only for the White Heron Cup's candidates (the 24 students and Flayn); Engage's Dancer is Seadall's.
 - **Skill Planners don't work out which skill a child inherits** (user, 2026-11-02): the skills are picked, and the general pool
   lists every skill the unit can have in some playthrough, following the game for what can pass (as Fates' looser pool does). In
   Awakening the classes show as chips to pick, as the DLC classes do, since the lists are long.
@@ -123,6 +131,9 @@ reveals it. What that means for each tab is settled with the user as each game i
 - **A story split is picked when you reach it** (user, 2026-11-03, Three Houses): with the block on, the Roster asks for what's known
   at the start (Three Houses: the house) and asks for the route only once the chapter bar reaches the split (Chapter 12). With the
   block off, the route is picked straight away.
+- **A personal skill's later form replaces the first once the chapter reaches it** (user, 2026-11-04, Three Houses): Professor's
+  Guidance+ from Chapter 11 (the Sothis fusion in Chapter 10), the house leaders' Lineage+ from Part II (Chapter 13); before then
+  only the first shows. With the block off, both.
 - **Every game gets the block** (user, 2026-11-03): its chapter bar, units shown once they can have joined, picks asked at their
   chapter, time-away lines blank.
 - **Felicia and Jakob both stay listed** (user, 2026-11-03, Fates): a note says you get the one of the opposite gender to Corrin,

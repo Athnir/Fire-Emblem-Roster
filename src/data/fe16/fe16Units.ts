@@ -11550,8 +11550,39 @@ export const FE16_CLASSES: Record<string, Fe16Class> = {
       "mov": 0,
       "cha": 10
     },
-    "given": "Certified for the White Heron Cup's winner (0x1ffaf0), its only source: one unit a playthrough.",
-    "unique": true
+    "given": "Certified for the White Heron Cup's winner (Chapter 9, 0x1ffaf0), its only source: one unit a playthrough, a student or Flayn.",
+    "unique": true,
+    "who": [
+      "fe16-edelgard",
+      "fe16-dimitri",
+      "fe16-claude",
+      "fe16-hubert",
+      "fe16-ferdinand",
+      "fe16-linhardt",
+      "fe16-caspar",
+      "fe16-bernadetta",
+      "fe16-dorothea",
+      "fe16-petra",
+      "fe16-dedue",
+      "fe16-felix",
+      "fe16-ashe",
+      "fe16-sylvain",
+      "fe16-mercedes",
+      "fe16-annette",
+      "fe16-ingrid",
+      "fe16-lorenz",
+      "fe16-raphael",
+      "fe16-ignatz",
+      "fe16-lysithea",
+      "fe16-marianne",
+      "fe16-hilda",
+      "fe16-leonie",
+      "fe16-flayn"
+    ],
+    "alsoTeaches": [
+      "Sword Avo +20",
+      "Sword Dance"
+    ]
   }
 }
 

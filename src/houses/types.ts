@@ -132,6 +132,8 @@ export interface Fe16Class {
   exam?: { seal: string | null; ranks: Partial<Record<Fe16Skill, string>> }
   /** What mastering it teaches. */
   mastery: string[]
+  /** What winning the White Heron Cup teaches with the class (the Dancer: Sword Avo +20 and Sword Dance, 0x1ffaf0). */
+  alsoTeaches?: string[]
   /** Its class abilities. */
   abilities: string[]
   /** The only units who can be in it. */

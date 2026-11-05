@@ -105,6 +105,28 @@ riding). GameData +0x2427c is the chapter, +0x2449c the difficulty, +0x2449e the
   certified; the DLC classes the Expansion Pass. The Emperor, Great Lord and Barbarossa are certified by a ceremony (script
   command 2790) at the start of Crimson Flower's and Azure Moon's Chapter 16 and Verdant Wind's 17, with no level or seal;
   Enlightened One in Chapter 11; the Dancer for the White Heron Cup's winner only (`0x1ffaf0`); the Death Knight 91 is Jeritza's.
+- **Who can be the Dancer**: the Cup is in Chapter 9 (the Ethereal Moon) on every route: each chapter's flow record (file 7) has a
+  monastery script at +14, Chapter 9's is 39 everywhere, `LO00_09.bsi` (archive file 274), the only script with
+  `ChooseForHeronCup` (command 2640), quest 24. It has an event group per candidate, each needing the person in the army and alive:
+  persons 2-25 (the 24 students, the house leaders among them) and 27 (Flayn). Byleth, the staff and knights, Jeritza, Anna and the
+  Ashen Wolves have none, and no DLC script has the command. No gender rule (the certification record's gender is 2). The winner
+  (`0x1ffaf0`, stored per house) gets the Dancer certified (`0x3d2a10`), Sword Avo +20 (ability 56, `0x4124f0`) and Sword Dance (art
+  76, `0x412420`). `0x3d2a10`'s other callers are the exams, the story ceremonies and Enlightened One: no seal, exam or other way.
+  The generator writes the 25 as the Dancer's `who` and the two skills as its `alsoTeaches`.
+- **Personal abilities' Part II forms** (`0x40e520`): persondata section 5 +0x14 is the first, +0x15 the second (255: none; only
+  Byleth and the three house leaders have one). The second is used once GameData +0x2449f, the Part II flag, is 1, which the chapter
+  change (`0x3d8980`, at `0x3d8eac`) sets for a battle whose fixed_scenario record has bit 6 at +0x24: scenarios 13-30 and 32-39, so
+  from Chapter 13 on every route (Chapter 12, Crimson Flower's 31 too, is still Part I; the routes part there). Byleth's also follows
+  bit 1 of the unit's +0xae, set by the Sothis fusion partway through Chapter 10 (movie 11: `0x54c36c` -> `0xa7b50`; kept by
+  `0x415330`, set again at the end of scenario 11, `0x97510`): Byleth has Professor's Guidance+ for all of Chapter 11 on (Fire
+  Emblem Wiki says after the time skip). With the spoiler block on, the app shows the second in place of the first from 11 and 13.
+- **Abilities that come in levels** (fixed_skill.bin section 0 +3, the upgrade group; 255 none): learning one (`0x4124f0`, the only
+  reader) keeps the highest of its group the unit has learned, takes every lower one out of the equipped slots (+0x7f..+0x83) and
+  clears its learned bit; a lower one learned later is dropped at once. Groups 0-7 are Sword/Lance/Axe/Bow/Brawling Prowess, Reason,
+  Faith and Authority Lv 1-5; 9 Bowrange +1/+2 and 10 White Magic Heal +5/+10 (class abilities, never learned, so never replaced);
+  11 Weight -3/-5; 13 Alert Stance/+. Groups 8 (the Lineages and Paragon) and 12 (Mastermind, Discipline) hold different abilities;
+  the generator's chains split a group where the names' stems differ. The breakers and their "+" forms, the Magic Range and Uses
+  abilities are in no group: both stay.
 
 ## Checked against Serenes Forest and Fire Emblem Wiki
 

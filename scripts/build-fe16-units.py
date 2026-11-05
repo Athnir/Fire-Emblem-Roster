@@ -32,8 +32,15 @@ UNIQUE = {
     58: ['claude'], 17: ['claude'],         # Wyvern Master, Barbarossa
     42: ['byleth-m', 'byleth-f'],           # Enlightened One
     91: ['jeritza'],                        # Death Knight
-    43: None,                               # Dancer: anyone (the White Heron Cup's winner)
+    43: None,                               # Dancer: the White Heron Cup's candidates (HERON_CUP)
 }
+# Who can be the White Heron Cup's representative, and so the Dancer (user, 2026-11-04: dancer skills only for those who can be one):
+# LO00_09.bsi (archive file 274, Chapter 9's monastery script on every route: fixed_flow +14 = 39) has one ChooseForHeronCup event
+# group per candidate, each needing the person in your army and alive: persons 2-25 (the 24 students, the house leaders among them)
+# and 27 (Flayn). Not Byleth, the staff and knights, Jeritza, Anna or the Ashen Wolves.
+HERON_CUP = list(range(2, 26)) + [27]
+# What winning the Cup teaches with the class (0x1ffaf0): Sword Avo +20 (ability 56, 0x4124f0) and Sword Dance (art 76, 0x412420).
+HERON_CUP_ABILITY, HERON_CUP_ART = 56, 76
 GIVEN = {
     56: 'The story gives it at the time skip (0x3d91b0), with Aymr: Crimson Flower.',
     57: 'The story gives it at the time skip (0x3d91b0): Azure Moon.',
@@ -42,7 +49,7 @@ GIVEN = {
     44: 'The story certifies it at the start of Azure Moon\'s Chapter 16 (a ceremony, 0x253e50): no level or seal needed.',
     17: 'The story certifies it at the start of Verdant Wind\'s Chapter 17 (a ceremony, 0x253e50): no level or seal needed.',
     42: 'The story certifies it in Chapter 11 (a ceremony, 0x1d5280).',
-    43: 'Certified for the White Heron Cup\'s winner (0x1ffaf0), its only source: one unit a playthrough.',
+    43: 'Certified for the White Heron Cup\'s winner (Chapter 9, 0x1ffaf0), its only source: one unit a playthrough, a student or Flayn.',
     91: 'The class Jeritza joins in; no one else is offered it.',
 }
 # A class whose exam needs another class certified first (0x632c90): the Dark Bishop, the Dark Mage.
@@ -285,6 +292,8 @@ def build():
             cls['who'] = ['fe16-' + w for w in who]
         if n == 43:
             cls['unique'] = True
+            cls['who'] = [names[p] for p in HERON_CUP]
+            cls['alsoTeaches'] = [U.T(U.T_ABILITY + HERON_CUP_ABILITY), U.T(U.T_ART + HERON_CUP_ART)]
         if n in (84, 85, 86, 87):
             cls['dlc'] = True
         out_classes[str(n)] = cls

@@ -88,10 +88,15 @@ export function routesOpen(picks: Fe16Picks): Fe16Route[] {
   return picks.house ? HOUSE_ROUTES[picks.house] : ['cf', 'ss', 'am', 'vw']
 }
 
-/** The first chapter of Part II, where the routes part, and each route's last chapter (the game's flow, as the Armory reads it). */
+/** The chapter where the routes part (the Black Eagles' split; still Part I), and each route's last chapter (the game's flow, as the
+ * Armory reads it). */
 export const SPLIT_CHAPTER = 12
-/** The first chapter whose personal abilities are the Part II forms. */
-export const PART_TWO = SPLIT_CHAPTER
+/** The first chapter of Part II on every route, Crimson Flower too: the chapter change (0x3d8980) sets the Part II flag for a battle
+ * whose scenario has bit 6 at +0x24 (scenarios 13-30 and 32-39; not 12, nor Crimson Flower's Chapter 12, 31). */
+export const PART_TWO = 13
+/** The chapter from which Byleth has the Part II personal ability: the Sothis fusion partway through Chapter 10 sets it (movie 11,
+ * 0x54c36c -> 0xa7b50, bit 1 at +0xae), so all of Chapter 11 on has it; with the spoiler block on it shows from 11. */
+export const BYLETH_PART_TWO = 11
 export const LAST_CHAPTER: Record<Fe16Route, number> = { cf: 18, ss: 21, am: 22, vw: 22 }
 
 /** The chapter a unit can first be yours in, under the house taught. */
@@ -220,12 +225,14 @@ export const MAX_ARTS = 3
 export const kindOf = (data: Fe16Data, name: string): 'ability' | 'art' => (data.arts[name] !== undefined && data.abilities[name] === undefined ? 'art' : 'ability')
 
 /** The personal ability shown, and which part of the story it's from. With the spoiler block on (`chapter`), only the one the chapter
- * has: the Part II form (Professor's Guidance+) from Part II on, in place of the first (user, 2026-11-04); with it off, both. */
+ * has: the "+" form in place of the first once the game swaps it (user, 2026-11-04): Byleth's from Chapter 11, the house leaders'
+ * from Part II (the getter 0x40e520: persondata section 5 +0x15 under the Part II flag, or Byleth's own bit). With it off, both. */
 export function personalNow(unit: Fe16Unit, chapter?: number): { name: string; part?: string }[] {
   const [first, second] = unit.personal
   if (!second) return first ? [{ name: first }] : []
-  if (chapter === undefined) return [{ name: first, part: 'Part I' }, { name: second, part: 'Part II' }]
-  return [{ name: chapter >= PART_TWO ? second : first }]
+  const from = isByleth(unit) ? BYLETH_PART_TWO : PART_TWO
+  if (chapter === undefined) return [{ name: first }, { name: second, part: `from Chapter ${from}` }]
+  return [{ name: chapter >= from ? second : first }]
 }
 
 export interface Fe16Source {
@@ -249,7 +256,8 @@ export function learnable(data: Fe16Data, unit: Fe16Unit): Fe16Source[] {
   if (unit.budding) add(unit.budding.name, unit.budding.kind, `budding talent (${FE16_SKILL_LABELS[unit.budding.skill]})`)
   for (const cls of classesFor(data, unit)) {
     if (!canTake(cls, unit) && cls.id !== unit.classId) continue
-    for (const m of cls.mastery) add(m, data.arts[m] !== undefined && data.abilities[m] === undefined ? 'art' : 'ability', `mastering ${cls.name}`)
+    for (const m of cls.mastery) add(m, kindOf(data, m), `mastering ${cls.name}`)
+    for (const m of cls.alsoTeaches ?? []) add(m, kindOf(data, m), `the White Heron Cup (${cls.name})`)
   }
   return [...out.values()]
 }

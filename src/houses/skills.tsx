@@ -36,7 +36,7 @@ export function Fe16SkillPlanner({ data }: { data: Fe16Data }) {
   }
   const all = [...chosen.ability, ...chosen.art]
   const learns = learnsOf(data, unit).filter((l) => l.kind !== 'spell')
-  const classes = classesFor(data, unit).filter((c) => (canTake(c, unit) || c.id === unit.classId) && c.mastery.length > 0)
+  const classes = classesFor(data, unit).filter((c) => (canTake(c, unit) || c.id === unit.classId) && (c.mastery.length > 0 || c.alsoTeaches))
 
   return (
     <div className="space-y-4">
@@ -92,8 +92,8 @@ export function Fe16SkillPlanner({ data }: { data: Fe16Data }) {
           <SkillRow
             key={c.id}
             title={c.name}
-            meta={[`${c.tier}${c.level ? `, exam at Lv ${c.level}` : ''}`, 'mastering it teaches']}
-            skills={c.mastery.map((n) => skill(n))}
+            meta={c.alsoTeaches ? ['the White Heron Cup winner (Chapter 9)', 'winning, then mastering it'] : [`${c.tier}${c.level ? `, exam at Lv ${c.level}` : ''}`, 'mastering it teaches']}
+            skills={[...(c.alsoTeaches ?? []).map((n) => skill(n, 'the Cup')), ...c.mastery.map((n) => skill(n, 'mastery'))]}
             chosen={all}
             full={full}
             onToggle={toggle}
