@@ -3,7 +3,7 @@ import { useScreenshotContextStore } from '../state/screenshotContextStore'
 import { chip } from './hooks'
 import { labelOf, type Fe17Data } from './logic'
 import type { Fe17Class } from './types'
-import { SkillChips, StatTable } from './ui'
+import { SkillIcon, StatTable } from './ui'
 
 const TIERS: { tier: Fe17Class['tier']; label: string }[] = [
   { tier: 'base', label: 'Base classes' },
@@ -22,10 +22,38 @@ export function classLabel(data: Fe17Data, cls: Fe17Class): string {
 const weaponText = (w: Fe17Class['weapons'][number]) =>
   `${w.weapon} ${w.rank}${w.plus ? ' (+1 with innate proficiency)' : ''}${w.use !== 'always' ? ` (${w.use})` : ''}`
 
+/** The class types, each once with what it gives in the game's words and the classes of that type (user, 2026-11-05: each kind of
+ * ability in one place, not repeated on every class). */
+function ClassTypes({ data, onPick }: { data: Fe17Data; onPick: (id: string) => void }) {
+  return (
+    <div className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
+      <h3 className="text-base font-semibold text-neutral-100">Class types</h3>
+      <p className="text-xs text-neutral-500">What every class of a type gets, from the game's text; tap a class to see it below.</p>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {data.classTypes.map((t) => (
+          <div key={t.name} className="space-y-1.5 rounded-md border border-neutral-800 p-3 text-sm">
+            <div className="font-medium text-neutral-100">{t.name}</div>
+            <p className="text-neutral-300">{t.help}</p>
+            {t.more.length > 0 && <p className="text-xs text-neutral-500">{t.more.join(' ')}</p>}
+            <div className="flex flex-wrap gap-1">
+              {t.classes.map((id) => (
+                <button key={id} type="button" onClick={() => onPick(id)} className={chip(false)}>
+                  {data.classes[id] ? classLabel(data, data.classes[id]) : id}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 /** One class's fixed things: who can be in it, its weapons, what it needs to change into, its skills, and its bases (the least a unit
  * shows in it), growths and caps. */
 function ClassDetail({ data, cls }: { data: Fe17Data; cls: Fe17Class }) {
   const names = (ids: string[]) => ids.map((id) => data.classes[id]?.name ?? id).join(', ')
+  const type = data.classTypes.find((t) => t.name === cls.style)
   const who = cls.uniqueTo?.map((id) => data.units.find((u) => u.id === id)).filter((u) => u !== undefined)
   const needs = [...cls.needs.all, ...(cls.needs.choose ? [`${cls.needs.choose} of ${cls.needs.from.join(', ')}`] : [])]
   return (
@@ -34,8 +62,13 @@ function ClassDetail({ data, cls }: { data: Fe17Data; cls: Fe17Class }) {
         <h3 className="text-lg font-semibold text-neutral-100">{classLabel(data, cls)}</h3>
         <p className="text-neutral-400">{cls.help}</p>
         <div>
-          {TIERS.find((t) => t.tier === cls.tier)?.label.replace(' classes', '')} · to Lv {cls.maxLevel} · {cls.moveType} · {cls.style}
+          {TIERS.find((t) => t.tier === cls.tier)?.label.replace(' classes', '')} · to Lv {cls.maxLevel} · {cls.moveType}
           {cls.expansionPass && ' · Expansion Pass'}
+        </div>
+        <div>
+          <span className="text-neutral-500">Type: </span>
+          {cls.style}
+          {type && <span className="text-neutral-400">: {type.help}</span>}
         </div>
         {(who?.length || cls.femaleOnly) && (
           <div>
@@ -73,13 +106,29 @@ function ClassDetail({ data, cls }: { data: Fe17Data; cls: Fe17Class }) {
           </div>
         )}
       </div>
-      {(cls.skills.length > 0 || cls.learns) && (
-        <div className="space-y-1 text-sm text-neutral-300">
-          <h4 className="text-sm font-semibold text-neutral-200">Skills</h4>
-          <SkillChips
-            data={data}
-            skills={[...cls.skills.map((name) => ({ name })), ...(cls.learns ? [{ name: cls.learns.skill, note: `(Lv ${cls.learns.level})` }] : [])]}
-          />
+      {(cls.learns || cls.enemySkill) && (
+        <div className="space-y-2 text-sm text-neutral-300">
+          <h4 className="text-sm font-semibold text-neutral-200">Its skills</h4>
+          {cls.learns && (
+            <div className="flex items-start gap-2">
+              <SkillIcon data={data} skill={cls.learns.skill} />
+              <span>
+                <span className="text-neutral-500">Learned at Lv {cls.learns.level} in the class (lost on changing class): </span>
+                <span className="font-medium text-neutral-200">{cls.learns.skill}</span>
+                {data.skills[cls.learns.skill] && <span className="block text-xs text-neutral-500">{data.skills[cls.learns.skill]}</span>}
+              </span>
+            </div>
+          )}
+          {cls.enemySkill && (
+            <div className="flex items-start gap-2">
+              <SkillIcon data={data} skill={cls.enemySkill} />
+              <span>
+                <span className="text-neutral-500">Foes only, on Maddening: </span>
+                <span className="font-medium text-neutral-200">{cls.enemySkill}</span>
+                {data.skills[cls.enemySkill] && <span className="block text-xs text-neutral-500">{data.skills[cls.enemySkill]}</span>}
+              </span>
+            </div>
+          )}
         </div>
       )}
       <StatTable
@@ -110,8 +159,13 @@ export function Fe17Classes({ data }: { data: Fe17Data }) {
     return () => setUnitLabel('')
   }, [data, cls, setUnitLabel])
   if (!cls) return null
+  const pick = (classId: string) => {
+    setId(classId)
+    requestAnimationFrame(() => detailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+  }
   return (
     <div className="space-y-6">
+      <ClassTypes data={data} onPick={pick} />
       {TIERS.map((t) => (
         <div key={t.tier} className="space-y-2">
           <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-500">{t.label}</h3>
@@ -122,10 +176,7 @@ export function Fe17Classes({ data }: { data: Fe17Data }) {
                 <button
                   key={c.id}
                   type="button"
-                  onClick={() => {
-                    setId(c.id)
-                    requestAnimationFrame(() => detailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
-                  }}
+                  onClick={() => pick(c.id)}
                   className={chip(c.id === cls.id)}
                 >
                   {classLabel(data, c)}

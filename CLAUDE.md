@@ -104,6 +104,9 @@ new rule, add it here.
   maximums before the projected stats, the Skill Planner's rows by source (a class, a skill rank, an Emblem) under the loadout,
   saved sets in the planners, the Team Viewer table. Engage's Pact Ring is only noted on Alear's Emblem Ring (user, 2026-11-05), not
   planned in the Supports tab.
+- **Engage's Classes tab lists the class types once** (user, 2026-11-05): each type's rule in the game's words (Qi Adept's Chain
+  Guard, Covert's terrain Avo) with its classes, rather than on every class; a class shows its Lv 5 (or 25) skill and the skill
+  Maddening's foes in it can have.
 - **Engage and Three Houses have a Classes tab** (user, 2026-11-04): each class's fixed things, its skills and bases (the least a
   unit shows in it), growths and caps or boosts; Three Houses' adds the exam (level, seal, ranks) and a calculator for its pass chance
   from the ranks and Luck put in, as the game works it out (0x633f60).

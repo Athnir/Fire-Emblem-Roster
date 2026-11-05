@@ -28,7 +28,15 @@ offsets in the update's program (`main.bin`, IL2CPP; `global-metadata.dat` names
   (1 Foot, 2 Horse, 3 Fly, 4 Dragon); StyleName; Weapon<Kind> (1 always, 2 choose 1, 3 choose 2); MaxWeaponLevel<Kind> (D-S; a
   trailing + = one rank higher with innate proficiency); Base.*, Limit.*; DiffGrow.* (player growth modifiers); BaseGrow.*
   (generic enemies); DiffGrowNormal/Hard/Lunatic (auto-levelled enemies); HighJob1/2; LowJob; Skills (Unlock, Dance, Dragonstone,
-  Enchant, Bullets); LearningSkill (class level 5, or 25 in a 40-level class); LunaticSkill; UniqueItems.
+  Enchant, Bullets: all hidden, no class has a visible always-on skill; JobData.OnCompleted 0x2054d80 adds them, then the type's);
+  LearningSkill (class level 5, or 25 in a 40-level class, lost on a class change: Unit.LearnJobSkill 0x1a3c3b0); LunaticSkill
+  (Maddening foes alone: EncountUnitData.AppendSkill 0x22e3040, an advanced class from Lv 5 or a 40-level class from Lv 25, a 20%
+  roll for skirmish foes; the map's foes unconfirmed); UniqueItems. The second sheet, 戦闘スタイル, is the class types: Name and Help
+  (battlestyle.msbt) and Skills (BattleStyle.GetSkills, hidden: Backup's chain attack, Covert's terrain Avo x2, Armored's break
+  immunity, Mystical's terrain Avo 0 against magic, Qi Adept's Chain Guard); Cavalry's and Flying's are the classes' Mov and move
+  type, Dragon's the engage skills' Dragon versions. The tutorial (MID_TUT_STYLE_*) adds Chain Guard's terms: the qi adept takes 20%
+  of their own max HP, only at full HP, never against an engage attack. The generator writes them as FE17_CLASS_TYPES. No class has
+  Wrath: it's Emblem Ike's sync skill (bond 13), inheritable for 2,000 SP.
 - **skill.xml スキル** (1255 rows): Name, Help; Priority (skill groups); InheritanceCost (SP); EnhanceValue.* (flat stat bonus
   while held: the sync stat bonuses are skills like SID_力＋１); Work/WorkOperation/WorkValue (2 JobGrowChange: Jean's Expertise
   doubles class growths; 3 TotalGrowChange: Tiki's Starsphere +15 to all growths); EngageSid; ChangeSids; SyncConditions/SyncSids;

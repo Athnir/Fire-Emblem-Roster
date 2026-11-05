@@ -88,8 +88,20 @@ export interface Fe17Class {
   /** The units alone who can be in it (a class without AnyoneCC: its person's default class or what it promotes to). */
   uniqueTo?: string[]
   expansionPass?: true
+  /** The skill Maddening's foes in the class can have (job.xml LunaticSkill). */
+  enemySkill?: string
   /** The item that changes a unit into it (the Mystic Satchel, the Mage Cannon). */
   items?: string[]
+}
+
+/** A class type (battle style) and what it gives. */
+export interface Fe17ClassType {
+  name: string
+  help: string
+  /** The tutorial's lines on it. */
+  more: string[]
+  /** Its classes' ids. */
+  classes: string[]
 }
 
 export interface Fe17BondLevel {

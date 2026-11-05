@@ -1,4 +1,4 @@
-import { FE17_STATS, type Fe17BondRingSet, type Fe17Booster, type Fe17Chapter, type Fe17Class, type Fe17Emblem, type Fe17Stat, type Fe17Stats, type Fe17StatsMov, type Fe17Support, type Fe17Unit } from './types'
+import { FE17_STATS, type Fe17BondRingSet, type Fe17Booster, type Fe17Chapter, type Fe17Class, type Fe17ClassType, type Fe17Emblem, type Fe17Stat, type Fe17Stats, type Fe17StatsMov, type Fe17Support, type Fe17Unit } from './types'
 
 // Fire Emblem Engage's units, as the program works them out (methods and addresses in data-raw/fe17/README.md).
 
@@ -14,6 +14,8 @@ export interface Fe17Data {
   boosters: Fe17Booster[]
   /** The skills that come in levels, each chain lowest first. */
   chains: string[][]
+  /** The class types and what each gives. */
+  classTypes: Fe17ClassType[]
 }
 
 const MOV_KEYS = [...FE17_STATS, 'mov'] as (Fe17Stat | 'mov')[]
