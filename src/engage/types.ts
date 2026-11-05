@@ -121,6 +121,8 @@ export interface Fe17BondLevel {
 export interface Fe17Emblem {
   id: string
   name: string
+  /** One bracelet worn by several (Edelgard, Dimitri and Claude; Chrom and Robin): their names, each with a face. */
+  members?: string[]
   /** The chapter its ring first comes in (a switch half or Robin: their pair's); the spoiler block shows it from there. */
   joinChapter: string
   /** The ring's name (a switch half or a shared bond has none of its own). */

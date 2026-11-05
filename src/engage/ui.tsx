@@ -21,15 +21,11 @@ export function RingFace({ data, ring, size = 36 }: { data: Fe17Data; ring: stri
 
 /** An Emblem's face, as the Somniel's ring book shows it (Bulk Upload's "emblems" folder). */
 export function EmblemFace({ data, emblem, size = 64 }: { data: Fe17Data; emblem: string; size?: number }) {
-  const face = (name: string) => <Portrait characterId={emblemFaceId(data.gameId, name)} isChild={false} size={size} />
-  // The Emblem Alear is the player's Alear, a man or a woman: both faces.
-  if (emblem === 'Alear')
-    return (
-      <span className="flex gap-1">
-        {face(emblem)}
-        {face(FEMALE_ALEAR)}
-      </span>
-    )
+  const face = (name: string) => <Portrait key={name} characterId={emblemFaceId(data.gameId, name)} isChild={false} size={size} />
+  // The Emblem Alear is the player's Alear, a man or a woman: both faces. A bracelet worn by several (Edelgard, Dimitri and Claude):
+  // each wearer's.
+  const members = emblem === 'Alear' ? [emblem, FEMALE_ALEAR] : data.emblems.find((e) => e.name === emblem)?.members
+  if (members) return <span className="flex gap-1">{members.map(face)}</span>
   return face(emblem)
 }
 

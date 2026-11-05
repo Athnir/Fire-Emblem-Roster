@@ -206,6 +206,27 @@ def build():
             'levels': levels,
         })
 
+    # One bracelet, one Emblem (user, 2026-11-05): Edelgard, Dimitri and Claude (the Bracelet of the Three Houses) and Chrom and Robin
+    # (the Bracelet of the Shepherd Exalt) are one item each, their bonds, skills and stats the same, so each is listed once, under its
+    # wearers' names, with all of them as `members`.
+    merged, by_ring = [], {}
+    for e in emblems:
+        same = by_ring.get(e.get('ring')) if e.get('ring') else None
+        if same is not None and same['levels'] == e['levels'] and same['joinChapter'] == e['joinChapter']:
+            same['members'].append(e['name'])
+            continue
+        e = {**e, 'members': [e['name']]}
+        by_ring[e.get('ring')] = e
+        merged.append(e)
+    emblems = []
+    for e in merged:
+        if len(e['members']) > 1:
+            e['name'] = ', '.join(e['members'][:-1]) + ' & ' + e['members'][-1]
+            e['id'] = 'fe17-' + slug(e['name'])
+        else:
+            del e['members']
+        emblems.append(e)
+
     supports = []
     for p in d['supports']['pairs']:
         if p['a'] in pid_id and p['b'] in pid_id:

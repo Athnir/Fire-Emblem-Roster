@@ -33,7 +33,8 @@ const UPLOAD_DATA = {
   units: [...FE17_UNITS, { name: FEMALE_ALEAR }],
   skills: {},
 } as unknown as TelliusData
-const EMBLEM_FACES = [...FE17_EMBLEMS.map((e) => e.name), FEMALE_ALEAR]
+// One face a wearer: a bracelet worn by several (Edelgard, Dimitri and Claude) has each of theirs.
+const EMBLEM_FACES = [...FE17_EMBLEMS.flatMap((e) => e.members ?? [e.name]), FEMALE_ALEAR]
 const SKILL_NAMES = Object.keys(FE17_SKILLS)
 const UPLOAD_ART = fe17Art(UPLOAD_DATA, FE17_BOND_RINGS, EMBLEM_FACES, SKILL_NAMES)
 const RING_COUNT = FE17_BOND_RINGS.reduce((n, s) => n + s.rings.length, 0)

@@ -41,7 +41,7 @@ describe('Engage art', () => {
   })
 
   it("gives every Emblem a face of its own, in the folder's \"emblems\", apart from the rings and units of the same name", () => {
-    const ids = FE17_EMBLEMS.map((e) => emblemFaceId('fe17', e.name))
+    const ids = FE17_EMBLEMS.flatMap((e) => e.members ?? [e.name]).map((name) => emblemFaceId('fe17', name))
     expect(new Set(ids).size).toBe(24)
     for (const [i, e] of FE17_EMBLEMS.entries()) expect(keyOf(`${ids[i]}.png`), e.name).toBe(assetKeys.portrait(ids[i]))
     // The Emblem Chrom and the Bond Ring Chrom.
