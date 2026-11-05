@@ -164,6 +164,9 @@ export const rankIndex = (rank: string) => FE16_RANKS.indexOf(rank)
 /** Whether a unit can be in a class at all: the unique classes' own units, the gender locks, Byleth's Enlightened One. */
 export function canTake(cls: Fe16Class, unit: Fe16Unit): boolean {
   if (cls.who) return cls.who.includes(unit.id)
+  // Noble or Commoner: a unit has the one it's certified in as it joins, never the other (user, 2026-11-04; the class lists offer a
+  // class without an exam only once certified, 0x651160).
+  if (cls.tier === 'Starting') return unit.certified.includes(cls.id)
   if (cls.gender === 'male' && unit.female) return false
   if (cls.gender === 'female' && !unit.female) return false
   return true
@@ -214,8 +217,6 @@ export function helpOf(data: Fe16Data, l: Pick<Fe16Learn, 'kind' | 'name'>): str
   return l.kind === 'art' ? data.arts[l.name] : l.kind === 'spell' ? data.spells[l.name] : data.abilities[l.name]
 }
 
-/** A pair's support levels in order, the half levels included: "C, C+, B, A, S". */
-export const levelsText = (talks: string[]) => talks.join(', ')
 
 /** The game's limits: five abilities and three combat arts equipped (the personal ability and the class's own come on their own). */
 export const MAX_ABILITIES = 5

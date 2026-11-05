@@ -1,12 +1,11 @@
 import { AssetIcon } from '../components/AssetIcon'
 import { PlanSets } from '../components/PlanSets'
 import { Portrait } from '../components/Portrait'
-import { topLevels } from '../logic/skillChains'
 import { skillIconId } from '../tellius/art'
 import { artId, chip, selectClass } from './hooks'
-import { fmt, groupOf, groupsFor, helpOf, labelOf, learnsOf, type Fe16Choice, type Fe16Data, type Fe16Picks } from './logic'
+import { fmt, groupOf, groupsFor, labelOf, type Fe16Choice, type Fe16Data, type Fe16Picks } from './logic'
 import { useFe16Builds, useFe16Store } from './store'
-import { FE16_SKILL_LABELS, FE16_SKILLS, FE16_STATS, FE16_STAT_LABELS, type Fe16Learn, type Fe16Stats, type Fe16Unit } from './types'
+import { FE16_SKILL_LABELS, FE16_SKILLS, FE16_STATS, FE16_STAT_LABELS, type Fe16Stats, type Fe16Unit } from './types'
 
 // Three Houses' shared components.
 
@@ -144,41 +143,41 @@ export function ChoicePicker({ choice, onPick }: { choice: Fe16Choice; onPick?: 
   )
 }
 
-const KIND: Record<Fe16Learn['kind'], string> = { ability: 'ability', art: 'combat art', spell: 'spell' }
-
-/** What a unit learns at each skill rank, a skill to a row; theirs alone in violet; a skill's levels (Sword Prowess) only at the top
- * one unless every level is asked for. */
-export function LearnTable({ data, unit, everyone = false, allLevels = false }: { data: Fe16Data; unit: Fe16Unit; everyone?: boolean; allLevels?: boolean }) {
-  // A level a higher one in the same skill replaces (Sword Prowess Lv 1 to 4 beside Lv 5) only shows with every level asked for.
-  const listed = everyone ? learnsOf(data, unit) : learnsOf({ ...data, rankRewards: [] }, unit)
-  const all = allLevels ? listed : FE16_SKILLS.flatMap((sk) => topLevels(listed.filter((l) => l.skill === sk), (l) => l.name, data.chains))
-  const own = new Set(unit.learns.map((l) => `${l.skill}/${l.rank}/${l.name}`))
+/** The ranks a unit starts with, their strengths and weaknesses, and a budding talent. */
+export function SkillRanks({ data, unit }: { data: Fe16Data; unit: Fe16Unit }) {
   return (
-    <div className="space-y-1 text-sm">
-      {FE16_SKILLS.map((sk) => {
-        const here = all.filter((l) => l.skill === sk)
-        if (here.length === 0) return null
-        return (
-          <div key={sk}>
-            <span className="text-neutral-500">{FE16_SKILL_LABELS[sk]}: </span>
-            {here.map((l, i) => (
-              <span key={`${l.rank}-${l.name}`} title={`${KIND[l.kind]}: ${helpOf(data, l) ?? ''}`}>
-                {i > 0 && ', '}
-                {l.kind !== 'spell' && (
-                  <span className="mr-1 inline-block align-middle">
-                    <SkillIcon data={data} skill={l.name} size={16} />
-                  </span>
-                )}
-                <span className={own.has(`${l.skill}/${l.rank}/${l.name}`) ? 'text-violet-300' : 'text-neutral-200'}>{l.name}</span>
-                <span className="text-neutral-500"> {l.rank}</span>
+    <div className="space-y-1">
+      <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-sm sm:grid-cols-4">
+        {FE16_SKILLS.map((sk) => {
+          const strong = unit.strengths.includes(sk)
+          const weak = unit.weaknesses.includes(sk)
+          const bud = unit.budding?.skill === sk
+          return (
+            <div key={sk} className="flex justify-between gap-2">
+              <span className={strong ? 'text-emerald-400' : weak ? 'text-red-400' : 'text-neutral-400'}>
+                {FE16_SKILL_LABELS[sk]}
+                {strong ? ' ▲' : weak ? ' ▼' : ''}
+                {bud ? ' ✦' : ''}
               </span>
-            ))}
-          </div>
-        )
-      })}
+              <span className="tabular-nums text-neutral-200">{unit.ranks[sk] ?? 'E'}</span>
+            </div>
+          )
+        })}
+      </div>
+      <p className="text-xs text-neutral-500">
+        ▲ a strength, ▼ a weakness (skill EXP comes faster or slower).
+        {unit.budding && (
+          <>
+            {' '}
+            ✦ a budding talent: {FE16_SKILL_LABELS[unit.budding.skill]}, which teaches {unit.budding.name}
+            {data.abilities[unit.budding.name] || data.arts[unit.budding.name] ? ` (${data.abilities[unit.budding.name] ?? data.arts[unit.budding.name]})` : ''}.
+          </>
+        )}
+      </p>
     </div>
   )
 }
+
 
 /** Saved sets of every unit's plan and the Roster's picks (as Fates' Build Sets), at the foot of the planners and the Bulk Viewer. */
 export function Fe16PlanSets() {

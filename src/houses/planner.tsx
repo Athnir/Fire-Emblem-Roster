@@ -18,7 +18,7 @@ import {
 } from './plan'
 import { useFe16Store } from './store'
 import { FE16_SKILL_LABELS, FE16_STATS, type Fe16Class, type Fe16Skill, type Fe16Stats, type Fe16Unit } from './types'
-import { Fe16PlanSets, SkillChips, StatTable, UnitSelect } from './ui'
+import { Fe16PlanSets, SkillChips, SkillRanks, StatTable, UnitSelect } from './ui'
 
 const TIERS = ['Starting', 'Beginner', 'Intermediate', 'Advanced', 'Master', 'DLC', 'Unique'] as const
 /** Which Saint Statue raises which maximums isn't traced to a name: the statues by the stats they raise (at level 9). */
@@ -219,6 +219,10 @@ export function Fe16Planner({ data }: { data: Fe16Data }) {
         <div className="space-y-1">
           <h4 className="text-sm font-semibold text-neutral-200">Projected stats</h4>
           <StatTable rows={stages.map(row)} />
+        </div>
+        <div className="space-y-1">
+          <h4 className="text-sm font-semibold text-neutral-200">Skill levels as they join</h4>
+          <SkillRanks data={data} unit={unit} />
         </div>
         {Object.keys(needed).length > 0 && (
           <div className="space-y-1 text-sm">

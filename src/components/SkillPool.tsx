@@ -9,16 +9,22 @@ export interface PoolSkill {
   icon: ReactNode
   tag?: string
   help?: string
+  /** A skill few units learn (one of the unit's own, a budding talent): a gold border. */
+  rare?: boolean
 }
 
-const buttonClass = (on: boolean) =>
+const buttonClass = (on: boolean, rare?: boolean) =>
   `flex min-w-[10rem] max-w-xs flex-col gap-0.5 rounded-md border px-2 py-1 text-left text-xs transition-colors disabled:opacity-40 ${
-    on ? 'border-violet-500 bg-violet-950/50 text-violet-200' : 'border-neutral-700 bg-neutral-800 text-neutral-300 hover:border-neutral-600'
+    on
+      ? `${rare ? 'border-amber-400' : 'border-violet-500'} bg-violet-950/50 text-violet-200`
+      : rare
+        ? 'border-amber-500/80 bg-amber-950/20 text-amber-100 hover:border-amber-400'
+        : 'border-neutral-700 bg-neutral-800 text-neutral-300 hover:border-neutral-600'
   }`
 
 function SkillButton({ skill, on, disabled, onClick }: { skill: PoolSkill; on: boolean; disabled?: boolean; onClick: () => void }) {
   return (
-    <button type="button" onClick={onClick} disabled={disabled} className={buttonClass(on)}>
+    <button type="button" onClick={onClick} disabled={disabled} className={buttonClass(on, skill.rare)}>
       <span className="flex items-center gap-1.5">
         {skill.icon}
         <span className="min-w-0 break-words">{skill.name}</span>
@@ -29,13 +35,14 @@ function SkillButton({ skill, on, disabled, onClick }: { skill: PoolSkill; on: b
   )
 }
 
-/** One source's skills: its name and notes on the left, the skills to tap on the right (as Fates' class rows). A skill is greyed out
- * once its loadout is full (`full`). */
+/** One source's skills: its name and notes on the left, the skills to tap on the right (as Fates' class rows), or in tiers (a skill's
+ * ranks), each under its label. A skill is greyed out once its loadout is full (`full`). */
 export function SkillRow({
   title,
   icon,
   meta = [],
   skills,
+  tiers,
   chosen,
   full,
   onToggle,
@@ -43,12 +50,19 @@ export function SkillRow({
   title: ReactNode
   icon?: ReactNode
   meta?: string[]
-  skills: PoolSkill[]
+  skills?: PoolSkill[]
+  tiers?: { label: string; skills: PoolSkill[] }[]
   chosen: string[]
   full?: (name: string) => boolean
   onToggle: (name: string) => void
 }) {
-  if (skills.length === 0) return null
+  const buttons = (list: PoolSkill[]) =>
+    list.map((s) => {
+      const on = chosen.includes(s.name)
+      return <SkillButton key={s.name} skill={s} on={on} disabled={!on && full?.(s.name)} onClick={() => onToggle(s.name)} />
+    })
+  const shownTiers = tiers?.filter((t) => t.skills.length > 0)
+  if (shownTiers ? shownTiers.length === 0 : !skills?.length) return null
   return (
     <div className="flex flex-col gap-2 rounded-md border border-neutral-800 px-3 py-2 sm:flex-row sm:items-start sm:gap-3">
       <div className="flex shrink-0 items-start gap-2 sm:w-36">
@@ -62,12 +76,18 @@ export function SkillRow({
           </div>
         </div>
       </div>
-      <div className="flex min-w-0 flex-1 flex-wrap gap-2">
-        {skills.map((s) => {
-          const on = chosen.includes(s.name)
-          return <SkillButton key={s.name} skill={s} on={on} disabled={!on && full?.(s.name)} onClick={() => onToggle(s.name)} />
-        })}
-      </div>
+      {shownTiers ? (
+        <div className="min-w-0 flex-1 space-y-1.5">
+          {shownTiers.map((t) => (
+            <div key={t.label} className="flex items-start gap-2">
+              <span className="w-7 shrink-0 pt-1 text-right text-xs font-medium text-neutral-500">{t.label}</span>
+              <div className="flex min-w-0 flex-1 flex-wrap gap-2">{buttons(t.skills)}</div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="flex min-w-0 flex-1 flex-wrap gap-2">{buttons(skills ?? [])}</div>
+      )}
     </div>
   )
 }

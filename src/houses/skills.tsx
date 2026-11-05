@@ -4,7 +4,10 @@ import { topLevels } from '../logic/skillChains'
 import { useAllLevels } from '../state/allLevelsStore'
 import { useArmy, useScreenshotUnit, useSpoiler, useUnitPlan } from './hooks'
 import { canTake, classesFor, kindOf, labelOf, learnsOf, MAX_ABILITIES, MAX_ARTS, personalNow, type Fe16Data } from './logic'
-import { FE16_SKILL_LABELS, FE16_SKILLS } from './types'
+import { FE16_RANKS, FE16_SKILL_LABELS, FE16_SKILLS, type Fe16Class } from './types'
+
+/** The classes' tiers, in the order the exams climb. */
+const TIERS: Fe16Class['tier'][] = ['Starting', 'Beginner', 'Intermediate', 'Advanced', 'Master', 'Unique', 'DLC']
 import { Fe16PlanSets, SkillIcon, UnitSelect } from './ui'
 
 /** The abilities and combat arts a unit equips, laid out as Fates' Skill Planner: the personal ability, the loadouts, then everything
@@ -22,8 +25,13 @@ export function Fe16SkillPlanner({ data }: { data: Fe16Data }) {
   const chosen = { ability: plan.abilities ?? [], art: plan.arts ?? [] }
   const max = { ability: MAX_ABILITIES, art: MAX_ARTS }
   const help = (name: string) => data.abilities[name] ?? data.arts[name]
-  const skill = (name: string, tag?: string): PoolSkill => ({ name, tag, help: help(name), icon: <SkillIcon data={data} skill={name} size={18} /> })
-  const shown = (items: PoolSkill[]) => (allLevels ? items : topLevels(items, (s) => s.name, data.chains))
+  const skill = (name: string, tag?: string, rare?: boolean): PoolSkill => ({ name, tag, rare, help: help(name), icon: <SkillIcon data={data} skill={name} size={18} /> })
+  function shown<T extends PoolSkill>(items: T[]): T[] {
+    return allLevels ? items : topLevels(items, (s) => s.name, data.chains)
+  }
+  // A skill few units learn has a gold border: one of the unit's own, beyond what every unit learns at the ranks (Annette's rallies,
+  // Byleth's Rally Movement), and their budding talent (user, 2026-11-04).
+  const own = new Set(unit.learns.map((l) => `${l.skill}/${l.rank}/${l.name}`))
   const toggle = (name: string) => {
     const kind = kindOf(data, name)
     const list = chosen[kind]
@@ -64,40 +72,43 @@ export function Fe16SkillPlanner({ data }: { data: Fe16Data }) {
       <div className="space-y-2 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
         <h3 className="text-base font-semibold text-neutral-100">What {labelOf(unit)} can learn</h3>
         <AllLevelsToggle on={allLevels} onChange={setAllLevels} example="Sword Prowess Lv 1 to 5" />
-        {FE16_SKILLS.map((sk) => (
-          <SkillRow
-            key={sk}
-            title={FE16_SKILL_LABELS[sk]}
-            meta={[
-              unit.strengths.includes(sk) ? '▲ a strength' : unit.weaknesses.includes(sk) ? '▼ a weakness' : 'skill ranks',
-              ...(unit.budding?.skill === sk ? [`✦ budding talent: ${unit.budding.name}`] : []),
-            ]}
-            skills={shown(learns.filter((l) => l.skill === sk).map((l) => skill(l.name, l.rank)))}
-            chosen={all}
-            full={full}
-            onToggle={toggle}
-          />
-        ))}
-        {unit.budding && (
-          <SkillRow
-            title="Budding talent"
-            meta={[FE16_SKILL_LABELS[unit.budding.skill], 'once the weakness is trained']}
-            skills={[skill(unit.budding.name)]}
-            chosen={all}
-            full={full}
-            onToggle={toggle}
-          />
-        )}
-        {classes.map((c) => (
-          <SkillRow
-            key={c.id}
-            title={c.name}
+        <p className="text-xs text-neutral-500">
+          By skill, then by the rank that teaches it. A gold border marks what few units learn: {labelOf(unit)}'s own, and a budding
+          talent (✦), once the weakness it starts as is trained.
+        </p>
+        {FE16_SKILLS.map((sk) => {
+          const here = shown(learns.filter((l) => l.skill === sk).map((l) => ({ ...skill(l.name, undefined, own.has(`${l.skill}/${l.rank}/${l.name}`)), rank: l.rank })))
+          const tiers: { label: string; skills: PoolSkill[] }[] = FE16_RANKS.map((r) => ({ label: r, skills: here.filter((h) => h.rank === r) }))
+          if (unit.budding?.skill === sk) tiers.push({ label: '✦', skills: [skill(unit.budding.name, 'budding talent', true)] })
+          return (
+            <SkillRow
+              key={sk}
+              title={FE16_SKILL_LABELS[sk]}
+              meta={[unit.strengths.includes(sk) ? '▲ a strength' : unit.weaknesses.includes(sk) ? '▼ a weakness' : 'skill ranks']}
+              tiers={tiers}
+              chosen={all}
+              full={full}
+              onToggle={toggle}
+            />
+          )
+        })}
+        {TIERS.filter((t) => classes.some((c) => c.tier === t)).map((t) => (
+          <div key={t} className="space-y-2 pt-2">
+            <h4 className="text-sm font-semibold text-neutral-200">{t} classes</h4>
+            {classes
+              .filter((c) => c.tier === t)
+              .map((c) => (
+                <SkillRow
+                  key={c.id}
+                  title={c.name}
             meta={c.alsoTeaches ? ['the White Heron Cup winner (Chapter 9)', 'winning, then mastering it'] : [`${c.tier}${c.level ? `, exam at Lv ${c.level}` : ''}`, 'mastering it teaches']}
             skills={[...(c.alsoTeaches ?? []).map((n) => skill(n, 'the Cup')), ...c.mastery.map((n) => skill(n, 'mastery'))]}
             chosen={all}
             full={full}
             onToggle={toggle}
           />
+              ))}
+          </div>
         ))}
       </div>
       <Fe16PlanSets />

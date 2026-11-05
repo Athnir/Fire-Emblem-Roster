@@ -1,6 +1,4 @@
 import { useRef, useState } from 'react'
-import { AllLevelsToggle } from '../components/SkillPool'
-import { useAllLevels } from '../state/allLevelsStore'
 import { useSpoilerStore } from '../state/spoilerStore'
 import { selectClass, useArmy, useScreenshotUnit } from './hooks'
 import {
@@ -11,7 +9,6 @@ import {
   joinText,
   LAST_CHAPTER,
   labelOf,
-  levelsText,
   personalNow,
   ROUTE_CHOICE,
   ROUTE_NAMES,
@@ -23,50 +20,11 @@ import {
   type Fe16Picks,
 } from './logic'
 import { useFe16Store } from './store'
-import { FE16_SKILL_LABELS, FE16_SKILLS, type Fe16Unit } from './types'
-import { ChoicePicker, LearnTable, SkillIcon, StatTable, UnitPortrait, UnitSelect } from './ui'
-
-/** The ranks a unit starts with, their strengths and weaknesses, and a budding talent. */
-function SkillRanks({ data, unit }: { data: Fe16Data; unit: Fe16Unit }) {
-  return (
-    <div className="space-y-1">
-      <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-sm sm:grid-cols-4">
-        {FE16_SKILLS.map((sk) => {
-          const strong = unit.strengths.includes(sk)
-          const weak = unit.weaknesses.includes(sk)
-          const bud = unit.budding?.skill === sk
-          return (
-            <div key={sk} className="flex justify-between gap-2">
-              <span className={strong ? 'text-emerald-400' : weak ? 'text-red-400' : 'text-neutral-400'}>
-                {FE16_SKILL_LABELS[sk]}
-                {strong ? ' ▲' : weak ? ' ▼' : ''}
-                {bud ? ' ✦' : ''}
-              </span>
-              <span className="tabular-nums text-neutral-200">{unit.ranks[sk] ?? 'E'}</span>
-            </div>
-          )
-        })}
-      </div>
-      <p className="text-xs text-neutral-500">
-        ▲ a strength, ▼ a weakness (skill EXP comes faster or slower).
-        {unit.budding && (
-          <>
-            {' '}
-            ✦ a budding talent: {FE16_SKILL_LABELS[unit.budding.skill]}, which teaches {unit.budding.name}
-            {data.abilities[unit.budding.name] || data.arts[unit.budding.name] ? ` (${data.abilities[unit.budding.name] ?? data.arts[unit.budding.name]})` : ''}.
-          </>
-        )}
-      </p>
-    </div>
-  )
-}
+import type { Fe16Unit } from './types'
+import { ChoicePicker, SkillIcon, StatTable, UnitPortrait, UnitSelect } from './ui'
 
 function UnitDetail({ data, unit, picks, chapter }: { data: Fe16Data; unit: Fe16Unit; picks: Fe16Picks; chapter?: number }) {
-  const [everyone, setEveryone] = useState(false)
-  const [allLevels, setAllLevels] = useAllLevels(data.gameId)
   const cls = data.classes[unit.classId]
-  const byId = new Map(data.units.map((u) => [u.id, u]))
-  const supports = supportsOf(data, unit.id).filter((s) => s.npc || (byId.get(s.partner) && inArmy(byId.get(s.partner)!, picks, chapter)))
   return (
     <div className="space-y-4 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
       <div className="flex flex-col items-start gap-4 sm:flex-row">
@@ -123,42 +81,15 @@ function UnitDetail({ data, unit, picks, chapter }: { data: Fe16Data; unit: Fe16
           </div>
         ))}
       </div>
-      <div className="space-y-1">
-        <h4 className="text-sm font-semibold text-neutral-200">Skill levels</h4>
-        <SkillRanks data={data} unit={unit} />
-      </div>
+      {/* The Roster keeps to who the unit is (user, 2026-11-04): their skill ranks, growths, skills and supports are in the planners
+          and the Supports tab. */}
       <StatTable
         rows={[
           { label: 'Bases (Lv 1)', values: unit.bases, mov: true },
-          { label: 'Growths', values: unit.growths, suffix: '%' },
           { label: 'Maximums', values: unit.caps },
         ]}
       />
       <p className="text-xs text-neutral-500">The maximums are the unit's own: in Three Houses classes have none.</p>
-      <div className="space-y-1">
-        <h4 className="text-sm font-semibold text-neutral-200">Learned at skill levels</h4>
-        <LearnTable data={data} unit={unit} everyone={everyone} allLevels={allLevels} />
-        <label className="flex items-center gap-2 text-xs text-neutral-400">
-          <input type="checkbox" checked={everyone} onChange={(e) => setEveryone(e.target.checked)} />
-          Also what every unit learns (theirs alone stay violet)
-        </label>
-        {everyone && <AllLevelsToggle on={allLevels} onChange={setAllLevels} example="Sword Prowess Lv 1 to 5" />}
-        <p className="text-xs text-neutral-500">Hover for what each does.</p>
-      </div>
-      {supports.length > 0 && (
-        <div className="space-y-1 text-sm text-neutral-300">
-          <h4 className="text-sm font-semibold text-neutral-200">Supports</h4>
-          <p className="text-xs text-neutral-500">Each pair's levels, from their conversations: some have the half levels (C+, B+, A+), some stop at B.</p>
-          <div>
-            {supports.map((s, i) => (
-              <span key={`${s.partner}`}>
-                {i > 0 && ', '}
-                {s.npc ?? labelOf(byId.get(s.partner)!)} <span className="text-neutral-500">{levelsText(s.talks)}</span>
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   )
 }
