@@ -28,23 +28,14 @@ export interface Fe16Data {
   statues: Record<string, Record<string, Partial<Record<string, number>>>>
 }
 
-// The Roster's picks: Byleth's gender, the house taught, and for the Black Eagles the route they take at Chapter 12. Each leaves the
-// units it rules out out of every tab. With the spoiler block on, the Roster follows the chapter you're on: the route is asked
-// only at the split, and a unit shows once they can be yours.
+// The Roster's picks: the house taught, and for the Black Eagles the route they take at Chapter 12. Each leaves the units it rules out
+// out of every tab. With the spoiler block on, the Roster follows the chapter you're on: the route is asked only at the split, and a
+// unit shows once they can be yours. Both Byleths are always listed, as Fates' two Corrins are (user, 2026-11-04).
 
 export interface Fe16Choice {
-  id: 'byleth' | 'house' | 'route'
+  id: 'house' | 'route'
   question: string
   options: { label: string; value: string }[]
-}
-
-export const BYLETH_CHOICE: Fe16Choice = {
-  id: 'byleth',
-  question: 'Byleth: a man or a woman?',
-  options: [
-    { label: 'Male', value: 'm' },
-    { label: 'Female', value: 'f' },
-  ],
 }
 
 export const HOUSE_NAMES: Record<Fe16House, string> = { be: 'Black Eagles', bl: 'Blue Lions', gd: 'Golden Deer' }
@@ -78,6 +69,7 @@ export const HOUSE_ROUTES: Record<Fe16House, Fe16Route[]> = { be: ['cf', 'ss'], 
 /** The house each route is taught in. */
 export const ROUTE_HOUSE: Record<Fe16Route, Fe16House> = { cf: 'be', ss: 'be', am: 'bl', vw: 'gd' }
 
+/** `byleth` was Byleth's gender before both were listed (2026-11-04); it's no longer read. */
 export type Fe16Picks = { byleth?: 'm' | 'f'; house?: Fe16House; route?: 'cf' | 'ss' }
 
 /** The route under the picks: the Black Eagles' as picked, the other houses' own. */
@@ -103,7 +95,6 @@ export const joinChapter = (unit: Fe16Unit, house: Fe16House) => unit.joinsAt?.[
 
 /** Whether a unit can be in your army under the picks; with the spoiler block on (`chapter`), only once they can have joined. */
 export function inArmy(unit: Fe16Unit, picks: Fe16Picks, chapter?: number): boolean {
-  if (isByleth(unit) && picks.byleth && !unit.id.endsWith(`-${picks.byleth}`)) return false
   if (!unit.routes.some((r) => routesOpen(picks).includes(r))) return false
   if (chapter === undefined) return true
   if (!picks.house) return isByleth(unit)

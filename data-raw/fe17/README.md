@@ -230,7 +230,7 @@ straight from the NSPs (the bundles aren't copied into `romfs/`).
   640x340, ASTC 4x4, Tegra block-linear swizzled (UnityPy, texture2ddecoder); a square of the full height, centred on the opaque
   columns' middle, scaled to 256x256 (Lanczos on premultiplied alpha). The folder also holds the Emblems' faces.
 - **Alear:** the person record is male (Gender 1); the female look is written too (`alear_female.png`: the 女装 models, or `LueurW`
-  with `--level-up`), and the app shows it when Alear is picked female (and the Emblem Alear's `emblems/alear_female.png`).
+  with `--level-up`), the female Alear's own unit (scripts/build-fe17-units.py writes her as a second Alear, as Fates' two Corrins), and the Emblem Alear shows it beside the male face (`emblems/alear_female.png`).
 - **File names:** the app's artId (src/tellius/logic.ts): the English name with its accents dropped, lower-cased, each run of
   anything but a-z and 0-9 as one "_" (Céline: `celine.png`, as the Roster looks it up).
 - **Bond Ring faces** (`rings/<ring>.png`, 123): the Ring Chamber's, `fe_assets_ui/hub/godroom/face/face.bundle`: one SpriteAtlas

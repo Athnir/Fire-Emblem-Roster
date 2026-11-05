@@ -23,7 +23,7 @@ describe('Engage art', () => {
     }
     expect(keyOf('fe17/celine.png')).toBe('portrait:fe17/celine')
     expect(keyOf('fe17/chloe.png')).toBe('portrait:fe17/chloe')
-    // The female Alear has a portrait of her own, shown when Alear is picked female.
+    // The female Alear, a unit of her own, has a portrait of her own.
     expect(keyOf('fe17/alear_female.png')).toBe('portrait:fe17/alear_female')
     expect(fe17.art.expected).toContain('alear_female.png')
   })

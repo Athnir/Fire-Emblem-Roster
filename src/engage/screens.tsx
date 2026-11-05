@@ -1,9 +1,9 @@
 import { useRef, useState } from 'react'
 import { useReached } from '../state/spoilerStore'
 import { chip, selectClass, useArmy, useScreenshotUnit } from './hooks'
-import { capsOf, chapterLabel, supportsOf, type Fe17Data } from './logic'
+import { capsOf, chapterLabel, labelOf, supportsOf, type Fe17Data } from './logic'
 import { FE17_STAT_LABELS, type Fe17BondRingSet, type Fe17StatsMov, type Fe17Unit } from './types'
-import { AlearPicker, EmblemFace, RingFace, SkillChips, SkillIcon, SkillList, StatTable, UnitPortrait, UnitSelect } from './ui'
+import { EmblemFace, RingFace, SkillChips, SkillIcon, SkillList, StatTable, UnitPortrait, UnitSelect } from './ui'
 
 function UnitDetail({ data, unit, reached }: { data: Fe17Data; unit: Fe17Unit; reached?: Set<string> }) {
   const cls = data.classes[unit.classId]
@@ -18,7 +18,7 @@ function UnitDetail({ data, unit, reached }: { data: Fe17Data; unit: Fe17Unit; r
       <div className="flex flex-col items-start gap-4 sm:flex-row">
         <UnitPortrait data={data} unit={unit} size={128} />
         <div className="min-w-0 space-y-1 text-sm text-neutral-300">
-          <h3 className="text-lg font-semibold text-neutral-100">{unit.name}</h3>
+          <h3 className="text-lg font-semibold text-neutral-100">{labelOf(unit)}</h3>
           <div>
             {cls.name} · Lv {unit.level}
             {unit.internalLevel ? ` (internal Lv ${unit.internalLevel})` : ''}
@@ -71,7 +71,7 @@ function UnitDetail({ data, unit, reached }: { data: Fe17Data; unit: Fe17Unit; r
             {supports.map((s, i) => (
               <span key={s.partner}>
                 {i > 0 && ', '}
-                {byId.get(s.partner)!.name} <span className="text-neutral-500">{s.top}</span>
+                {labelOf(byId.get(s.partner)!)} <span className="text-neutral-500">{s.top}</span>
               </span>
             ))}
           </div>
@@ -90,7 +90,6 @@ export function Fe17Roster({ data }: { data: Fe17Data }) {
   useScreenshotUnit(selected)
   return (
     <div className="space-y-6">
-      <AlearPicker />
       <div className="space-y-3">
         {data.chapters.map((ch) => {
           const here = units.filter((u) => u.joinChapter === ch.id)
@@ -112,7 +111,7 @@ export function Fe17Roster({ data }: { data: Fe17Data }) {
                     }`}
                   >
                     <UnitPortrait data={data} unit={u} size={32} />
-                    {u.name}
+                    {labelOf(u)}
                   </button>
                 ))}
               </div>
@@ -169,7 +168,7 @@ export function Fe17Supports({ data }: { data: Fe17Data }) {
                     <td className="py-1 pr-2">
                       <button type="button" onClick={() => setUnitId(p.id)} className="flex items-center gap-2 text-left text-neutral-200 hover:text-violet-300">
                         <UnitPortrait data={data} unit={p} size={24} />
-                        {p.name}
+                        {labelOf(p)}
                       </button>
                     </td>
                     {RANKS.map((r) => (

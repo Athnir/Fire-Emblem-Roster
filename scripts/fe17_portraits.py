@@ -6,8 +6,8 @@ git-ignored, and nothing here is ever committed.
 Engage draws its units in 3D on the status and inventory screens; by default each portrait is that model, waist up
 (scripts/fe17_models.py: the unit's pieces from the asset table, posed at the first frame of their status loop, lit by the menu
 model's own lights), a 384x384 square from the hips to above the head (the user asked for waist up, 2026-11-04). Alear's person
-record is male (Gender 1); the female Alear (the 女装 models) is written too, as alear_female.png, which the app shows when Alear is
-picked female.
+record is male (Gender 1); the female Alear (the 女装 models) is written too, as alear_female.png: the female Alear's portrait (a unit
+of her own, beside the male Alear).
 
 --level-up writes the hand-drawn 2D art instead, the only 2D art every unit has, which ends at the neck: the face shown when a
 unit levels up, the Addressables key Telop/LevelUp/FaceThumb/<name>, the bundle fe_assets_telop/levelup/facethumb/<name>.bundle,

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useArmy, useScreenshotUnit, useUnitPlan } from './hooks'
-import { inheritable, type Fe17Data } from './logic'
+import { inheritable, labelOf, type Fe17Data } from './logic'
 import { SkillIcon, UnitSelect } from './ui'
 
 /** The skill slots inheriting fills (Unit.EquipSkillMax). */
@@ -33,7 +33,7 @@ export function Fe17SkillPlanner({ data }: { data: Fe17Data }) {
       <div className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
         <p className="text-xs text-neutral-500">
           Skills inherited from the emblems: two at a time, each once the bond with its emblem reaches the level shown (inheriting opens
-          at bond 5), for its SP. {unit.name} starts with {unit.sp} SP; SP comes from EXP earned with an emblem ring on (half with a
+          at bond 5), for its SP. {labelOf(unit)} starts with {unit.sp} SP; SP comes from EXP earned with an emblem ring on (half with a
           bond ring).
         </p>
         <div className="flex flex-wrap items-center gap-2 text-sm">

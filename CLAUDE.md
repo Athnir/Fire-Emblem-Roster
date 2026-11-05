@@ -45,7 +45,9 @@ new rule, add it here.
 - **Engage's portraits are its 3D models, waist up** (user, 2026-11-04): posed and lit as its status and inventory screens draw
   them (`scripts/fe17_models.py`), since its only 2D art of the units ends at the neck. Each Bond Ring shows its hero's face, and
   each Emblem Ring its Emblem's, from the Somniel's ring book (user, 2026-11-04; Ephraim's, which the book lacks, drawn from his
-  model). Alear picked female shows her own portrait and Emblem face; skills show the game's icons.
+  model). Skills show the game's icons.
+- **The Avatar is two units, a man and a woman, as Fates' Corrins are** (user, 2026-11-04): both always listed, no gender pick
+  (Engage's two Alears, each with her or his own portrait; Three Houses' two Byleths). The Emblem Alear shows both faces.
 - **Three Houses' abilities and combat arts show the game's icons** (user, 2026-11-04): an ability's square one, a combat art its
   weapon's round one, as the game draws them; spells have none of their own.
 

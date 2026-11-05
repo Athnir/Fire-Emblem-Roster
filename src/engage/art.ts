@@ -9,8 +9,8 @@ import type { Fe17BondRingSet } from './types'
 // "rings/", each Emblem's, under "emblems/", and each skill's icon, under "skills/", so a hero who shares a unit's name (the Heroes
 // ring Anna, Engage's Anna) or an Emblem's (the Bond Ring Chrom, the Emblem Chrom) stays apart.
 
-/** The name the female Alear's art is kept under (alear_female.png), as a portrait and as the Emblem: the app shows it when Alear is
- * picked female. */
+/** The name the female Alear's art is kept under (alear_female.png), as a portrait (the female Alear is a unit of her
+ * own, as Fates' two Corrins) and as the Emblem (shown beside the male face). */
 export const FEMALE_ALEAR = 'Alear Female'
 
 /** A face's file name, without ".png": the name as a unit's portrait is named ("Black Knight": black_knight). */

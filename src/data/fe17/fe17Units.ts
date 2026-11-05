@@ -296,6 +296,78 @@ export const FE17_UNITS: Fe17Unit[] = [
     }
   },
   {
+    "id": "fe17-alear-female",
+    "name": "Alear",
+    "female": true,
+    "classId": "dragon-child",
+    "level": 1,
+    "internalLevel": 0,
+    "own": {
+      "hp": 0,
+      "str": 0,
+      "mag": 0,
+      "dex": 3,
+      "spd": 0,
+      "def": 0,
+      "res": 0,
+      "lck": 3,
+      "bld": 0,
+      "mov": 0
+    },
+    "joinStats": {
+      "hp": 22,
+      "str": 6,
+      "mag": 0,
+      "dex": 5,
+      "spd": 7,
+      "def": 5,
+      "res": 3,
+      "lck": 5,
+      "bld": 4,
+      "mov": 4
+    },
+    "growths": {
+      "hp": 60,
+      "str": 35,
+      "mag": 20,
+      "dex": 45,
+      "spd": 50,
+      "def": 40,
+      "res": 25,
+      "lck": 25,
+      "bld": 5
+    },
+    "capMods": {
+      "hp": 0,
+      "str": 1,
+      "mag": 0,
+      "dex": 1,
+      "spd": 1,
+      "def": 0,
+      "res": 0,
+      "lck": 0,
+      "bld": 0,
+      "mov": 0
+    },
+    "innate": [
+      "Sword"
+    ],
+    "proficiencies": [
+      "Sword",
+      "Arts"
+    ],
+    "personal": [
+      "Divinely Inspiring"
+    ],
+    "sp": 300,
+    "supportType": "Balanced",
+    "joinChapter": "CID_M001",
+    "join": {
+      "how": "start",
+      "note": "Chapter 1: the Lord, in the Hero group (m001 dispos, Force 0)."
+    }
+  },
+  {
     "id": "fe17-vander",
     "name": "Vander",
     "female": false,
@@ -3250,7 +3322,8 @@ export const FE17_CLASSES: Record<string, Fe17Class> = {
     ],
     "promotesFrom": [],
     "uniqueTo": [
-      "fe17-alear"
+      "fe17-alear",
+      "fe17-alear-female"
     ]
   },
   "divine-dragon": {
@@ -3328,7 +3401,8 @@ export const FE17_CLASSES: Record<string, Fe17Class> = {
       "level": 5
     },
     "uniqueTo": [
-      "fe17-alear"
+      "fe17-alear",
+      "fe17-alear-female"
     ]
   },
   "fell-child-1": {
@@ -25588,6 +25662,206 @@ export const FE17_SUPPORTS: Fe17Support[] = [
   },
   {
     "a": "fe17-gregory",
+    "b": "fe17-madeline",
+    "top": "A"
+  },
+  {
+    "a": "fe17-alear-female",
+    "b": "fe17-vander",
+    "top": "A"
+  },
+  {
+    "a": "fe17-alear-female",
+    "b": "fe17-clanne",
+    "top": "A"
+  },
+  {
+    "a": "fe17-alear-female",
+    "b": "fe17-framme",
+    "top": "A"
+  },
+  {
+    "a": "fe17-alear-female",
+    "b": "fe17-alfred",
+    "top": "A"
+  },
+  {
+    "a": "fe17-alear-female",
+    "b": "fe17-boucheron",
+    "top": "A"
+  },
+  {
+    "a": "fe17-alear-female",
+    "b": "fe17-etie",
+    "top": "A"
+  },
+  {
+    "a": "fe17-alear-female",
+    "b": "fe17-celine",
+    "top": "A"
+  },
+  {
+    "a": "fe17-alear-female",
+    "b": "fe17-louis",
+    "top": "A"
+  },
+  {
+    "a": "fe17-alear-female",
+    "b": "fe17-chloe",
+    "top": "A"
+  },
+  {
+    "a": "fe17-alear-female",
+    "b": "fe17-diamant",
+    "top": "A"
+  },
+  {
+    "a": "fe17-alear-female",
+    "b": "fe17-amber",
+    "top": "A"
+  },
+  {
+    "a": "fe17-alear-female",
+    "b": "fe17-jade",
+    "top": "A"
+  },
+  {
+    "a": "fe17-alear-female",
+    "b": "fe17-alcryst",
+    "top": "A"
+  },
+  {
+    "a": "fe17-alear-female",
+    "b": "fe17-lapis",
+    "top": "A"
+  },
+  {
+    "a": "fe17-alear-female",
+    "b": "fe17-citrinne",
+    "top": "A"
+  },
+  {
+    "a": "fe17-alear-female",
+    "b": "fe17-ivy",
+    "top": "A"
+  },
+  {
+    "a": "fe17-alear-female",
+    "b": "fe17-zelkov",
+    "top": "A"
+  },
+  {
+    "a": "fe17-alear-female",
+    "b": "fe17-kagetsu",
+    "top": "A"
+  },
+  {
+    "a": "fe17-alear-female",
+    "b": "fe17-hortensia",
+    "top": "A"
+  },
+  {
+    "a": "fe17-alear-female",
+    "b": "fe17-rosado",
+    "top": "A"
+  },
+  {
+    "a": "fe17-alear-female",
+    "b": "fe17-goldmary",
+    "top": "A"
+  },
+  {
+    "a": "fe17-alear-female",
+    "b": "fe17-timerra",
+    "top": "A"
+  },
+  {
+    "a": "fe17-alear-female",
+    "b": "fe17-merrin",
+    "top": "A"
+  },
+  {
+    "a": "fe17-alear-female",
+    "b": "fe17-panette",
+    "top": "A"
+  },
+  {
+    "a": "fe17-alear-female",
+    "b": "fe17-fogado",
+    "top": "A"
+  },
+  {
+    "a": "fe17-alear-female",
+    "b": "fe17-pandreo",
+    "top": "A"
+  },
+  {
+    "a": "fe17-alear-female",
+    "b": "fe17-bunet",
+    "top": "A"
+  },
+  {
+    "a": "fe17-alear-female",
+    "b": "fe17-anna",
+    "top": "A"
+  },
+  {
+    "a": "fe17-alear-female",
+    "b": "fe17-jean",
+    "top": "A"
+  },
+  {
+    "a": "fe17-alear-female",
+    "b": "fe17-yunaka",
+    "top": "A"
+  },
+  {
+    "a": "fe17-alear-female",
+    "b": "fe17-seadall",
+    "top": "A"
+  },
+  {
+    "a": "fe17-alear-female",
+    "b": "fe17-lindon",
+    "top": "A"
+  },
+  {
+    "a": "fe17-alear-female",
+    "b": "fe17-saphir",
+    "top": "A"
+  },
+  {
+    "a": "fe17-alear-female",
+    "b": "fe17-veyle",
+    "top": "A"
+  },
+  {
+    "a": "fe17-alear-female",
+    "b": "fe17-mauvier",
+    "top": "A"
+  },
+  {
+    "a": "fe17-alear-female",
+    "b": "fe17-nel",
+    "top": "A"
+  },
+  {
+    "a": "fe17-alear-female",
+    "b": "fe17-rafal",
+    "top": "A"
+  },
+  {
+    "a": "fe17-alear-female",
+    "b": "fe17-zelestia",
+    "top": "A"
+  },
+  {
+    "a": "fe17-alear-female",
+    "b": "fe17-gregory",
+    "top": "A"
+  },
+  {
+    "a": "fe17-alear-female",
     "b": "fe17-madeline",
     "top": "A"
   }

@@ -6,7 +6,7 @@ import type { Fe16Plan } from './plan'
 interface Fe16State {
   /** {unit id: plan}. */
   plans: Record<string, Fe16Plan>
-  /** The Roster's picks: Byleth's gender and the route. */
+  /** The Roster's picks: the house and the route. */
   picks: Fe16Picks
   setPlan: (unitId: string, plan: Fe16Plan | null) => void
   setPick: (choiceId: keyof Fe16Picks, value: string | null) => void

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { FE17_CLASSES, FE17_UNITS } from '../fe17Units'
+import { FE17_CLASSES, FE17_SUPPORTS, FE17_UNITS } from '../fe17Units'
 
 // Serenes Forest's Engage tables (fetched 2026-11-03), to check the data built from the user's own dump against.
 // Bases: class, Lv, HP, Str, Mag, Dex, Spd, Def, Res, Lck, Bld.
@@ -14,7 +14,14 @@ const byName = new Map(FE17_UNITS.map((u) => [u.name, u]))
 
 describe('Engage units', () => {
   it('has the 41 playable units, the Expansion Pass\'s five among them', () => {
-    expect(FE17_UNITS).toHaveLength(41)
+    expect(FE17_UNITS).toHaveLength(42)
+    // Alear twice, a man and a woman, as Fates' two Corrins: the same unit otherwise, the same supports, the same classes.
+    const [m, f] = FE17_UNITS.filter((u) => u.name === 'Alear')
+    expect([m.id, m.female, f.id, f.female]).toEqual(['fe17-alear', false, 'fe17-alear-female', true])
+    expect({ ...f, id: m.id, female: false }).toEqual(m)
+    const partners = (id: string) => FE17_SUPPORTS.filter((s) => s.a === id || s.b === id).map((s) => [s.a === id ? s.b : s.a, s.top])
+    expect(partners(f.id)).toEqual(partners(m.id))
+    for (const c of Object.values(FE17_CLASSES)) if (c.uniqueTo?.includes(m.id)) expect(c.uniqueTo, c.name).toContain(f.id)
     expect(FE17_UNITS.filter((u) => u.expansionPass).map((u) => u.name)).toEqual(['Nel', 'Rafal', 'Zelestia', 'Gregory', 'Madeline'])
   })
 

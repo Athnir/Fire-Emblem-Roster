@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useReached } from '../state/spoilerStore'
 import { armyWith, plansWith, selectClass } from './hooks'
-import { project, shownStats, type Fe17Data } from './logic'
+import { labelOf, project, shownStats, type Fe17Data } from './logic'
 import { useFe17Builds, useFe17Store } from './store'
 import { SkillChips, StatGrid, UnitPortrait } from './ui'
 
@@ -18,9 +18,9 @@ export function Fe17BulkViewer({ data }: { data: Fe17Data }) {
   const [source, setSource] = useState('current')
   const [name, setName] = useState('')
   const set = sets.find((s) => s.id === source)
-  const { plans, picks } = set ?? current
+  const { plans } = set ?? current
   const planOf = plansWith(plans)
-  const units = armyWith(data, picks, reached)
+  const units = armyWith(data, reached)
   const rows = units.map((u) => {
     const plan = planOf(u)
     const stages = project(data, u, plan)
@@ -109,7 +109,7 @@ export function Fe17BulkViewer({ data }: { data: Fe17Data }) {
           <div key={r.unit.id} className="space-y-2 rounded-lg border border-neutral-800 bg-neutral-900 p-3 text-sm">
             <div className="flex items-center gap-2">
               <UnitPortrait data={data} unit={r.unit} size={28} />
-              <span className="font-medium text-neutral-200">{r.unit.name}</span>
+              <span className="font-medium text-neutral-200">{labelOf(r.unit)}</span>
               <span className="text-neutral-500">
                 · {r.cls.name} Lv {r.level}
               </span>

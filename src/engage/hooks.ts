@@ -1,8 +1,8 @@
 import { useEffect } from 'react'
 import { useScreenshotContextStore } from '../state/screenshotContextStore'
 import { useReached } from '../state/spoilerStore'
-import { defaultPlan, type Fe17Data, type Fe17Plan } from './logic'
-import { useFe17Store, type Fe17Picks } from './store'
+import { defaultPlan, labelOf, type Fe17Data, type Fe17Plan } from './logic'
+import { useFe17Store } from './store'
 import type { Fe17Unit } from './types'
 
 // What Engage's tabs share that isn't a component.
@@ -22,25 +22,19 @@ export function artId(gameId: string, name: string): string {
 export function useScreenshotUnit(unit: Fe17Unit | undefined) {
   const setUnitLabel = useScreenshotContextStore((state) => state.setUnitLabel)
   useEffect(() => {
-    setUnitLabel(unit?.name ?? '')
+    setUnitLabel(unit ? labelOf(unit) : '')
     return () => setUnitLabel('')
   }, [unit, setUnitLabel])
 }
 
-/** A unit as the picks make them: Alear with the gender picked (the classes for women alone hang on it). */
-export function withPicks(unit: Fe17Unit, picks: Fe17Picks): Fe17Unit {
-  return unit.id === 'fe17-alear' && picks.alear ? { ...unit, female: picks.alear === 'f' } : unit
-}
-
-/** The units that can be yours; with the spoiler block on, those the chapters reached have brought. */
-export function armyWith(data: Fe17Data, picks: Fe17Picks, reached?: Set<string>) {
-  return data.units.filter((u) => !reached || reached.has(u.joinChapter)).map((u) => withPicks(u, picks))
+/** The units that can be yours, both Alears among them; with the spoiler block on, those the chapters reached have brought. */
+export function armyWith(data: Fe17Data, reached?: Set<string>) {
+  return data.units.filter((u) => !reached || reached.has(u.joinChapter))
 }
 
 export function useArmy(data: Fe17Data) {
-  const picks = useFe17Store((s) => s.picks)
   const reached = useReached(data.gameId, data.chapters)
-  return { units: armyWith(data, picks, reached), picks, reached }
+  return { units: armyWith(data, reached), reached }
 }
 
 /** Every unit's plan from a set of saved plans (the store's by default). */

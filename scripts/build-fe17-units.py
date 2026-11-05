@@ -73,6 +73,9 @@ def chapter_label(c):
     return f"{prefix}: {c['name']}" if prefix in ('Paralogue', 'Divine Paralogue') else prefix
 
 
+ALEAR, ALEAR_FEMALE = 'fe17-alear', 'fe17-alear-female'
+
+
 def build():
     d = U.build(None)
     job_id = {c['jid']: slug(c['name']) for c in d['classes']}
@@ -202,6 +205,16 @@ def build():
     for p in d['supports']['pairs']:
         if p['a'] in pid_id and p['b'] in pid_id:
             supports.append({'a': pid_id[p['a']], 'b': pid_id[p['b']], 'top': p['max_rank']})
+
+    # Alear is one person record (male, Gender 1) and the player picks a man or a woman, so the female Alear is a unit of her own,
+    # as Fates' two Corrins are (user, 2026-11-04): the same record, female, with the same supports and classes.
+    at = next(k for k, u in enumerate(units) if u['id'] == ALEAR)
+    units.insert(at + 1, {**units[at], 'id': ALEAR_FEMALE, 'female': True})
+    supports += [{**x, 'a': ALEAR_FEMALE if x['a'] == ALEAR else x['a'], 'b': ALEAR_FEMALE if x['b'] == ALEAR else x['b']}
+                 for x in supports if ALEAR in (x['a'], x['b'])]
+    for c in classes.values():
+        if ALEAR in c.get('uniqueTo', []):
+            c['uniqueTo'].insert(c['uniqueTo'].index(ALEAR) + 1, ALEAR_FEMALE)
 
     skills = {}
     for sid, s in d['skills'].items():

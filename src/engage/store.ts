@@ -1,9 +1,19 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-/** The Roster's pick: Alear's gender. */
+import { ALEAR_FEMALE, type Fe17Plan } from './logic'
+
+/** The Roster's story picks: none yet. `alear` was Alear's gender before both Alears were listed (2026-11-04); a plan made for the
+ * female Alear then is moved to her own unit (`migrate`). */
 export type Fe17Picks = { alear?: 'm' | 'f' }
-import type { Fe17Plan } from './logic'
+
+/** Saves from before both Alears were listed: Alear's plan, made for the gender picked, goes to the female Alear's unit if she was
+ * the one picked. */
+function alearMoved<T extends { plans: Record<string, Fe17Plan>; picks: Fe17Picks }>(s: T): T {
+  if (s.picks?.alear !== 'f' || !s.plans?.['fe17-alear']) return s
+  const { ['fe17-alear']: plan, ...plans } = s.plans
+  return { ...s, plans: { ...plans, [ALEAR_FEMALE]: plan }, picks: {} }
+}
 
 interface Fe17State {
   /** {unit id: plan}. */
@@ -38,7 +48,7 @@ export const useFe17Store = create<Fe17State>()(
         }),
       load: (plans, picks) => set({ plans: { ...plans }, picks: { ...picks } }),
     }),
-    { name: 'fe-roster-fe17' },
+    { name: 'fe-roster-fe17', version: 1, migrate: (saved, version) => (version < 1 ? alearMoved(saved as Fe17State) : saved) as Fe17State },
   ),
 )
 
@@ -73,6 +83,13 @@ export const useFe17Builds = create<Fe17BuildState>()(
       rename: (id, name) => set((state) => ({ sets: state.sets.map((s) => (s.id === id ? { ...s, name } : s)) })),
       deleteSet: (id) => set((state) => ({ sets: state.sets.filter((s) => s.id !== id) })),
     }),
-    { name: 'fe-roster-fe17-builds' },
+    {
+      name: 'fe-roster-fe17-builds',
+      version: 1,
+      migrate: (saved, version) => {
+        const s = saved as Fe17BuildState
+        return (version < 1 ? { ...s, sets: (s.sets ?? []).map(alearMoved) } : s) as Fe17BuildState
+      },
+    },
   ),
 )

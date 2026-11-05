@@ -2,7 +2,6 @@ import { useRef, useState } from 'react'
 import { useSpoilerStore } from '../state/spoilerStore'
 import { selectClass, useArmy, useScreenshotUnit } from './hooks'
 import {
-  BYLETH_CHOICE,
   groupOf,
   groupsFor,
   HOUSE_CHOICE,
@@ -219,14 +218,13 @@ export function Fe16SpoilerBar({ data }: { data: Fe16Data }) {
   )
 }
 
-/** Byleth's gender and the house taught; the Black Eagles' route right away with the spoiler block off, at the split with it on. */
+/** The house taught; the Black Eagles' route right away with the spoiler block off, at the split with it on. */
 function Picks({ data, picks, chapter }: { data: Fe16Data; picks: Fe16Picks; chapter?: number }) {
   const setProgress = useSpoilerStore((s) => s.setProgress)
   const setPick = useFe16Store((s) => s.setPick)
   const route = routeOf(picks)
   return (
     <div className="space-y-2">
-      <ChoicePicker choice={BYLETH_CHOICE} />
       <ChoicePicker
         choice={HOUSE_CHOICE}
         onPick={(house) => {
@@ -247,7 +245,7 @@ function Picks({ data, picks, chapter }: { data: Fe16Data; picks: Fe16Picks; cha
   )
 }
 
-/** Every unit by house, with the picks on top (Byleth's gender, the house, the route); tapping one shows their data below. */
+/** Every unit by house, with the picks on top (the house, the route); tapping one shows their data below. */
 export function Fe16Roster({ data }: { data: Fe16Data }) {
   const { units, picks, chapter } = useArmy(data)
   const [selectedId, setSelectedId] = useState(units[0]?.id ?? '')

@@ -1,17 +1,15 @@
 import { AssetIcon } from '../components/AssetIcon'
 import { Portrait } from '../components/Portrait'
 import { emblemFaceId, FEMALE_ALEAR, ringFaceId, skillIconId } from './art'
-import { artId, chip, selectClass } from './hooks'
-import { fmt, type Fe17Data } from './logic'
-import { useFe17Store } from './store'
+import { artId, selectClass } from './hooks'
+import { ALEAR_FEMALE, fmt, labelOf, type Fe17Data } from './logic'
 import { FE17_STATS, FE17_STAT_LABELS, type Fe17Stat, type Fe17StatsMov, type Fe17Unit } from './types'
 
 // Engage's shared components.
 
 export function UnitPortrait({ data, unit, size = 64 }: { data: Fe17Data; unit: Fe17Unit; size?: number }) {
-  // Alear picked female shows her own portrait.
-  const female = useFe17Store((s) => s.picks.alear) === 'f' && unit.id === 'fe17-alear'
-  return <Portrait characterId={artId(data.gameId, female ? FEMALE_ALEAR : unit.name)} isChild={false} size={size} />
+  // The female Alear has her own portrait.
+  return <Portrait characterId={artId(data.gameId, unit.id === ALEAR_FEMALE ? FEMALE_ALEAR : unit.name)} isChild={false} size={size} />
 }
 
 /** A Bond Ring's face: its hero as the Ring Chamber shows them (Bulk Upload's "rings" folder). */
@@ -21,9 +19,16 @@ export function RingFace({ data, ring, size = 36 }: { data: Fe17Data; ring: stri
 
 /** An Emblem's face, as the Somniel's ring book shows it (Bulk Upload's "emblems" folder). */
 export function EmblemFace({ data, emblem, size = 64 }: { data: Fe17Data; emblem: string; size?: number }) {
-  // The Emblem Alear follows the gender Alear is picked.
-  const female = useFe17Store((s) => s.picks.alear) === 'f' && emblem === 'Alear'
-  return <Portrait characterId={emblemFaceId(data.gameId, female ? FEMALE_ALEAR : emblem)} isChild={false} size={size} />
+  const face = (name: string) => <Portrait characterId={emblemFaceId(data.gameId, name)} isChild={false} size={size} />
+  // The Emblem Alear is the player's Alear, a man or a woman: both faces.
+  if (emblem === 'Alear')
+    return (
+      <span className="flex gap-1">
+        {face(emblem)}
+        {face(FEMALE_ALEAR)}
+      </span>
+    )
+  return face(emblem)
 }
 
 /** A skill's icon, as the game draws it (Bulk Upload's "skills" folder). */
@@ -113,35 +118,13 @@ export function UnitSelect({ data, units, value, onChange }: { data: Fe17Data; u
           <optgroup key={ch.id} label={ch.label}>
             {here.map((u) => (
               <option key={u.id} value={u.id}>
-                {u.name}
+                {labelOf(u)}
               </option>
             ))}
           </optgroup>
         )
       })}
     </select>
-  )
-}
-
-/** Alear's gender: the classes for women alone hang on it. */
-export function AlearPicker() {
-  const picked = useFe17Store((s) => s.picks.alear)
-  const setPick = useFe17Store((s) => s.setPick)
-  return (
-    <div className="space-y-1.5 rounded-md border border-neutral-800 bg-neutral-900/60 p-2">
-      <div className="text-xs text-neutral-400">Alear: a man or a woman? (The fliers' classes are for women alone.)</div>
-      <div className="flex flex-wrap gap-1.5">
-        <button type="button" onClick={() => setPick('alear', null)} className={chip(picked === undefined)}>
-          Not picked
-        </button>
-        <button type="button" onClick={() => setPick('alear', 'm')} className={chip(picked === 'm')}>
-          Male
-        </button>
-        <button type="button" onClick={() => setPick('alear', 'f')} className={chip(picked === 'f')}>
-          Female
-        </button>
-      </div>
-    </div>
   )
 }
 

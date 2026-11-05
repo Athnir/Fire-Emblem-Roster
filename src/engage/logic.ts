@@ -114,6 +114,13 @@ export interface Fe17Plan {
 
 export const defaultPlan = (u: Fe17Unit): Fe17Plan => ({ steps: [], targetLevel: u.level })
 
+/** The two Alears (as Fates' two Corrins): the player's Alear is a man or a woman, so both are listed. */
+export const ALEAR_FEMALE = 'fe17-alear-female'
+export const isAlear = (u: Fe17Unit) => u.id === 'fe17-alear' || u.id === ALEAR_FEMALE
+
+/** A unit's name where both Alears show: "Alear (male)", "Alear (female)". */
+export const labelOf = (u: Fe17Unit) => (isAlear(u) ? `${u.name} (${u.female ? 'female' : 'male'})` : u.name)
+
 /** The weapons a unit is proficient in under a plan: what they join with, and what their planned emblem bonds grant (each bond
  * level-up adds its proficiency: Unit.InheritAptitude 0x1a3dd90). */
 export function proficienciesOf(data: Fe17Data, unit: Fe17Unit, plan: Fe17Plan): string[] {
