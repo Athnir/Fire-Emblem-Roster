@@ -3,6 +3,7 @@ import { LinearSpoilerBar } from '../components/LinearSpoilerBar'
 import { FE17_BOND_RINGS, FE17_BOOSTERS, FE17_CHAPTERS, FE17_CLASSES, FE17_EMBLEMS, FE17_SKILL_CHAINS, FE17_SKILLS, FE17_SUPPORTS, FE17_UNITS } from '../data/fe17/fe17Units'
 import { FEMALE_ALEAR, fe17Art, matchEmblemFaces, matchRingFaces, matchSkillIcons } from '../engage/art'
 import { Fe17BulkViewer } from '../engage/bulk'
+import { Fe17Classes } from '../engage/classes'
 import type { Fe17Data } from '../engage/logic'
 import { Fe17Planner } from '../engage/planner'
 import { Fe17Emblems, Fe17Info, Fe17Roster, Fe17Supports } from '../engage/screens'
@@ -42,6 +43,7 @@ const fe17: GameParts = {
     { id: 'unit', label: 'Unit Planner', component: () => <Fe17Planner data={FE17_DATA} /> },
     { id: 'supports', label: 'Supports', component: () => <Fe17Supports data={FE17_DATA} /> },
     { id: 'emblems', label: 'Emblems', component: () => <Fe17Emblems data={FE17_DATA} /> },
+    { id: 'classes', label: 'Classes', component: () => <Fe17Classes data={FE17_DATA} /> },
     { id: 'skills', label: 'Skill Planner', component: () => <Fe17SkillPlanner data={FE17_DATA} /> },
     { id: 'viewer', label: 'Bulk Viewer', component: () => <Fe17BulkViewer data={FE17_DATA} /> },
     { id: 'info', label: 'Info', component: () => <Fe17Info /> },
