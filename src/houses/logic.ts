@@ -219,6 +219,28 @@ export function helpOf(data: Fe16Data, l: Pick<Fe16Learn, 'kind' | 'name'>): str
 
 
 /** The game's limits: five abilities and three combat arts equipped (the personal ability and the class's own come on their own). */
+const learnerCache = new WeakMap<Fe16Data, { counts: Map<string, number>; units: number }>()
+
+/** How many units can learn each ability and combat art, any way but as a personal ability (user, 2026-11-05): at the ranks, as a
+ * budding talent, by mastering a class or winning the White Heron Cup. Both Byleths count as one. */
+export function learners(data: Fe16Data): { counts: Map<string, number>; units: number } {
+  const had = learnerCache.get(data)
+  if (had) return had
+  const who = new Map<string, Set<string>>()
+  for (const u of data.units) for (const s of learnable(data, u)) who.set(s.name, (who.get(s.name) ?? new Set()).add(u.name))
+  const out = { counts: new Map([...who].map(([name, set]) => [name, set.size])), units: new Set(data.units.map((u) => u.name)).size }
+  learnerCache.set(data, out)
+  return out
+}
+
+/** A skill's stars: none for a standard one (more than half the units can learn it), ★ for one half or fewer can, ★★ for one three
+ * or fewer can (user, 2026-11-05). */
+export function starsOf(data: Fe16Data, name: string): number {
+  const { counts, units } = learners(data)
+  const n = counts.get(name) ?? 0
+  return n * 2 > units ? 0 : n <= 3 ? 2 : 1
+}
+
 /** The lowest pass rate an exam can be taken at (0x1a274c8). */
 export const EXAM_MIN_RATE = 30
 

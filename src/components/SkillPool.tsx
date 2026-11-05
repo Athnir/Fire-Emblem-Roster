@@ -9,25 +9,32 @@ export interface PoolSkill {
   icon: ReactNode
   tag?: string
   help?: string
-  /** A skill few units learn (one of the unit's own, a budding talent): a gold border. */
-  rare?: boolean
+  /** How few units can learn it: ★ not standard, ★★ three units or fewer. */
+  stars?: number
 }
 
-const buttonClass = (on: boolean, rare?: boolean) =>
+const buttonClass = (on: boolean) =>
   `flex min-w-[10rem] max-w-xs flex-col gap-0.5 rounded-md border px-2 py-1 text-left text-xs transition-colors disabled:opacity-40 ${
-    on
-      ? `${rare ? 'border-amber-400' : 'border-violet-500'} bg-violet-950/50 text-violet-200`
-      : rare
-        ? 'border-amber-500/80 bg-amber-950/20 text-amber-100 hover:border-amber-400'
-        : 'border-neutral-700 bg-neutral-800 text-neutral-300 hover:border-neutral-600'
+    on ? 'border-violet-500 bg-violet-950/50 text-violet-200' : 'border-neutral-700 bg-neutral-800 text-neutral-300 hover:border-neutral-600'
   }`
+
+/** A skill's stars, after its name. */
+export function Stars({ n }: { n?: number }) {
+  if (!n) return null
+  return (
+    <span className="shrink-0 text-amber-400" title={n > 1 ? 'Three units or fewer can learn it' : 'Not standard: half the units or fewer can learn it'}>
+      {'★'.repeat(n)}
+    </span>
+  )
+}
 
 function SkillButton({ skill, on, disabled, onClick }: { skill: PoolSkill; on: boolean; disabled?: boolean; onClick: () => void }) {
   return (
-    <button type="button" onClick={onClick} disabled={disabled} className={buttonClass(on, skill.rare)}>
+    <button type="button" onClick={onClick} disabled={disabled} className={buttonClass(on)}>
       <span className="flex items-center gap-1.5">
         {skill.icon}
         <span className="min-w-0 break-words">{skill.name}</span>
+        <Stars n={skill.stars} />
         {skill.tag && <span className="ml-auto shrink-0 text-neutral-500">{skill.tag}</span>}
       </span>
       {skill.help && <span className="text-[10px] leading-tight text-neutral-400">{skill.help}</span>}
@@ -114,6 +121,7 @@ export function Loadout({ title, max, skills, onRemove, children }: { title: str
                 <span className="flex items-center gap-1.5">
                   {s.icon}
                   <span className="min-w-0 break-words">{s.name}</span>
+                  <Stars n={s.stars} />
                   <span className="ml-auto flex shrink-0 items-center gap-1">
                     {s.tag && <span className="text-violet-300/70">{s.tag}</span>}
                     <span>×</span>

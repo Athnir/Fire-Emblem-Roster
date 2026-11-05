@@ -3,7 +3,7 @@ import { AllLevelsToggle, Loadout, SkillRow, type PoolSkill } from '../component
 import { topLevels } from '../logic/skillChains'
 import { useAllLevels } from '../state/allLevelsStore'
 import { useArmy, useScreenshotUnit, useSpoiler, useUnitPlan } from './hooks'
-import { canTake, CLASS_TIERS, classesFor, kindOf, labelOf, learnsOf, MAX_ABILITIES, MAX_ARTS, personalNow, type Fe16Data } from './logic'
+import { canTake, CLASS_TIERS, classesFor, kindOf, starsOf, labelOf, learnsOf, MAX_ABILITIES, MAX_ARTS, personalNow, type Fe16Data } from './logic'
 import { FE16_RANKS, FE16_SKILL_LABELS, FE16_SKILLS } from './types'
 import { Fe16PlanSets, SkillIcon, UnitSelect } from './ui'
 
@@ -22,13 +22,10 @@ export function Fe16SkillPlanner({ data }: { data: Fe16Data }) {
   const chosen = { ability: plan.abilities ?? [], art: plan.arts ?? [] }
   const max = { ability: MAX_ABILITIES, art: MAX_ARTS }
   const help = (name: string) => data.abilities[name] ?? data.arts[name]
-  const skill = (name: string, tag?: string, rare?: boolean): PoolSkill => ({ name, tag, rare, help: help(name), icon: <SkillIcon data={data} skill={name} size={18} /> })
+  const skill = (name: string, tag?: string, stars?: number): PoolSkill => ({ name, tag, stars, help: help(name), icon: <SkillIcon data={data} skill={name} size={18} /> })
   function shown<T extends PoolSkill>(items: T[]): T[] {
     return allLevels ? items : topLevels(items, (s) => s.name, data.chains)
   }
-  // A skill few units learn has a gold border: one of the unit's own, beyond what every unit learns at the ranks (Annette's rallies,
-  // Byleth's Rally Movement), and their budding talent (user, 2026-11-04).
-  const own = new Set(unit.learns.map((l) => `${l.skill}/${l.rank}/${l.name}`))
   const toggle = (name: string) => {
     const kind = kindOf(data, name)
     const list = chosen[kind]
@@ -70,13 +67,14 @@ export function Fe16SkillPlanner({ data }: { data: Fe16Data }) {
         <h3 className="text-base font-semibold text-neutral-100">What {labelOf(unit)} can learn</h3>
         <AllLevelsToggle on={allLevels} onChange={setAllLevels} example="Sword Prowess Lv 1 to 5" />
         <p className="text-xs text-neutral-500">
-          By skill, then by the rank that teaches it. A gold border marks what few units learn: {labelOf(unit)}'s own, and a budding
-          talent (✦), once the weakness it starts as is trained.
+          By skill, then by the rank that teaches it; a budding talent (✦) once the weakness it starts as is trained. ★ marks a skill
+          that isn't standard (half the units or fewer can learn it), ★★ one three units or fewer can; personal abilities aren't counted.
         </p>
         {FE16_SKILLS.map((sk) => {
-          const here = shown(learns.filter((l) => l.skill === sk).map((l) => ({ ...skill(l.name, undefined, own.has(`${l.skill}/${l.rank}/${l.name}`)), rank: l.rank })))
+          // What the ranks teach, starred by how few units can learn it (starsOf).
+          const here = shown(learns.filter((l) => l.skill === sk).map((l) => ({ ...skill(l.name, undefined, starsOf(data, l.name)), rank: l.rank })))
           const tiers: { label: string; skills: PoolSkill[] }[] = FE16_RANKS.map((r) => ({ label: r, skills: here.filter((h) => h.rank === r) }))
-          if (unit.budding?.skill === sk) tiers.push({ label: '✦', skills: [skill(unit.budding.name, 'budding talent', true)] })
+          if (unit.budding?.skill === sk) tiers.push({ label: '✦', skills: [skill(unit.budding.name, 'budding talent', starsOf(data, unit.budding.name))] })
           return (
             <SkillRow
               key={sk}

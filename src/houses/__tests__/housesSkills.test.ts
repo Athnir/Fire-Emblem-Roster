@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { FE16_DATA } from '../../games/fe16'
-import { canTake, examRate, learnable, personalNow } from '../logic'
+import { canTake, examRate, learnable, personalNow, starsOf } from '../logic'
 import { pathTo } from '../plan'
 
 const unit = (id: string) => FE16_DATA.units.find((u) => u.id === id)!
@@ -62,5 +62,16 @@ describe('the certification exams', () => {
     expect(examRate(cls('Gremory'), { reason: 'C', faith: 'B+' }, 12)).toBe(6)
     // Past the rank adds nothing; the rate stops at 100.
     expect(examRate(cls('Swordmaster'), { sword: 'S+' }, 40)).toBe(100)
+  })
+})
+
+describe('the Skill Planner\'s stars', () => {
+  it('stars a skill by how many units can learn it, personal abilities aside: ★ half or fewer, ★★ three or fewer', () => {
+    const stars = (name: string) => starsOf(FE16_DATA, name)
+    // Every unit's, or nearly (36 of the 40 learn Black Tomefaire; the dark mages Dark Tomefaire instead).
+    expect([stars('Sword Prowess Lv 5'), stars('Black Tomefaire'), stars('Black Magic Range +1')]).toEqual([0, 0, 0])
+    expect([stars('Dark Tomefaire'), stars('Battalion Desperation')]).toEqual([1, 1])
+    // Annette's and Byleth's Rally Movement, Annette's Rally Speed; Jeritza's Mastermind (Lysithea's personal one isn't counted).
+    expect([stars('Rally Movement'), stars('Rally Speed'), stars('Mastermind')]).toEqual([2, 2, 2])
   })
 })
