@@ -23,6 +23,11 @@ faces, fe_assets_ui/hub/godroom/face/face.bundle, one SpriteAtlas with a Sprite 
 Each Sprite is 300x300, but the atlas keeps only its opaque part (textureRect, placed at textureRectOffset from the bottom left), so
 it's put back on its 300x300 before it's scaled to 128x128, as the face shows small beside the ring's stats.
 
+Each Emblem's face goes in emblems/, named after the Emblem (Sigurd -> emblems/sigurd.png): the ring book's,
+fe_assets_ui/hub/ringbook/godface/godface.bundle, one SpriteAtlas with a Sprite per Emblem named by god.xml's AsciiName (Siglud,
+Kamui, Reflet; Lueur and LueurW for the two Alears), 388x388 and trimmed the same way, scaled to 192x192. Ephraim has none: the
+game shows him only beside Eirika.
+
 Run: python scripts/fe17_portraits.py [out folder] [--sheet sheet.png] [--alear-female] [--level-up]
 Needs: pip install UnityPy numba (UnityPy brings texture2ddecoder).
 """
@@ -48,6 +53,8 @@ FOLDER = AA + 'fe_assets_telop/levelup/facethumb/'
 RING_FACES = AA + 'fe_assets_ui/hub/godroom/face/face.bundle'
 SIZE = 256
 RING_SIZE = 128
+EMBLEM_FACES = AA + 'fe_assets_ui/hub/ringbook/godface/godface.bundle'
+EMBLEM_SIZE = 192
 
 
 def art_id(name):
@@ -122,10 +129,10 @@ def model_portraits(alear_female=False):
             yield stem, label, spec['DressModel'], M.waist_up(draws, rig_w)
 
 
-def ring_faces(rom, files):
-    """[(file stem, ring name, the sprite's name, PIL image)] for every bond ring, in ring.xml's order: its Icon names the
-    sprite, each put back on its full rect."""
-    off, size = files[RING_FACES]
+def atlas_sprites(rom, files, path):
+    """{name: PIL image} for every Sprite of a sprite atlas's bundle, each put back on its full rect (the atlas keeps only the
+    opaque part, at textureRectOffset from the bottom left)."""
+    off, size = files[path]
     env = UnityPy.load(io.BytesIO(rom.open(off, size)))
     sprites = {}
     for o in env.objects:
@@ -138,6 +145,13 @@ def ring_faces(rom, files):
         full = Image.new('RGBA', (w, h))
         full.paste(part, (round(at.x), h - round(at.y) - part.height))
         sprites[sprite.m_Name] = full
+    return sprites
+
+
+def ring_faces(rom, files):
+    """[(file stem, ring name, the sprite's name, PIL image)] for every bond ring, in ring.xml's order: its Icon names the
+    sprite."""
+    sprites = atlas_sprites(rom, files, RING_FACES)
     out, stems = [], {}
     for r in D.rows('ring'):
         name = U.text(r['Name']) if r['Name'] else ''
@@ -148,6 +162,29 @@ def ring_faces(rom, files):
         stems[r['Icon']] = stem
         out.append((stem, name, r['Icon'], sprites[r['Icon']]))
     assert set(stems) == set(sprites), set(stems) ^ set(sprites)
+    return out
+
+
+def emblem_faces(rom, files, alear_female=False):
+    """[(file stem, Emblem name, the sprite's name, PIL image)] for every playable Emblem (GID_<name>; the story's and enemies'
+    copies have GIDs of their own) the ring book has a face for, in god.xml's order: its AsciiName names the sprite."""
+    sprites = atlas_sprites(rom, files, EMBLEM_FACES)
+    out, seen, missing = [], set(), []
+    for g in D.rows('god', '神将'):
+        key = g.get('AsciiName')
+        if not key or key in seen or g['Gid'].count('_') != 1:
+            continue
+        seen.add(key)
+        name = U.text(g['Mid'])
+        looks = [(art_id(name), name, key)]
+        if key == 'Lueur' and alear_female:
+            looks.append((art_id(name) + '_female', name + ' (female)', 'LueurW'))
+        for stem, label, k in looks:
+            if k in sprites:
+                out.append((stem, label, k, sprites[k]))
+            else:
+                missing.append(label)
+    print('  no ring-book face for:', ', '.join(missing) or 'none')
     return out
 
 
@@ -175,6 +212,7 @@ def main(argv):
     argv = [a for a in argv if a not in ('--alear-female', '--level-up')]
     out = argv[0] if argv else OUT
     os.makedirs(os.path.join(out, 'rings'), exist_ok=True)
+    os.makedirs(os.path.join(out, 'emblems'), exist_ok=True)
     rom, files = M.romfs()[:2]
     made = []
     if level_up:
@@ -195,6 +233,13 @@ def main(argv):
         made.append(('rings/' + stem, f'{label} ({key})', face))
         faces += 1
     print(f'{faces} Bond Ring faces written to {os.path.abspath(os.path.join(out, "rings"))}')
+    faces = 0
+    for stem, label, key, im in emblem_faces(rom, files, female):
+        face = premultiplied_resize(im, (EMBLEM_SIZE, EMBLEM_SIZE))
+        face.save(os.path.join(out, 'emblems', stem + '.png'))
+        made.append(('emblems/' + stem, f'{label} ({key})', face))
+        faces += 1
+    print(f'{faces} Emblem faces written to {os.path.abspath(os.path.join(out, "emblems"))}')
     if sheet:
         contact_sheet(made, sheet)
 

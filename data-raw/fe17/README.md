@@ -238,8 +238,12 @@ straight from the NSPs (the bundles aren't copied into `romfs/`).
   Heroes ring Anna), all 123 matched one to one. Each Sprite's rect is 300x300, but the atlas keeps only its opaque part
   (m_RD.textureRect, placed at textureRectOffset from the bottom left), so it's put back on its 300x300, then scaled to 128x128.
   They sit in their own folder so a ring that shares a unit's name (Anna) stays apart.
+- **Emblem faces** (`emblems/<emblem>.png`, 23): the ring book's, `fe_assets_ui/hub/ringbook/godface/godface.bundle`: one
+  SpriteAtlas (`GodFace`) with a Sprite per Emblem, named by god.xml's `AsciiName` (`Siglud`, `Leaf`, `Lin`, `Kamui`, `Eirik`,
+  `Senerio`, `Reflet`; `Lueur` and `LueurW` for the two Alears), 388x388 trimmed as the ring faces are, scaled to 192x192. Every
+  playable Emblem (a `GID_<name>` row) has one but Ephraim, whom the game shows only beside Eirika; his card keeps the blank.
+  god.xml's `FaceIconName` (`Face_Marth`...) names no sprite or catalog key in the dump.
 - **Other 2D art found, not used:** the unit list's 188x74 strips (`fe_assets_ui/common/unitlist/facethumb`), the Somniel
-  notebook's photos (3D renders with backgrounds, `fe_assets_ui/hub/notebook/pictures`), the ring book's Emblem faces
-  (`fe_assets_ui/hub/ringbook/godface/godface.bundle`, 24 Sprites of 388x388, Ephraim's not among them).
-- **Run:** `python scripts/fe17_portraits.py` (41 portraits and 123 Bond Ring faces, about a minute; `--sheet <png>` for a
+  notebook's photos (3D renders with backgrounds, `fe_assets_ui/hub/notebook/pictures`).
+- **Run:** `python scripts/fe17_portraits.py` (41 portraits, 123 Bond Ring faces and 23 Emblem faces, about a minute; `--sheet <png>` for a
   labelled contact sheet, `--level-up` for the 2D faces). Needs `pip install UnityPy numba`.

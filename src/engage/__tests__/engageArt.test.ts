@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { assetKeys } from '../../data/assetStorage'
-import { FE17_BOND_RINGS, FE17_UNITS } from '../../data/fe17/fe17Units'
+import { FE17_BOND_RINGS, FE17_EMBLEMS, FE17_UNITS } from '../../data/fe17/fe17Units'
 import fe17 from '../../games/fe17'
-import { ringFaceId } from '../art'
+import { emblemFaceId, ringFaceId } from '../art'
 import { artId } from '../hooks'
 
 /** A file as a picked folder, or an unzipped .zip, gives it: its name, and its path in webkitRelativePath. */
@@ -35,5 +35,17 @@ describe('Engage art', () => {
     expect(keyOf('fe17/anna.png')).toBe('portrait:fe17/anna')
     expect(keyOf('fe17/rings/black_knight.png')).toBe('portrait:fe17/rings/black_knight')
     expect(fe17.art.expected.filter((p) => p.startsWith('rings/'))).toHaveLength(123)
+  })
+
+  it("gives every Emblem a face of its own, in the folder's \"emblems\", apart from the rings and units of the same name", () => {
+    const ids = FE17_EMBLEMS.map((e) => emblemFaceId('fe17', e.name))
+    expect(new Set(ids).size).toBe(24)
+    for (const [i, e] of FE17_EMBLEMS.entries()) expect(keyOf(`${ids[i]}.png`), e.name).toBe(assetKeys.portrait(ids[i]))
+    // The Emblem Chrom and the Bond Ring Chrom.
+    expect(keyOf('fe17/emblems/chrom.png')).toBe('portrait:fe17/emblems/chrom')
+    expect(keyOf('fe17/rings/chrom.png')).toBe('portrait:fe17/rings/chrom')
+    // The ring book has a face for every Emblem but Ephraim, who shows only beside Eirika.
+    expect(fe17.art.expected.filter((p) => p.startsWith('emblems/'))).toHaveLength(23)
+    expect(fe17.art.expected).not.toContain('emblems/ephraim.png')
   })
 })

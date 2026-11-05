@@ -3,7 +3,7 @@ import { useReached } from '../state/spoilerStore'
 import { chip, selectClass, useArmy, useScreenshotUnit } from './hooks'
 import { capsOf, chapterLabel, supportsOf, type Fe17Data } from './logic'
 import { FE17_STAT_LABELS, type Fe17BondRingSet, type Fe17StatsMov, type Fe17Unit } from './types'
-import { AlearPicker, RingFace, SkillList, StatTable, UnitPortrait, UnitSelect } from './ui'
+import { AlearPicker, EmblemFace, RingFace, SkillList, StatTable, UnitPortrait, UnitSelect } from './ui'
 
 function UnitDetail({ data, unit, reached }: { data: Fe17Data; unit: Fe17Unit; reached?: Set<string> }) {
   const cls = data.classes[unit.classId]
@@ -342,15 +342,19 @@ function EmblemRings({ data, reached }: { data: Fe17Data; reached?: Set<string> 
         ))}
       </select>
       <div className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
-        <div className="text-sm text-neutral-300">
-          {e.ring && <div>{e.ring}</div>}
-          <div className="text-neutral-500">From {chapterLabel(data, e.joinChapter)}</div>
-          {e.engageAttack && (
-            <div>
-              <span className="text-neutral-500">Engage attack: </span>
-              {e.engageAttack}
-            </div>
-          )}
+        <div className="flex items-start gap-3">
+          <EmblemFace data={data} emblem={e.name} />
+          <div className="text-sm text-neutral-300">
+            <div className="font-medium text-neutral-100">{e.name}</div>
+            {e.ring && <div>{e.ring}</div>}
+            <div className="text-neutral-500">From {chapterLabel(data, e.joinChapter)}</div>
+            {e.engageAttack && (
+              <div>
+                <span className="text-neutral-500">Engage attack: </span>
+                {e.engageAttack}
+              </div>
+            )}
+          </div>
         </div>
         <p className="text-xs text-neutral-500">
           Bond levels 1-20 (a base game ring stops at 10 until its paralogue). Syncing adds the stats and sync skills of the bond level
