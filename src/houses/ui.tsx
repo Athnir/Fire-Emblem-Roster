@@ -1,5 +1,6 @@
 import { AssetIcon } from '../components/AssetIcon'
 import { Portrait } from '../components/Portrait'
+import { topLevels } from '../logic/skillChains'
 import { skillIconId } from '../tellius/art'
 import { artId, chip, selectClass } from './hooks'
 import { fmt, groupOf, groupsFor, helpOf, labelOf, learnsOf, type Fe16Choice, type Fe16Data, type Fe16Picks } from './logic'
@@ -144,9 +145,12 @@ export function ChoicePicker({ choice, onPick }: { choice: Fe16Choice; onPick?: 
 
 const KIND: Record<Fe16Learn['kind'], string> = { ability: 'ability', art: 'combat art', spell: 'spell' }
 
-/** What a unit learns at each skill rank, a skill to a row; theirs alone in violet. */
-export function LearnTable({ data, unit, everyone = false }: { data: Fe16Data; unit: Fe16Unit; everyone?: boolean }) {
-  const all = everyone ? learnsOf(data, unit) : learnsOf({ ...data, rankRewards: [] }, unit)
+/** What a unit learns at each skill rank, a skill to a row; theirs alone in violet; a skill's levels (Sword Prowess) only at the top
+ * one unless every level is asked for. */
+export function LearnTable({ data, unit, everyone = false, allLevels = false }: { data: Fe16Data; unit: Fe16Unit; everyone?: boolean; allLevels?: boolean }) {
+  // A level a higher one in the same skill replaces (Sword Prowess Lv 1 to 4 beside Lv 5) only shows with every level asked for.
+  const listed = everyone ? learnsOf(data, unit) : learnsOf({ ...data, rankRewards: [] }, unit)
+  const all = allLevels ? listed : FE16_SKILLS.flatMap((sk) => topLevels(listed.filter((l) => l.skill === sk), (l) => l.name, data.chains))
   const own = new Set(unit.learns.map((l) => `${l.skill}/${l.rank}/${l.name}`))
   return (
     <div className="space-y-1 text-sm">

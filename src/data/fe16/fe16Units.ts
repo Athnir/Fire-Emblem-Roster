@@ -15464,6 +15464,10 @@ export const FE16_CRESTS: Record<string, string> = {
   "Minor Mystery Crest": "It might be some kind of Crest, though it's\nunclear which one..."
 }
 
+/** The abilities that come in levels, each chain lowest first (Sword Prowess Lv 1 to 5): the game's upgrade groups (fixed_skill.bin
+ * section 0 +3). The Skill Planner shows a chain's top level unless every level is asked for. */
+export const FE16_ABILITY_CHAINS: string[][] = [["Sword Prowess Lv 1", "Sword Prowess Lv 2", "Sword Prowess Lv 3", "Sword Prowess Lv 4", "Sword Prowess Lv 5"], ["Lance Prowess Lv 1", "Lance Prowess Lv 2", "Lance Prowess Lv 3", "Lance Prowess Lv 4", "Lance Prowess Lv 5"], ["Axe Prowess Lv 1", "Axe Prowess Lv 2", "Axe Prowess Lv 3", "Axe Prowess Lv 4", "Axe Prowess Lv 5"], ["Bow Prowess Lv 1", "Bow Prowess Lv 2", "Bow Prowess Lv 3", "Bow Prowess Lv 4", "Bow Prowess Lv 5"], ["Brawling Prowess Lv 1", "Brawling Prowess Lv 2", "Brawling Prowess Lv 3", "Brawling Prowess Lv 4", "Brawling Prowess Lv 5"], ["Reason Lv 1", "Reason Lv 2", "Reason Lv 3", "Reason Lv 4", "Reason Lv 5"], ["Faith Lv 1", "Faith Lv 2", "Faith Lv 3", "Faith Lv 4", "Faith Lv 5"], ["Authority Lv 1", "Authority Lv 2", "Authority Lv 3", "Authority Lv 4", "Authority Lv 5"], ["Bowrange +1", "Bowrange +2"], ["White Magic Heal +5", "White Magic Heal +10"], ["Weight -3", "Weight -5"], ["Alert Stance", "Alert Stance+"]]
+
 /** The level a unit recruited (or joining by the story) gets in each chapter's month, by route: index = chapter (0 the Prologue). */
 export const FE16_JOIN_LEVELS: Record<string, (number | null)[]> = {"ss": [1, 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 35, 37, 38, 40, 42, null], "am": [1, 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35, 37, 39, 41, 42], "vw": [1, 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35, 37, 38, 40, 42], "cf": [1, 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 25, 27, 29, 31, 33, 35, 37, null, null, null, null]}
 

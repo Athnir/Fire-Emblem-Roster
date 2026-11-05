@@ -1,6 +1,6 @@
 import { UploadSection } from '../components/BulkAssetUpload'
 import { LinearSpoilerBar } from '../components/LinearSpoilerBar'
-import { FE17_BOND_RINGS, FE17_BOOSTERS, FE17_CHAPTERS, FE17_CLASSES, FE17_EMBLEMS, FE17_SKILLS, FE17_SUPPORTS, FE17_UNITS } from '../data/fe17/fe17Units'
+import { FE17_BOND_RINGS, FE17_BOOSTERS, FE17_CHAPTERS, FE17_CLASSES, FE17_EMBLEMS, FE17_SKILL_CHAINS, FE17_SKILLS, FE17_SUPPORTS, FE17_UNITS } from '../data/fe17/fe17Units'
 import { FEMALE_ALEAR, fe17Art, matchEmblemFaces, matchRingFaces, matchSkillIcons } from '../engage/art'
 import { Fe17BulkViewer } from '../engage/bulk'
 import type { Fe17Data } from '../engage/logic'
@@ -21,6 +21,7 @@ export const FE17_DATA: Fe17Data = {
   supports: FE17_SUPPORTS,
   skills: FE17_SKILLS,
   boosters: FE17_BOOSTERS,
+  chains: FE17_SKILL_CHAINS,
 }
 
 // The bulk upload matches portraits by unit name (and the female Alear's, alear_female.png), Bond Ring faces (in a "rings" folder)

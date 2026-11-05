@@ -1,4 +1,6 @@
 import { useRef, useState } from 'react'
+import { AllLevelsToggle } from '../components/SkillPool'
+import { useAllLevels } from '../state/allLevelsStore'
 import { useSpoilerStore } from '../state/spoilerStore'
 import { selectClass, useArmy, useScreenshotUnit } from './hooks'
 import {
@@ -10,6 +12,7 @@ import {
   LAST_CHAPTER,
   labelOf,
   levelsText,
+  personalNow,
   ROUTE_CHOICE,
   ROUTE_NAMES,
   routeOf,
@@ -60,6 +63,7 @@ function SkillRanks({ data, unit }: { data: Fe16Data; unit: Fe16Unit }) {
 
 function UnitDetail({ data, unit, picks, chapter }: { data: Fe16Data; unit: Fe16Unit; picks: Fe16Picks; chapter?: number }) {
   const [everyone, setEveryone] = useState(false)
+  const [allLevels, setAllLevels] = useAllLevels(data.gameId)
   const cls = data.classes[unit.classId]
   const byId = new Map(data.units.map((u) => [u.id, u]))
   const supports = supportsOf(data, unit.id).filter((s) => s.npc || (byId.get(s.partner) && inArmy(byId.get(s.partner)!, picks, chapter)))
@@ -108,13 +112,13 @@ function UnitDetail({ data, unit, picks, chapter }: { data: Fe16Data; unit: Fe16
       )}
       <div className="space-y-1 text-sm">
         <h4 className="text-sm font-semibold text-neutral-200">Personal ability</h4>
-        {unit.personal.map((p, i) => (
-          <div key={p} className="flex items-start gap-2">
-            <SkillIcon data={data} skill={p} />
+        {personalNow(unit, chapter).map((p) => (
+          <div key={p.name} className="flex items-start gap-2">
+            <SkillIcon data={data} skill={p.name} />
             <span>
-              <span className="font-medium text-neutral-200">{p}</span>
-              {unit.personal.length > 1 && <span className="text-neutral-500"> ({i === 0 ? 'Part I' : 'Part II'})</span>}
-              {data.abilities[p] && <span className="text-neutral-400">: {data.abilities[p]}</span>}
+              <span className="font-medium text-neutral-200">{p.name}</span>
+              {p.part && <span className="text-neutral-500"> ({p.part})</span>}
+              {data.abilities[p.name] && <span className="text-neutral-400">: {data.abilities[p.name]}</span>}
             </span>
           </div>
         ))}
@@ -133,11 +137,12 @@ function UnitDetail({ data, unit, picks, chapter }: { data: Fe16Data; unit: Fe16
       <p className="text-xs text-neutral-500">The maximums are the unit's own: in Three Houses classes have none.</p>
       <div className="space-y-1">
         <h4 className="text-sm font-semibold text-neutral-200">Learned at skill levels</h4>
-        <LearnTable data={data} unit={unit} everyone={everyone} />
+        <LearnTable data={data} unit={unit} everyone={everyone} allLevels={allLevels} />
         <label className="flex items-center gap-2 text-xs text-neutral-400">
           <input type="checkbox" checked={everyone} onChange={(e) => setEveryone(e.target.checked)} />
           Also what every unit learns (theirs alone stay violet)
         </label>
+        {everyone && <AllLevelsToggle on={allLevels} onChange={setAllLevels} example="Sword Prowess Lv 1 to 5" />}
         <p className="text-xs text-neutral-500">Hover for what each does.</p>
       </div>
       {supports.length > 0 && (

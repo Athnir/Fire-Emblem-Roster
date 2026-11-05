@@ -12,6 +12,8 @@ export interface Fe17Data {
   supports: Fe17Support[]
   skills: Record<string, string>
   boosters: Fe17Booster[]
+  /** The skills that come in levels, each chain lowest first. */
+  chains: string[][]
 }
 
 const MOV_KEYS = [...FE17_STATS, 'mov'] as (Fe17Stat | 'mov')[]

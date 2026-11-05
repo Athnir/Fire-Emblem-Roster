@@ -26,6 +26,8 @@ export interface Fe16Data {
   joinLevels: Record<string, (number | null)[]>
   /** The Saint Statues' raises to the maximums, by statue and level. */
   statues: Record<string, Record<string, Partial<Record<string, number>>>>
+  /** The abilities that come in levels, each chain lowest first. */
+  chains: string[][]
 }
 
 // The Roster's picks: the house taught, and for the Black Eagles the route they take at Chapter 12. Each leaves the units it rules out
@@ -88,6 +90,8 @@ export function routesOpen(picks: Fe16Picks): Fe16Route[] {
 
 /** The first chapter of Part II, where the routes part, and each route's last chapter (the game's flow, as the Armory reads it). */
 export const SPLIT_CHAPTER = 12
+/** The first chapter whose personal abilities are the Part II forms. */
+export const PART_TWO = SPLIT_CHAPTER
 export const LAST_CHAPTER: Record<Fe16Route, number> = { cf: 18, ss: 21, am: 22, vw: 22 }
 
 /** The chapter a unit can first be yours in, under the house taught. */
@@ -211,6 +215,18 @@ export const levelsText = (talks: string[]) => talks.join(', ')
 /** The game's limits: five abilities and three combat arts equipped (the personal ability and the class's own come on their own). */
 export const MAX_ABILITIES = 5
 export const MAX_ARTS = 3
+
+/** Whether a skill a unit learns is a combat art (equipped in the arts' slots) or an ability. */
+export const kindOf = (data: Fe16Data, name: string): 'ability' | 'art' => (data.arts[name] !== undefined && data.abilities[name] === undefined ? 'art' : 'ability')
+
+/** The personal ability shown, and which part of the story it's from. With the spoiler block on (`chapter`), only the one the chapter
+ * has: the Part II form (Professor's Guidance+) from Part II on, in place of the first (user, 2026-11-04); with it off, both. */
+export function personalNow(unit: Fe16Unit, chapter?: number): { name: string; part?: string }[] {
+  const [first, second] = unit.personal
+  if (!second) return first ? [{ name: first }] : []
+  if (chapter === undefined) return [{ name: first, part: 'Part I' }, { name: second, part: 'Part II' }]
+  return [{ name: chapter >= PART_TWO ? second : first }]
+}
 
 export interface Fe16Source {
   name: string

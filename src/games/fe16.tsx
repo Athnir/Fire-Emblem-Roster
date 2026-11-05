@@ -1,5 +1,6 @@
 import {
   FE16_ABILITIES,
+  FE16_ABILITY_CHAINS,
   FE16_ARTS,
   FE16_CLASSES,
   FE16_CRESTS,
@@ -33,6 +34,7 @@ export const FE16_DATA: Fe16Data = {
   crests: FE16_CRESTS,
   joinLevels: FE16_JOIN_LEVELS,
   statues: FE16_STATUES,
+  chains: FE16_ABILITY_CHAINS,
 }
 
 // The bulk upload matches portraits by unit name: "byleth_male.png" and "byleth_female.png" for the two Byleths.
