@@ -97,8 +97,9 @@ function TeamViewer({ data }: { data: Fe4Data }) {
   const { pairings, plans } = set ?? current
   const { profile, planOf } = profilesWith(data, pairings, plans)
   const left = excludedUnits(data, picks, pairings)
+  // Only the units with a plan, as Fates' Team Viewer shows only the units in its sets (user, 2026-11-05).
   const rows = data.units
-    .filter((u) => u.generation === gen && !left.has(u.id))
+    .filter((u) => u.generation === gen && !left.has(u.id) && plans[u.id])
     .flatMap((u) => {
       const p = profile(u)
       if (!p) return []
@@ -221,7 +222,7 @@ function TeamViewer({ data }: { data: Fe4Data }) {
             </div>
           </div>
         ))}
-        {rows.length === 0 && <p className="text-sm text-neutral-500">No one to show: pick the mothers' husbands in Pairings first.</p>}
+        {rows.length === 0 && <p className="text-sm text-neutral-500">No plans yet: a unit shows here once it has a plan (change anything for them in the Unit or Skill Planner), as in Fates' Team Viewer. A child shows once their mother's husband is picked in Pairings.</p>}
       </div>
     </div>
   )

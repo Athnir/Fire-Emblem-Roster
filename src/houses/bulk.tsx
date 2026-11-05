@@ -15,7 +15,10 @@ export function Fe16BulkViewer({ data }: { data: Fe16Data }) {
   const set = sets.find((s) => s.id === source)
   const { plans, picks } = set ?? current
   const planOf = plansWith(plans)
-  const rows = armyWith(data, picks, chapter).map((u) => {
+  // Only the units with a plan, as Fates' Team Viewer shows only the units in its sets (user, 2026-11-05).
+  const rows = armyWith(data, picks, chapter)
+    .filter((u) => plans[u.id])
+    .map((u) => {
     const plan = planOf(u)
     const stages = project(data, u, plan, picks)
     const final = stages[stages.length - 1]
@@ -51,6 +54,7 @@ export function Fe16BulkViewer({ data }: { data: Fe16Data }) {
           </select>
         </label>
       </div>
+      {rows.length === 0 && <p className="text-sm text-neutral-500">No plans yet: a unit shows here once it has a plan (change anything for them in the Unit or Skill Planner), as in Fates' Team Viewer.</p>}
       <div data-export-table className="hidden overflow-x-auto rounded-lg border border-neutral-800 bg-neutral-900 sm:block">
         <table className="w-full min-w-[1000px] border-collapse text-sm">
           <thead>

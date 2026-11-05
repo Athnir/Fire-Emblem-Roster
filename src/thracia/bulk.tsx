@@ -21,7 +21,10 @@ export function Fe5BulkViewer({ data }: { data: Fe5Data }) {
   const reached = useReached(data, picks)
   const { units } = armyWith(data, picks, reached)
   const clashes = manualClashes(units, planOf)
-  const rows = units.map((u) => {
+  // Only the units with a plan, as Fates' Team Viewer shows only the units in its sets (user, 2026-11-05).
+  const rows = units
+    .filter((u) => plans[u.id])
+    .map((u) => {
     const stages = project(data, u, planOf(u))
     const final = stages[stages.length - 1]
     const cls = data.classes[final.classId]
@@ -115,6 +118,7 @@ export function Fe5BulkViewer({ data }: { data: Fe5Data }) {
         ))}
       </div>
       <div className="space-y-3">
+        {rows.length === 0 && <p className="text-sm text-neutral-500">No plans yet: a unit shows here once it has a plan (change anything for them in the Unit or Skill Planner), as in Fates' Team Viewer.</p>}
         {rows.map((r) => (
           <div key={r.unit.id} className="space-y-2 rounded-lg border border-neutral-800 bg-neutral-900 p-3 text-sm">
             <div className="flex items-center gap-2">

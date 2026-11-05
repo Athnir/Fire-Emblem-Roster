@@ -17,7 +17,8 @@ new rule, add it here.
 - **The picker lists the games in the series' order, by number** (user, 2026-11-04): "14. Fire Emblem Fates", and each mainline
   game the app doesn't have (Gaiden, New Mystery of the Emblem, Fortune's Weave) in its place, greyed out.
 - **Every game gets a Bulk Viewer** (user, 2026-11-02): at least the Team Viewer, with saved sets of plans; a game with a second
-  generation adds the Parent Checker. The games still without one get theirs in their review.
+  generation adds the Parent Checker. The games still without one get theirs in their review. It shows only the units with a plan
+  (or in the set shown), never the whole roster, as Fates' does (user, 2026-11-05).
 - **Rules too long for the tabs go in an Info tab** (user, 2026-11-02, Thracia's rescue, capture and fatigue): the user checks them by
   hand, rather than the tabs working them out and getting busy.
 - **Finish one game across every tab before starting the next.** Order: Fates, Path of Radiance, Radiant Dawn, Genealogy of the
