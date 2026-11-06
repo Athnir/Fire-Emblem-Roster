@@ -53,7 +53,7 @@ export interface GbaData {
   statLabels?: Partial<Record<GbaStat, string>>
   /** How promoting changes stats where the class data has no gains: the difference between the classes' bases for `difference`, and
    * `raise` lifted to the new class's bases where lower (Mystery of the Emblem). Unset: the difference for every stat but Luck. */
-  promotion?: { difference: GbaStat[]; raise: GbaStat[] }
+  promotion?: { difference: GbaStat[]; raise: GbaStat[]; noneRaised?: GbaStats }
   /** Fixed supports instead of support points (Mystery of the Emblem), and what they add, in words. */
   supportBonuses?: GbaSupportBonus[]
   supportBonusText?: string
@@ -94,6 +94,20 @@ export interface GbaData {
   portrait?: (unit: GbaUnit, size: number) => ReactNode
   /** More in the Roster under a unit (the Avatar's looks, by the portraits as Fates' Corrin's are). */
   rosterExtra?: (unit: GbaUnit) => ReactNode
+  /** What the Roster calls a unit's `altName` ("In the translation"). */
+  altNameLabel?: string
+  /** Each unit's average gain per level of each stat, where the game's roll makes it differ from the growth (Gaiden: one random byte
+   * for all six rolls, and 1 HP when every roll fails), and what to say about it. Used for the averages in place of the growth. */
+  expectedGrowths?: Record<string, Partial<GbaStats>>
+  expectedGrowthText?: string
+  /** Spells learned by level (Gaiden): each unit's known on joining and learned at the game's count of levels, each class's spells
+   * (a spell is learned only while the class has it), the spell a change into a class gives, and how the count goes: the class whose
+   * level-ups don't count, and the class change that starts it again. */
+  spells?: Record<string, { known: string[]; learn: { level: number; spell: string }[] }>
+  classSpells?: Record<string, string[]>
+  classChangeSpells?: Record<string, string>
+  spellCount?: { skip: string; restart: { from: string; to: string } }
+  spellText?: string
 }
 
 const statsOf = (data: GbaData) => data.stats ?? GBA_STATS
@@ -116,7 +130,12 @@ export interface GbaPlan {
   /** The Avatar's creation: the class (its index in the unit's list) and each question's answer (New Mystery's Kris). */
   avatarClass?: number
   answers?: number[]
+  /** Class changes after the third, up to MAX_CHANGES (Gaiden's Dread Fighter goes back to a Villager and round again). */
+  more?: { at: number | null; to?: string }[]
 }
+
+/** A planner keeps every class change the game allows, up to 30 (CLAUDE.md). */
+const MAX_CHANGES = 30
 
 interface GbaState {
   plans: Record<string, Record<string, GbaPlan>>
@@ -510,6 +529,11 @@ function UnitDetail({ data, unit: joined }: { data: GbaData; unit: GbaUnit }) {
         <UnitPortrait data={data} unit={unit} size={128} />
         <div className="min-w-0 space-y-1 text-sm text-neutral-300">
           <h3 className="text-lg font-semibold text-neutral-100">{unit.name}</h3>
+          {unit.altName && (
+            <div className="text-neutral-500">
+              {data.altNameLabel ?? 'Also called'}: {unit.altName}
+            </div>
+          )}
           <div>
             {cls.name} · Lv {unit.level}
             {promo.length > 0 && <span className="text-neutral-500"> · promotes to {promo.map((c) => c.name).join(' or ')}</span>}
@@ -532,6 +556,12 @@ function UnitDetail({ data, unit: joined }: { data: GbaData; unit: GbaUnit }) {
             {joinText(data, unit)}
           </div>
           {unit.join.note && <div className="text-neutral-400">{unit.join.note}</div>}
+          {unit.traits?.map((t) => (
+            <div key={t}>
+              <span className="text-neutral-500">Special: </span>
+              {t}
+            </div>
+          ))}
           {data.avatar?.classes[unit.id] && <div className="text-neutral-500">The class and the creation's answers are picked in the Unit Planner.</div>}
           {/* When they leave and come back: blank under the spoiler block (CLAUDE.md). */}
           {!block &&
@@ -658,7 +688,8 @@ function stepsOf(data: GbaData, unit: GbaUnit, plan: GbaPlan): Step[] {
     [plan.promoteAt, plan.to],
     [plan.promoteAt2 ?? null, plan.to2],
     [plan.promoteAt3 ?? null, plan.to3],
-  ]
+    ...(plan.more ?? []).map((m): [number | null, string | undefined] => [m.at, m.to]),
+  ].slice(0, MAX_CHANGES) as [number | null, string | undefined][]
   const been = [cls.id]
   for (const [at, to] of wanted) {
     const options = changesOf(data, unit, cls, been)
@@ -731,7 +762,9 @@ function project(data: GbaData, unit: GbaUnit, plan: GbaPlan): Stage[] {
   }
   const grow = (stats: GbaStats, levels: number, cls: GbaClass) => {
     const out = { ...stats }
-    for (const s of growingOf(data)) out[s] = (out[s] ?? 0) + ((growthIn(unit, cls, s) * (data.growthScale?.factor ?? 1)) / 100) * Math.max(0, levels)
+    const expected = data.expectedGrowths?.[unit.id]
+    for (const s of growingOf(data))
+      out[s] = (out[s] ?? 0) + ((expected?.[s] ?? growthIn(unit, cls, s) * (data.growthScale?.factor ?? 1)) / 100) * Math.max(0, levels)
     return capped(out, cls)
   }
   let cls = data.classes[unit.classId]
@@ -748,11 +781,16 @@ function project(data: GbaData, unit: GbaUnit, plan: GbaPlan): Stage[] {
     const diff = (s: GbaStat) => (step.to.bases[s] ?? 0) - (cls.bases[s] ?? 0)
     if (gains) {
       for (const s of statsOf(data)) if (s !== 'lck') stats[s] = (stats[s] ?? 0) + (s !== 'con' && s !== 'mov' ? (gains[s] ?? 0) : diff(s))
+    } else if (step.to.keepsStats) {
+      // Only the level changes (Gaiden's Princess: Celica's scene, 13:$97D8).
     } else if (data.promotion) {
       // Mystery of the Emblem ($83:FD2B): the old class's bases come off and the new class's go on ($93:D9FF, $93:D951); HP and the
-      // weapon level are lifted to the new class's where lower ($83:FD76).
+      // weapon level are lifted to the new class's where lower ($83:FD76). Gaiden (8:$A96C): each lifted to the new class's bases, and
+      // max HP + 1 when none is (`noneRaised`; worked on the averages).
+      const lifted = data.promotion.raise.some((s) => (stats[s] ?? 0) < (step.to.bases[s] ?? 0))
       for (const s of data.promotion.difference) stats[s] = (stats[s] ?? 0) + diff(s)
       for (const s of data.promotion.raise) stats[s] = Math.max(stats[s] ?? 0, step.to.bases[s] ?? 0)
+      if (!lifted) for (const [s, v] of Object.entries(data.promotion.noneRaised ?? {}) as [GbaStat, number][]) stats[s] = (stats[s] ?? 0) + v
     } else {
       for (const s of statsOf(data)) if (s !== 'lck') stats[s] = (stats[s] ?? 0) + diff(s)
     }
@@ -764,6 +802,54 @@ function project(data: GbaData, unit: GbaUnit, plan: GbaPlan): Stage[] {
   const target = Math.max(level, Math.min(maxLevelOf(cls), plan.targetLevel))
   if (target > level) stages.push({ classId: cls.id, level: target, stats: grow(stats, target - level, cls) })
   return stages
+}
+
+/** The spells a plan gives (Gaiden, 1:$ADDE): those known on joining, the one a class change gives (a Sage's Recover), and each
+ * learned spell at the level-up where the game's count reaches it, if the class has the spell then. The count goes up with every
+ * level-up but in the skipped class (the Villager), and starts again on the change that restarts it (a Villager becoming a Mage). */
+function spellsAlong(data: GbaData, unit: GbaUnit, plan: GbaPlan, steps: Step[]) {
+  const own = data.spells?.[unit.id]
+  const got: { spell: string; how: string }[] = (own?.known ?? []).map((spell) => ({ spell, how: 'known on joining' }))
+  const has = (spell: string) => got.some((g) => g.spell === spell)
+  let count = 0
+  let cls = data.classes[unit.classId]
+  let level = unit.level
+  const levelUps = (to: number) => {
+    for (let l = level + 1; l <= to; l++) {
+      if (cls.id !== data.spellCount?.skip) count++
+      for (const x of own?.learn ?? [])
+        if (x.level - 1 === count && (data.classSpells?.[cls.id] ?? []).includes(x.spell) && !has(x.spell)) got.push({ spell: x.spell, how: `${cls.name} Lv ${l}` })
+    }
+    level = Math.max(level, to)
+  }
+  for (const step of steps) {
+    levelUps(step.at)
+    const from = cls
+    cls = step.to
+    level = step.promotion ? 1 : step.at
+    if (from.id === data.spellCount?.restart.from && cls.id === data.spellCount.restart.to) count = 0
+    const given = data.classChangeSpells?.[cls.id]
+    if (given && !has(given)) got.push({ spell: given, how: `becoming a ${cls.name}` })
+  }
+  levelUps(Math.max(level, Math.min(maxLevelOf(cls), plan.targetLevel)))
+  const missed = (own?.learn ?? []).filter((x) => !has(x.spell)).map((x) => x.spell)
+  return { got, missed: [...new Set(missed)] }
+}
+
+function SpellsLine({ data, unit, plan, steps }: { data: GbaData; unit: GbaUnit; plan: GbaPlan; steps: Step[] }) {
+  if (!data.spells) return null
+  const { got, missed } = spellsAlong(data, unit, plan, steps)
+  if (!got.length && !missed.length) return null
+  return (
+    <div className="space-y-1">
+      <p className="text-sm text-neutral-300">
+        <span className="text-neutral-500">Spells on this plan: </span>
+        {got.length ? got.map((g) => `${g.spell} (${g.how})`).join(', ') : 'none'}
+        {missed.length > 0 && <span className="text-neutral-500"> · not learned on it: {missed.join(', ')}</span>}
+      </p>
+      {data.spellText && <p className="text-xs text-neutral-500">{data.spellText}</p>}
+    </div>
+  )
 }
 
 /** One unit's average stats through a promotion. Saved per unit. */
@@ -789,9 +875,17 @@ export function GbaPlanner({ data: game }: { data: GbaData }) {
     // A second promotion by default only where there is one (a trainee's), never a reclass.
     promoteAt2: first.length && isPromotion(data, start, first[0]) && optionsOf(data, first[0]).length ? MAX_LEVEL : null,
   }
-  const atOf = [plan.promoteAt, plan.promoteAt2 ?? null, plan.promoteAt3 ?? null]
-  const patchAt = (i: number, v: number | null): Partial<GbaPlan> => (i === 0 ? { promoteAt: v } : i === 1 ? { promoteAt2: v } : { promoteAt3: v })
-  const patchTo = (i: number, v: string): Partial<GbaPlan> => (i === 0 ? { to: v } : i === 1 ? { to2: v } : { to3: v })
+  const atOf = [plan.promoteAt, plan.promoteAt2 ?? null, plan.promoteAt3 ?? null, ...(plan.more ?? []).map((m) => m.at)]
+  // A change past the third is kept in `more`.
+  const withMore = (k: number, patch: Partial<NonNullable<GbaPlan['more']>[number]>) => {
+    const more = [...(plan.more ?? [])]
+    while (more.length <= k) more.push({ at: null })
+    more[k] = { ...more[k], ...patch }
+    return { more }
+  }
+  const patchAt = (i: number, v: number | null): Partial<GbaPlan> =>
+    i === 0 ? { promoteAt: v } : i === 1 ? { promoteAt2: v } : i === 2 ? { promoteAt3: v } : withMore(i - 3, { at: v })
+  const patchTo = (i: number, v: string): Partial<GbaPlan> => (i === 0 ? { to: v } : i === 1 ? { to2: v } : i === 2 ? { to3: v } : withMore(i - 3, { to: v }))
   const update = (patch: Partial<GbaPlan>) => setPlan(data.gameId, unit.id, { ...plan, ...patch })
   const steps = stepsOf(data, unit, plan)
   const stages = project(data, unit, plan)
@@ -803,10 +897,11 @@ export function GbaPlanner({ data: game }: { data: GbaData }) {
   // The promotions offered: the first from the class the unit joins in, then one from wherever that leads.
   const offers: { index: number; from: GbaClass; options: GbaClass[]; fromLevel: number }[] = []
   if (first.length) offers.push({ index: 0, from: start, options: first, fromLevel: unit.level })
-  for (const i of [1, 2]) {
+  for (let i = 1; i < MAX_CHANGES; i++) {
     const prev = steps[i - 1]
     const next = prev ? changesOf(data, unit, prev.to, [unit.classId, ...steps.slice(0, i).map((s) => s.to.id)]) : []
-    if (prev && next.length) offers.push({ index: i, from: prev.to, options: next, fromLevel: prev.promotion ? 1 : prev.at })
+    if (!prev || !next.length) break
+    offers.push({ index: i, from: prev.to, options: next, fromLevel: prev.promotion ? 1 : prev.at })
   }
   const reclassing = !!unit.reclass
   const avatar = avatarOptions ? data.avatar : undefined
@@ -930,7 +1025,14 @@ export function GbaPlanner({ data: game }: { data: GbaData }) {
             </button>
           )}
         </div>
-        {offers.map(({ from }) => from.storyPromotion && <p key={from.id} className="text-xs text-neutral-400">{from.name}: {from.storyPromotion}</p>)}
+        {[...new Map(offers.map(({ from }) => [from.id, from])).values()].map(
+          (from) =>
+            (from.storyPromotion || from.changeNote) && (
+              <p key={from.id} className="text-xs text-neutral-400">
+                {from.name}: {from.storyPromotion ?? from.changeNote}
+              </p>
+            ),
+        )}
         <p className="text-xs text-neutral-500">
           {data.catchUp ? 'Average stats, from the level-up rule below.' : 'Average stats: each level adds the growth rate.'}{' '}
           {data.growthScale ? `${data.growthScale.text} ` : ''}Stats stop at the{' '}
@@ -950,6 +1052,7 @@ export function GbaPlanner({ data: game }: { data: GbaData }) {
           data={data}
           rows={[
             { label: classIds.some((id) => data.classes[id].growths) ? 'Personal growths' : 'Growths', values: unit.growths, suffix: '%' },
+            ...(data.expectedGrowths?.[unit.id] ? [{ label: "Average gain per level (the game's roll)", values: data.expectedGrowths[unit.id], suffix: '%' }] : []),
             ...classIds
               .filter((id) => data.classes[id].growths)
               .map((id) => ({ label: `Growths as a ${data.classes[id].name}`, values: withClassGrowths(data, unit, data.classes[id]), suffix: '%' })),
@@ -973,6 +1076,8 @@ export function GbaPlanner({ data: game }: { data: GbaData }) {
               .join(', ')}
           </p>
         )}
+        {data.expectedGrowthText && data.expectedGrowths?.[unit.id] && <p className="text-xs text-neutral-500">{data.expectedGrowthText}</p>}
+        <SpellsLine data={data} unit={unit} plan={plan} steps={steps} />
         <StatTable
           data={data}
           rows={stages.map((st, i) => ({

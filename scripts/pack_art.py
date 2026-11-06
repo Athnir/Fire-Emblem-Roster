@@ -16,7 +16,7 @@ from PIL import Image
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 OUT = os.path.join(os.path.expanduser('~'), 'Documents', 'FE Games', 'FE Roster Art.zip')
-GAMES = ['fe1', 'fe3', 'fe4', 'fe5', 'fe6', 'fe7', 'fe8', 'fe9', 'fe10', 'fe11', 'fe12', 'fe13', 'fe15', 'fe16', 'fe17']
+GAMES = ['fe1', 'fe2', 'fe3', 'fe4', 'fe5', 'fe6', 'fe7', 'fe8', 'fe9', 'fe10', 'fe11', 'fe12', 'fe13', 'fe15', 'fe16', 'fe17']
 # A portrait smaller than this on its longer side is pixel art, scaled up to about this size.
 PIXEL_ART = 160
 TARGET = 256

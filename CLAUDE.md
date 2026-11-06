@@ -15,7 +15,7 @@ new rule, add it here.
 - **One game picker; every tool for that game sits in the same tabs.** No extra menus or tool-picker steps. A game with nothing
   like a tool (no marriages, no skills) has no tab for it.
 - **The picker lists the games in the series' order, by number** (user, 2026-11-04): "14. Fire Emblem Fates", and each mainline
-  game the app doesn't have (Gaiden until it's built, Fortune's Weave) in its place, greyed out.
+  game the app doesn't have (Fortune's Weave) in its place, greyed out.
 - **Every game gets a Bulk Viewer** (user, 2026-11-02): at least the Team Viewer, with saved sets of plans; a game with a second
   generation adds the Parent Checker. The games still without one get theirs in their review. It shows only the units with a plan
   (or in the set shown), never the whole roster, as Fates' does (user, 2026-11-05).
@@ -69,7 +69,10 @@ new rule, add it here.
 - **Dumps stay where the user extracted them** (each game's reader has the default path), or in `data-raw/<game>/`, which is
   git-ignored except each game's `README.md` (the formats). Only data derived from them goes in the repo.
 - **Japanese-only games:** read the clean Japanese files; English names come from the community translation patches' name
-  tables, applied in memory only (as the Armory does).
+  tables, applied in memory only (as the Armory does). Gaiden, whose only copy is the user's already-translated ROM, shows Shadows
+  of Valentia's official names for units and classes instead (2026-11-05, not yet settled with the user): its translation's menus cut
+  them to five letters ("Pala", "Bird"), so the translation's name stays beside each unit. New Mystery, with no translation patch,
+  takes Shadow Dragon's official names where it has them and Serenes Forest's for the rest.
 - **Everything generated comes from a re-runnable script**; fix the generator, never the output. Formats go in
   `data-raw/<game>/README.md`.
 - **The game wins.** When the data contradicts a wiki or memory, say so plainly and point to the file.

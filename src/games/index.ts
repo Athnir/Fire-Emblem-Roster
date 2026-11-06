@@ -52,6 +52,13 @@ export const GAMES: Game[] = [
     load: () => import('./fe1').then((m) => m.default),
   },
   {
+    id: 'fe2',
+    number: 2,
+    title: 'Fire Emblem Gaiden',
+    short: 'Gaiden',
+    load: () => import('./fe2').then((m) => m.default),
+  },
+  {
     id: 'fe3',
     number: 3,
     title: 'Fire Emblem: Mystery of the Emblem',
@@ -164,10 +171,9 @@ export interface MissingGame {
   why: string
 }
 
-/** The mainline games the app doesn't have, listed in their place in the picker so the gaps show: Gaiden until it's built, and
- * Fortune's Weave, too new for solid data (CLAUDE.md). */
+/** The mainline games the app doesn't have, listed in their place in the picker so the gaps show: Fortune's Weave, too new for solid
+ * data (CLAUDE.md). */
 export const MISSING_GAMES: MissingGame[] = [
-  { number: 2, title: 'Fire Emblem Gaiden', why: 'not in the app' },
   { title: "Fire Emblem: Fortune's Weave", why: 'not in the app yet' },
 ]
 

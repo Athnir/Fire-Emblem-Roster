@@ -80,6 +80,10 @@ export interface GbaUnit {
   reclassAll?: string[]
   /** When they leave the army and come back (New Mystery's prologue), shown in the Roster; blank under the spoiler block. */
   away?: string[]
+  /** The name the game itself shows, where the app shows another (Gaiden's translation: "Bird" for Tobin). */
+  altName?: string
+  /** What only they can do (Gaiden's special attacks), shown in the Roster as a personal skill is. */
+  traits?: string[]
 }
 
 /** One answer to a creation question for the Avatar (New Mystery's Kris): what it adds to the bases and the growths. */
@@ -170,6 +174,10 @@ export interface GbaClass {
   growths?: Partial<GbaStats>
   /** A promoted class (a reclass stays within the tier). */
   promoted?: boolean
+  /** How the change into one of its options works, beyond the level it needs (Gaiden's Villager: a random class, asked again). */
+  changeNote?: string
+  /** Becoming this class changes nothing but the level (Gaiden's Princess: Celica's scene at Fort Geeth). */
+  keepsStats?: boolean
 }
 
 export interface GbaSupport {
