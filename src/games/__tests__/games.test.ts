@@ -6,7 +6,7 @@ describe('the game picker', () => {
     const list = pickerList().map((e) => (e.game ? gameLabel(e.game) : `(${gameLabel(e.missing)})`))
     expect(list.slice(0, 3)).toEqual(['1. Fire Emblem: Shadow Dragon & the Blade of Light', '(2. Fire Emblem Gaiden)', '3. Fire Emblem: Mystery of the Emblem'])
     expect(list).toContain('14. Fire Emblem Fates')
-    expect(list.indexOf('(12. Fire Emblem: New Mystery of the Emblem)')).toBe(list.indexOf('11. Fire Emblem: Shadow Dragon') + 1)
+    expect(list.indexOf('12. Fire Emblem: New Mystery of the Emblem')).toBe(list.indexOf('11. Fire Emblem: Shadow Dragon') + 1)
     expect(list[list.length - 1]).toBe("(Fire Emblem: Fortune's Weave)")
     // Numbers 1 to 17, each once.
     const numbers = pickerList().map((e) => (e.game ? e.game.number : e.missing.number)).filter((n) => n !== undefined)

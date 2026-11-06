@@ -15,7 +15,7 @@ new rule, add it here.
 - **One game picker; every tool for that game sits in the same tabs.** No extra menus or tool-picker steps. A game with nothing
   like a tool (no marriages, no skills) has no tab for it.
 - **The picker lists the games in the series' order, by number** (user, 2026-11-04): "14. Fire Emblem Fates", and each mainline
-  game the app doesn't have (Gaiden, New Mystery of the Emblem, Fortune's Weave) in its place, greyed out.
+  game the app doesn't have (Gaiden until it's built, Fortune's Weave) in its place, greyed out.
 - **Every game gets a Bulk Viewer** (user, 2026-11-02): at least the Team Viewer, with saved sets of plans; a game with a second
   generation adds the Parent Checker. The games still without one get theirs in their review. It shows only the units with a plan
   (or in the set shown), never the whole roster, as Fates' does (user, 2026-11-05).
@@ -24,7 +24,10 @@ new rule, add it here.
 - **Finish one game across every tab before starting the next.** Order: Fates, Path of Radiance, Radiant Dawn, Genealogy of the
   Holy War, Thracia 776, The Binding Blade, The Blazing Blade, The Sacred Stones, Mystery of the Emblem, Awakening, then Shadows of
   Valentia (the user added its files, 2026-10-30), then Shadow Dragon (added 2026-10-30). The Switch games (the FE1 re-release,
-  Three Houses, Engage) come once the user can dump them. Fortune's Weave is skipped (too new for solid data).
+  Three Houses, Engage) come once the user can dump them. New Mystery of the Emblem and Gaiden came last (the user added them,
+  2026-11-05). Fortune's Weave is skipped (too new for solid data).
+- **A new game follows Fates where it has something like it** (user, 2026-11-05, New Mystery: "use the fates section as the default
+  when in question", the Roster and skills): the same tabs, the same layout, the Avatar made as Corrin is.
 - **Fates is finished** and is the model for the most any game will need (no other game has a web as complex). It's only
   touched to fix bugs.
 - **Only what the user owns.** Missing DLC is left out (or taken from wikis later), never obtained.
@@ -131,6 +134,10 @@ new rule, add it here.
   Dancer, a Transporter) says so.
 - **Picture settings live only in the Roster** (user, 2026-11-05): the Avatar's looks and hair colour sit with the portraits, as
   Fates' Corrin's do; the planners keep only what changes stats (Awakening's asset and flaw).
+- **New Mystery's Kris is made as Corrin is** (2026-11-05, Fates as the default): two units; the class and the three creation answers
+  (which add to the bases and growths) in the Unit Planner, as Corrin's boon and bane; the hair, hair colour and eyes in the Roster,
+  the portrait built from the game's own parts (body in the class's outfit, eyes, hair turned round the colour wheel). The prologue's
+  three questions only move when some units join, so they're picked in the Roster (or asked by the chapter bar), and no one drops out.
 - **Every game's Roster is Fates'** (user, 2026-11-05): who the unit is, and nothing to plan. The portrait and name, the class and
   level they join in (and their class set, reclass set or promotions), how and when they join, the story's notes on them, fixed
   traits (affinity, leadership, holy blood, crests), and their personal skill (Genealogy's and Thracia's own skills; Path of

@@ -11,7 +11,12 @@ import {
   GBA_STATS,
   GBA_STAT_LABELS,
   type GbaAffinity,
+  type GbaAvatar,
+  type GbaAvatarAnswer,
+  type GbaBaseTalk,
   type GbaBranch,
+  type GbaJoinChoice,
+  type GbaSlotSupport,
   type GbaClass,
   type GbaChapter,
   type GbaStats,
@@ -56,6 +61,9 @@ export interface GbaData {
    * read through the class's cap and floored at 0, and a level-up adds a catch-up bonus; averages worked out exactly, stat by stat
    * (`dynamicGrowth.ts`). */
   catchUp?: boolean
+  /** New Mystery's stats (arm9 0x204efa4, 0x205092c): as Shadow Dragon's, the unit's own base + the class's + the points gained, read
+   * through the class's cap, but with no catch-up bonus. */
+  ownStats?: boolean
   /** Classes of a reclass set offered in turn (Shadow Dragon's Dracoknight and Falcoknight): the first, or the next once the unit has
    * been in it. */
   reclassSwap?: string[]
@@ -67,6 +75,25 @@ export interface GbaData {
   /** The real chance per level of a listed growth, when the game's roll makes it differ (FE1: a random byte / 25 against the growth in
    * tenths, so 25G/256 of G tenths: 0.977 of the listed rate), and what to say about it. */
   growthScale?: { factor: number; text: string }
+  /** The Avatar's creation (New Mystery's Kris), picked in the Unit Planner: the class from its list and the answers, which add to the
+   * unit's own bases and growths. */
+  avatar?: GbaAvatar
+  /** Story choices that move when some units join (New Mystery's prologue questions): picked in the Roster, or under the spoiler block
+   * as the chapter bar reaches them. */
+  choices?: GbaJoinChoice[]
+  /** One-way supports (New Mystery), what each level adds ([Hit, Avoid, Crit, Crit avoid] at no level, C, B and A) and the rule. */
+  slotSupports?: GbaSlotSupport[]
+  slotSupportBonus?: number[][]
+  slotSupportText?: string
+  /** Talks at the base, and what to say about them. */
+  baseTalks?: GbaBaseTalk[]
+  baseTalkText?: string
+  /** The setting that opens every class of the unit's gender to reclassing (`GbaUnit.reclassAll`), as the Unit Planner words it. */
+  reclassAllLabel?: string
+  /** A unit's portrait where the game builds it from parts (New Mystery's Kris); the uploaded portrait otherwise. */
+  portrait?: (unit: GbaUnit, size: number) => ReactNode
+  /** More in the Roster under a unit (the Avatar's looks, by the portraits as Fates' Corrin's are). */
+  rosterExtra?: (unit: GbaUnit) => ReactNode
 }
 
 const statsOf = (data: GbaData) => data.stats ?? GBA_STATS
@@ -78,7 +105,7 @@ const MAX_LEVEL = 20
 const PROMOTE_LEVEL = 10
 
 /** A unit's plan: up to two promotions (a trainee's at Lv 10, then a promotion item's), each into a class of its own picking. */
-interface GbaPlan {
+export interface GbaPlan {
   promoteAt: number | null
   targetLevel: number
   to?: string
@@ -86,14 +113,20 @@ interface GbaPlan {
   to2?: string
   promoteAt3?: number | null
   to3?: string
+  /** The Avatar's creation: the class (its index in the unit's list) and each question's answer (New Mystery's Kris). */
+  avatarClass?: number
+  answers?: number[]
 }
 
 interface GbaState {
   plans: Record<string, Record<string, GbaPlan>>
   /** The story picked in each game told in several, shared by its tabs. */
   stories: Record<string, string>
+  /** A game's own switches, by name (New Mystery's every-class reclassing once Hard is cleared). */
+  settings: Record<string, Record<string, boolean>>
   setPlan: (gameId: string, unitId: string, plan: GbaPlan | null) => void
   setStory: (gameId: string, storyId: string) => void
+  setSetting: (gameId: string, key: string, on: boolean) => void
 }
 
 /** Saved under `fe-roster-gba`, so the backup (src/logic/backup.ts) picks it up. */
@@ -102,6 +135,7 @@ const useGbaStore = create<GbaState>()(
     (set) => ({
       plans: {},
       stories: {},
+      settings: {},
       setPlan: (gameId, unitId, plan) =>
         set((state) => {
           const game = { ...state.plans[gameId] }
@@ -110,14 +144,91 @@ const useGbaStore = create<GbaState>()(
           return { plans: { ...state.plans, [gameId]: game } }
         }),
       setStory: (gameId, storyId) => set((state) => ({ stories: { ...state.stories, [gameId]: storyId } })),
+      setSetting: (gameId, key, on) =>
+        set((state) => ({ settings: { ...state.settings, [gameId]: { ...state.settings?.[gameId], [key]: on } } })),
     }),
     { name: 'fe-roster-gba' },
   ),
 )
 
+/** A unit's saved plan, for a game's own parts: the Avatar's portrait wears the outfit of the class picked in the Unit Planner. */
+export function useGbaPlan(gameId: string, unitId: string): GbaPlan | undefined {
+  return useGbaStore((s) => s.plans[gameId]?.[unitId])
+}
+
+const ALL_CLASSES = 'reclassAll'
+
+/** The Avatar as the Unit Planner's creation picks make them (New Mystery's Kris, arm9 0x2028b04 and 0x2028b60): the class picked, with
+ * its reclass set and starting ranks (the starting weapon's kind higher), and each answer's bases and growths on top of the unit's own.
+ * Any other unit as it is. */
+export function avatarUnit(data: GbaData, unit: GbaUnit, plan?: Pick<GbaPlan, 'avatarClass' | 'answers'>): GbaUnit {
+  const av = data.avatar
+  const options = av?.classes[unit.id]
+  if (!av || !options?.length) return unit
+  const option = options[plan?.avatarClass ?? av.defaults.classIndex] ?? options[0]
+  const from = data.classes[unit.classId]
+  const to = data.classes[option.classId] ?? from
+  const bases: GbaStats = {}
+  for (const s of statsOf(data)) bases[s] = (unit.bases[s] ?? 0) - (from.bases[s] ?? 0) + (to.bases[s] ?? 0)
+  const growths: GbaStats = { ...unit.growths }
+  av.questions.forEach((q, i) => {
+    const answer = q.answers[plan?.answers?.[i] ?? av.defaults.answers[i]]
+    for (const [s, v] of Object.entries(answer?.bases ?? {}) as [GbaStat, number][]) bases[s] = (bases[s] ?? 0) + v
+    for (const [s, v] of Object.entries(answer?.growths ?? {}) as [GbaStat, number][]) growths[s] = (growths[s] ?? 0) + v
+  })
+  const ranks =
+    av.ranks && to.weapons
+      ? Object.fromEntries(to.weapons.map((w) => [w.toLowerCase(), w === option.weapon ? av.ranks!.start : av.ranks!.other]))
+      : unit.ranks
+  return { ...unit, classId: to.id, bases, growths, ranks, reclass: option.reclass ?? unit.reclass }
+}
+
+/** An answer's bonuses in words: "Skl +2, Spd +2 · Skl +5%, Spd +5%". */
+function answerText(data: GbaData, a: GbaAvatarAnswer): string {
+  const part = (values: GbaStats | undefined, suffix: string) =>
+    statsOf(data)
+      .filter((s) => values?.[s])
+      .map((s) => `${labelOf(data, s)} +${values![s]}${suffix}`)
+      .join(', ')
+  return [part(a.bases, ''), part(a.growths, '%')].filter(Boolean).join(' · ')
+}
+
+/** The units as the story choices picked so far make them join (New Mystery's prologue questions); a choice not picked keeps the data's
+ * join, which names both answers. */
+function withChoices(data: GbaData, picks: Record<string, string>): GbaData {
+  if (!data.choices?.length) return data
+  const moves = new Map<string, GbaJoinChoice['options'][number]['joins'][string]>()
+  for (const c of data.choices) {
+    const option = c.options.find((o) => o.id === picks[`${data.gameId}/${c.id}`])
+    for (const [id, j] of Object.entries(option?.joins ?? {})) moves.set(id, j)
+  }
+  if (!moves.size) return data
+  return {
+    ...data,
+    units: data.units.map((u) => {
+      const j = moves.get(u.id)
+      return j ? { ...u, joinChapter: j.joinChapter, join: j.join, away: j.away } : u
+    }),
+  }
+}
+
+/** A story choice as the spoiler block asks it: at the chapter after the one it ends, every answer carrying on there. */
+function choiceBranches(data: GbaData): GbaBranch[] {
+  return (data.choices ?? []).flatMap((c) => {
+    const next = data.chapters[data.chapters.findIndex((ch) => ch.id === c.after) + 1]
+    return next && c.after !== next.id
+      ? [{ id: c.id, after: c.after, question: c.question, choices: c.options.map((o) => ({ id: o.id, label: o.label, chapters: [next.id] })) }]
+      : []
+  })
+}
+
 /** The story's splits as the spoiler block walks them: a game's own (The Binding Blade's), or for a game whose stories part after
  * shared chapters (The Sacred Stones) the stories themselves, after the last shared chapter. */
 function branchesOf(data: GbaData): GbaBranch[] {
+  return [...ownBranches(data), ...choiceBranches(data)]
+}
+
+function ownBranches(data: GbaData): GbaBranch[] {
   if (data.branches) return data.branches
   const first = data.chapters.findIndex((c) => c.story)
   if (!data.stories?.length || first <= 0) return []
@@ -155,12 +266,13 @@ function walkOf(data: GbaData, chapters: GbaChapter[], picks: Record<string, str
 
 /** The game's data for the story picked (all of it for a game told in one), and the switch to pick another. With the spoiler block
  * on, the chapters you've reached and the units they've brought, and the bar that walks the story (asking at each split). */
-function useStory(data: GbaData): { view: GbaData; story?: GbaStory; picker: ReactNode } {
-  const picked = useGbaStore((s) => s.stories?.[data.gameId])
+function useStory(game: GbaData): { view: GbaData; story?: GbaStory; picker: ReactNode } {
+  const picked = useGbaStore((s) => s.stories?.[game.gameId])
   const setStory = useGbaStore((s) => s.setStory)
   const block = useSpoilerStore((s) => s.block)
   const progress = useSpoilerStore((s) => s.progress)
   const branchPicks = useSpoilerStore((s) => s.branches)
+  const data = withChoices(game, branchPicks)
   const setProgress = useSpoilerStore((s) => s.setProgress)
   const setBranch = useSpoilerStore((s) => s.setBranch)
   if (block) return spoilerView(data, picked, setStory, { progress, branchPicks, setProgress, setBranch })
@@ -263,7 +375,33 @@ function artId(gameId: string, name: string): string {
 }
 
 function UnitPortrait({ data, unit, size = 64 }: { data: GbaData; unit: GbaUnit; size?: number }) {
-  return <Portrait characterId={artId(data.gameId, unit.name)} isChild={false} size={size} />
+  return data.portrait?.(unit, size) ?? <Portrait characterId={artId(data.gameId, unit.name)} isChild={false} size={size} />
+}
+
+/** A story choice that moves when units join, as buttons (block off; the chapter bar asks it under the spoiler block). */
+function JoinChoicePicker({ data, choice }: { data: GbaData; choice: GbaJoinChoice }) {
+  const key = `${data.gameId}/${choice.id}`
+  const picked = useSpoilerStore((s) => s.branches[key])
+  const setBranch = useSpoilerStore((s) => s.setBranch)
+  const chip = (on: boolean) =>
+    `rounded-full border px-3 py-1 text-xs transition-colors ${
+      on ? 'border-violet-500 bg-violet-950/50 text-violet-200' : 'border-neutral-700 bg-neutral-800 text-neutral-400 hover:border-neutral-600'
+    }`
+  return (
+    <div className="mb-2 space-y-1.5">
+      <div className="text-xs text-neutral-400">{choice.question}</div>
+      <div className="flex flex-wrap gap-1.5">
+        <button type="button" onClick={() => setBranch(key, null)} className={chip(!picked)}>
+          Not picked
+        </button>
+        {choice.options.map((o) => (
+          <button key={o.id} type="button" onClick={() => setBranch(key, o.id)} className={chip(picked === o.id)}>
+            {o.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
 }
 
 function fmt(v: number | undefined): string {
@@ -359,7 +497,11 @@ function turnsFor(levels: number[], s: GbaSupport): (number | null)[] {
 
 /** Who the unit is, as Fates' Roster (user, 2026-11-05): their stats, growths, maximums and weapon ranks are in the Unit Planner, their
  * supports in the Supports tab. */
-function UnitDetail({ data, unit }: { data: GbaData; unit: GbaUnit }) {
+function UnitDetail({ data, unit: joined }: { data: GbaData; unit: GbaUnit }) {
+  const plan = useGbaStore((s) => s.plans[data.gameId]?.[joined.id])
+  const block = useSpoilerStore((s) => s.block)
+  // The Avatar in the class and with the answers picked in the Unit Planner.
+  const unit = avatarUnit(data, joined, plan)
   const cls = data.classes[unit.classId]
   const promo = optionsOf(data, cls)
   return (
@@ -390,8 +532,17 @@ function UnitDetail({ data, unit }: { data: GbaData; unit: GbaUnit }) {
             {joinText(data, unit)}
           </div>
           {unit.join.note && <div className="text-neutral-400">{unit.join.note}</div>}
+          {data.avatar?.classes[unit.id] && <div className="text-neutral-500">The class and the creation's answers are picked in the Unit Planner.</div>}
+          {/* When they leave and come back: blank under the spoiler block (CLAUDE.md). */}
+          {!block &&
+            unit.away?.map((line) => (
+              <div key={line} className="text-neutral-400">
+                {line}
+              </div>
+            ))}
         </div>
       </div>
+      {data.rosterExtra?.(unit)}
     </div>
   )
 }
@@ -399,6 +550,7 @@ function UnitDetail({ data, unit }: { data: GbaData; unit: GbaUnit }) {
 /** Every playable unit by the chapter they join; tapping one shows their data below the list. */
 export function GbaRoster({ data: game }: { data: GbaData }) {
   const { view: data, picker } = useStory(game)
+  const block = useSpoilerStore((s) => s.block)
   const [selectedId, setSelectedId] = useState(data.units[0]?.id ?? '')
   const detailRef = useRef<HTMLDivElement>(null)
   const selected = data.units.find((u) => u.id === selectedId) ?? data.units[0]
@@ -407,12 +559,18 @@ export function GbaRoster({ data: game }: { data: GbaData }) {
     <div className="space-y-6">
       {picker}
       <div className="space-y-3">
-        {data.chapters.map((ch) => {
+        {data.chapters.map((ch, i) => {
           const units = data.units.filter((u) => u.joinChapter === ch.id)
-          if (units.length === 0) return null
+          // A story choice made at the end of the chapter before, picked here with the block off (the chapter bar asks it with it on).
+          const choices = block ? [] : (data.choices ?? []).filter((c) => i > 0 && c.after === data.chapters[i - 1].id)
+          if (units.length === 0 && choices.length === 0) return null
           return (
             <div key={ch.id}>
               <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">{ch.label}</h3>
+              {ch.note && <p className="mb-1 text-xs text-neutral-500">{ch.note}</p>}
+              {choices.map((c) => (
+                <JoinChoicePicker key={c.id} data={data} choice={c} />
+              ))}
               <div className="flex flex-wrap gap-2">
                 {units.map((u) => (
                   <button
@@ -541,7 +699,7 @@ function projectCatchUp(data: GbaData, unit: GbaUnit, plan: GbaPlan): Stage[] {
     const caps = capsFor(unit, cls)
     for (let i = 0; i < count; i++)
       for (const s of growing)
-        states.set(s, levelUp(states.get(s)!, (unit.growths[s] ?? 0) + (cls.growths?.[s] ?? 0), (own[s] ?? 0) + (cls.bases[s] ?? 0), caps[s]))
+        states.set(s, levelUp(states.get(s)!, (unit.growths[s] ?? 0) + (cls.growths?.[s] ?? 0), (own[s] ?? 0) + (cls.bases[s] ?? 0), caps[s], !!data.catchUp))
   }
   let cls = start
   let level = unit.level
@@ -564,7 +722,7 @@ function projectCatchUp(data: GbaData, unit: GbaUnit, plan: GbaPlan): Stage[] {
 /** Average stats: each level adds the growth rate, held at the class's caps. Promoting adds the new class's gains where the game keeps
  * them (Con and Mov from the class), otherwise the difference between the classes' bases, and starts again at level 1. */
 function project(data: GbaData, unit: GbaUnit, plan: GbaPlan): Stage[] {
-  if (data.catchUp) return projectCatchUp(data, unit, plan)
+  if (data.catchUp || data.ownStats) return projectCatchUp(data, unit, plan)
   const capped = (stats: GbaStats, cls: GbaClass) => {
     const out = { ...stats }
     const caps = capsFor(unit, cls)
@@ -612,11 +770,17 @@ function project(data: GbaData, unit: GbaUnit, plan: GbaPlan): Stage[] {
 export function GbaPlanner({ data: game }: { data: GbaData }) {
   const { view: data, picker } = useStory(game)
   const [unitId, setUnitId] = useState(data.units[0]?.id ?? '')
-  const unit = data.units.find((u) => u.id === unitId) ?? data.units[0]
-  useScreenshotUnit(unit)
-  const saved = useGbaStore((s) => (unit ? s.plans[data.gameId]?.[unit.id] : undefined))
+  const joined = data.units.find((u) => u.id === unitId) ?? data.units[0]
+  useScreenshotUnit(joined)
+  const saved = useGbaStore((s) => (joined ? s.plans[data.gameId]?.[joined.id] : undefined))
   const setPlan = useGbaStore((s) => s.setPlan)
-  if (!unit) return null
+  const allClasses = useGbaStore((s) => !!s.settings?.[data.gameId]?.[ALL_CLASSES])
+  const setSetting = useGbaStore((s) => s.setSetting)
+  if (!joined) return null
+  // The Avatar as created (New Mystery's Kris), and every class of the unit's gender once the setting opens them all.
+  const made = avatarUnit(data, joined, saved)
+  const unit = allClasses && made.reclassAll ? { ...made, reclass: made.reclassAll } : made
+  const avatarOptions = data.avatar?.classes[unit.id]
   const start = data.classes[unit.classId]
   const first = changesOf(data, unit, start)
   const plan: GbaPlan = saved ?? {
@@ -645,11 +809,59 @@ export function GbaPlanner({ data: game }: { data: GbaData }) {
     if (prev && next.length) offers.push({ index: i, from: prev.to, options: next, fromLevel: prev.promotion ? 1 : prev.at })
   }
   const reclassing = !!unit.reclass
+  const avatar = avatarOptions ? data.avatar : undefined
+  const answers = avatar ? avatar.questions.map((_, i) => plan.answers?.[i] ?? avatar.defaults.answers[i]) : []
   return (
     <div className="space-y-4">
       {picker}
       <UnitSelect data={data} value={unit.id} onChange={setUnitId} />
       <div className="space-y-4 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
+        {/* The Avatar's creation, as Fates' Corrin's boon and bane: what changes their stats (their looks are in the Roster). */}
+        {avatar && avatarOptions && (
+          <div className="space-y-2">
+            <h4 className="text-xs font-semibold uppercase tracking-wide text-neutral-400">Creation</h4>
+            <div className="flex flex-wrap items-end gap-3 text-sm text-neutral-300">
+              <label className="space-y-1">
+                <span className="block text-xs text-neutral-500">Class</span>
+                <select
+                  value={plan.avatarClass ?? avatar.defaults.classIndex}
+                  onChange={(e) => update({ avatarClass: Number(e.target.value), to: undefined, to2: undefined, to3: undefined })}
+                  className={selectClass}
+                >
+                  {avatarOptions.map((o, i) => (
+                    <option key={o.classId} value={i}>
+                      {data.classes[o.classId]?.name}
+                      {o.weapon ? ` (${o.weapon})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {avatar.questions.map((q, qi) => (
+                <label key={q.question} className="min-w-0 space-y-1">
+                  <span className="block text-xs text-neutral-500">{q.question}</span>
+                  <select
+                    value={answers[qi]}
+                    onChange={(e) => update({ answers: answers.map((a, i) => (i === qi ? Number(e.target.value) : a)) })}
+                    className={`${selectClass} max-w-full`}
+                  >
+                    {q.answers.map((a, ai) => (
+                      <option key={a.label} value={ai}>
+                        {a.label}: {answerText(data, a)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ))}
+            </div>
+            {avatar.text && <p className="text-xs text-neutral-500">{avatar.text}</p>}
+          </div>
+        )}
+        {data.reclassAllLabel && made.reclassAll && (
+          <label className="flex items-center gap-2 text-sm text-neutral-300">
+            <input type="checkbox" checked={allClasses} onChange={(e) => setSetting(data.gameId, ALL_CLASSES, e.target.checked)} />
+            {data.reclassAllLabel}
+          </label>
+        )}
         <div className="flex flex-wrap items-end gap-4 text-sm text-neutral-300">
           {offers.map(({ index, from, options, fromLevel }) => {
             const step = steps[index]
@@ -818,7 +1030,9 @@ export function GbaSupports({ data: game }: { data: GbaData }) {
               {unit.affinity && <div className="text-xs text-neutral-400">Affinity: {unit.affinity}</div>}
             </div>
           </div>
-          {data.rankedSupports ? (
+          {data.slotSupports ? (
+            <SlotSupports data={data} unit={unit} onPick={(id) => data.units.some((u) => u.id === id) && setUnitId(id)} />
+          ) : data.rankedSupports ? (
             <RankedSupports data={everyone} unit={unit} onPick={(id) => data.units.some((u) => u.id === id) && setUnitId(id)} />
           ) : fixed ? (
             <FixedSupports data={data} unit={unit} fixed={fixed} onPick={setUnitId} />
@@ -908,6 +1122,119 @@ function FixedSupports({
         {list(`${unit.name} gets`, fixed.gets)}
         {list(`${unit.name} gives`, fixed.gives)}
       </div>
+    </>
+  )
+}
+
+const SLOT_LABELS = ['Hit', 'Avoid', 'Crit', 'Crit avoid']
+const SLOT_LEVELS = ['C', 'B', 'A']
+
+/** One-way supports (New Mystery): the partners whose nearness gives this unit a bonus, with the turns both must spend on the map for each
+ * level, the units it gives a bonus to, and its talks at the base. The Avatar's two units show as one partner. */
+function SlotSupports({ data, unit, onPick }: { data: GbaData; unit: GbaUnit; onPick: (id: string) => void }) {
+  const byId = new Map(data.units.map((u) => [u.id, u]))
+  const avatarIds = Object.keys(data.avatar?.classes ?? {})
+  const isAvatar = (id: string) => avatarIds.includes(id)
+  // One row for the Avatar: the first of its units in the list stands for both.
+  const once = (rows: GbaSlotSupport[], key: (s: GbaSlotSupport) => string) =>
+    rows.filter((s, i) => !isAvatar(key(s)) || rows.findIndex((t) => isAvatar(key(t))) === i)
+  const nameOf = (id: string) => (isAvatar(id) && !isAvatar(unit.id) ? (data.avatar?.name ?? byId.get(id)?.name) : byId.get(id)?.name) ?? id
+  const gets = once((data.slotSupports ?? []).filter((s) => s.unit === unit.id && byId.has(s.partner)), (s) => s.partner)
+  const gives = once((data.slotSupports ?? []).filter((s) => s.partner === unit.id && byId.has(s.unit)), (s) => s.unit)
+  const bonus = data.slotSupportBonus ?? []
+  const levelText = (i: number) =>
+    (bonus[i] ?? [])
+      .map((v, k) => (v ? `${SLOT_LABELS[k]} +${v}` : ''))
+      .filter(Boolean)
+      .join(', ')
+  const top = (s: GbaSlotSupport) => SLOT_LEVELS.filter((_, i) => s.levels[i] !== null).pop()
+  // The talks at the base: the Avatar's are with either of its units.
+  const talks = (data.baseTalks ?? []).flatMap((t) => {
+    const partner = isAvatar(unit.id) ? (t.avatar ? t.a : null) : t.a === unit.id ? t.b : t.b === unit.id && !t.avatar ? t.a : null
+    return partner && byId.has(partner) ? [{ ...t, partner }] : []
+  })
+  const talkPartners = [...new Set(talks.map((t) => t.partner))]
+  return (
+    <>
+      {data.slotSupportText && <p className="text-xs text-neutral-500">{data.slotSupportText}</p>}
+      {bonus.length > 0 && (
+        <p className="text-xs text-neutral-400">
+          {SLOT_LEVELS.map((l, i) => `${l}: ${levelText(i + 1)}`).join(' · ')}
+        </p>
+      )}
+      {gets.length === 0 ? (
+        <p className="text-sm text-neutral-400">No one gives {unit.name} a support bonus.</p>
+      ) : (
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-xs text-neutral-500">
+              <th className="py-1 text-left font-normal">{unit.name} gets a bonus near (turns on the map together)</th>
+              {SLOT_LEVELS.map((l) => (
+                <th key={l} className="w-9 py-1 text-right font-normal">
+                  {l}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {gets.map((s) => (
+              <tr key={s.partner} className="border-t border-neutral-800 align-top">
+                <td className="py-1 pr-1">
+                  <button type="button" onClick={() => onPick(s.partner)} className="flex items-center gap-1.5 text-left text-neutral-200 hover:text-violet-300">
+                    <UnitPortrait data={data} unit={byId.get(s.partner)!} size={24} />
+                    {nameOf(s.partner)}
+                  </button>
+                  {s.start > 0 && <div className="text-xs text-neutral-500">starts with {s.start} points</div>}
+                </td>
+                {s.levels.map((need, i) => (
+                  <td key={i} className="w-9 py-1 text-right tabular-nums text-neutral-200">
+                    {need === null ? '–' : Math.max(0, need - s.start)}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      {gives.length > 0 && (
+        <div>
+          <h4 className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">{unit.name} gives a bonus to</h4>
+          <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm">
+            {gives.map((s) => (
+              <button key={s.unit} type="button" onClick={() => onPick(s.unit)} className="flex items-center gap-1.5 text-neutral-200 hover:text-violet-300">
+                <UnitPortrait data={data} unit={byId.get(s.unit)!} size={24} />
+                {nameOf(s.unit)} <span className="text-xs text-neutral-500">(to {top(s) ?? '–'})</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      {talkPartners.length > 0 && (
+        <div className="space-y-1">
+          <h4 className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Talks at the base</h4>
+          {data.baseTalkText && <p className="text-xs text-neutral-500">{data.baseTalkText}</p>}
+          <ul className="space-y-1 text-sm">
+            {talkPartners.map((id) => {
+              const mine = talks.filter((t) => t.partner === id)
+              const rewards = mine.filter((t) => t.reward)
+              return (
+                <li key={id} className="flex flex-wrap items-center gap-x-2">
+                  <button type="button" onClick={() => onPick(id)} className="flex items-center gap-1.5 text-neutral-200 hover:text-violet-300">
+                    <UnitPortrait data={data} unit={byId.get(id)!} size={24} />
+                    {nameOf(id)}
+                  </button>
+                  <span className="text-neutral-400">{mine.map((t) => t.level).join(', ')}</span>
+                  {rewards.map((t) => (
+                    <span key={t.level} className="text-xs text-neutral-500">
+                      {t.level} gives {t.reward}
+                    </span>
+                  ))}
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      )}
     </>
   )
 }

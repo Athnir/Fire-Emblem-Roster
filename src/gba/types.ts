@@ -43,6 +43,8 @@ export interface GbaChapter {
   id: string
   label: string
   story?: string
+  /** What opens the chapter, for one the story can skip (New Mystery's x chapters). */
+  note?: string
 }
 
 export interface GbaJoin {
@@ -74,6 +76,71 @@ export interface GbaUnit {
   caps?: GbaStats
   /** The classes they can reclass into (Shadow Dragon), both tiers: a change within a tier keeps the level. */
   reclass?: string[]
+  /** Every class of their gender, both tiers, once a setting opens them all (New Mystery, after clearing Hard). */
+  reclassAll?: string[]
+  /** When they leave the army and come back (New Mystery's prologue), shown in the Roster; blank under the spoiler block. */
+  away?: string[]
+}
+
+/** One answer to a creation question for the Avatar (New Mystery's Kris): what it adds to the bases and the growths. */
+export interface GbaAvatarAnswer {
+  label: string
+  bases?: GbaStats
+  growths?: GbaStats
+}
+
+/** A class the Avatar's creation offers: the reclass set it gives and the kind of weapon it starts with. */
+export interface GbaAvatarClass {
+  classId: string
+  reclass?: string[]
+  /** The starting weapon's kind, as the class's weapons name it ('Sword'). */
+  weapon?: string
+}
+
+/** The Avatar's creation, as the game asks it (New Mystery's Kris): for each of its units (the man and the woman) the classes on
+ * offer, the questions and the answers a new save starts on. The Unit Planner picks them; they add to the unit's own bases and
+ * growths. */
+export interface GbaAvatar {
+  /** Their name as others' rows show it, for both units ("Kris"). */
+  name?: string
+  classes: Record<string, GbaAvatarClass[]>
+  questions: { question: string; answers: GbaAvatarAnswer[] }[]
+  defaults: { classIndex: number; answers: number[] }
+  /** The ranks the starting weapon's kind and the class's other weapons start at. */
+  ranks?: { start: string; other: string }
+  text?: string
+}
+
+/** A story choice that moves when some units join, not who joins (New Mystery's prologue questions): asked at the end of `after`, each
+ * answer giving the units it names their join. */
+export interface GbaJoinChoice {
+  id: string
+  after: string
+  question: string
+  options: {
+    id: string
+    label: string
+    joins: Record<string, { joinChapter: string; join: GbaJoin; level?: number; classId?: string; away?: string[] }>
+  }[]
+}
+
+/** A one-way support (New Mystery): `unit` gets the bonus while `partner` is near. Points start at `start` and rise each turn;
+ * `levels` are the points C, B and A need (null: never). */
+export interface GbaSlotSupport {
+  unit: string
+  partner: string
+  start: number
+  levels: (number | null)[]
+}
+
+/** A talk at the base (New Mystery): between two units, at a level, and what it gives. */
+export interface GbaBaseTalk {
+  a: string
+  b: string
+  /** `b` is the Avatar, either of its units. */
+  avatar?: boolean
+  level: string
+  reward?: string
 }
 
 export interface GbaClass {

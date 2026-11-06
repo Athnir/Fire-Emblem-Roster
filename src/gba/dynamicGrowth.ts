@@ -24,8 +24,8 @@ export const shownStat = (base: number, points: number, cap?: number) => {
 }
 
 /** One level-up of one stat. `growth`: the person's + the class's (may be negative); `base`: the unit's own + the class's; `cap`: the
- * class's. */
-export function levelUp(state: GrowthState, growth: number, base: number, cap?: number): GrowthState {
+ * class's. `catchUp` false: no catch-up bonus (New Mystery's level-up, arm9 0x205092c), the running total left at 0. */
+export function levelUp(state: GrowthState, growth: number, base: number, cap?: number, catchUp = true): GrowthState {
   const out: GrowthState = new Map()
   const add = (points: number, total: number, p: number) => {
     if (p <= 0) return
@@ -35,7 +35,7 @@ export function levelUp(state: GrowthState, growth: number, base: number, cap?: 
   const under = (points: number) => cap === undefined || shownStat(base, points, cap) < cap
   for (const [key, p] of state) {
     const [points, total] = key.split(',').map(Number)
-    const behind = total - 100 * points
+    const behind = catchUp ? total - 100 * points : 0
     let chance = (behind > 0 ? Math.floor(behind / 10) : 0) + growth
     let after = points
     if (chance >= 100) {
@@ -43,7 +43,7 @@ export function levelUp(state: GrowthState, growth: number, base: number, cap?: 
       if (under(points)) after = points + 1
     }
     const hit = Math.max(0, Math.min(100, chance)) / 100
-    const nextTotal = under(points) ? total + Math.max(0, growth) : total
+    const nextTotal = catchUp && under(points) ? total + Math.max(0, growth) : total
     const rolled = under(after) ? after + 1 : after
     add(rolled, nextTotal, p * hit)
     add(after, nextTotal, p * (1 - hit))
