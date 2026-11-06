@@ -110,6 +110,14 @@ The app keeps Celica's Priestess apart ("11c") so a Mage who becomes a Priestess
   the record's spell byte is the spell in that place. Fire, Thunder, Ragnarok, Angel, Excaliber, Arrow, Aura, then Recover for the
   Priestess and Sage (none for the Mages); Recover, Libro, Drain, Warp, Reserve, Illusion, Dear, then Angel for the Saint (Fire for the
   Cleric, never set).
+- The spells' numbers, by item (bank 15): Mt $D9B9, Hit $DA54 (9:$8227; 0 for the white magic that doesn't roll), Crit $DA84
+  (9:$83EA), the HP it costs $D9F4, the range bits $DAFD (6:$9AD0: 0x02 a foe next to the caster, 0x04 two tiles away, 0x10 an ally's
+  spell, 0x20 any range; Thunder reaches three, 6:$A646) and what it's effective against $DAB4 (9:$8298: an index into $DAE4's
+  pointers, each a list of classes ended by $FF; Mt x3 against them: Angel's is the monsters, classes 3, 5, 11, 17 and 18 as foes).
+  Items 23-29 and 40-46 are the casting classes' (two items are named Recover and two Reserve: 35 and 36 are the foes'). A spell can't
+  be cast unless the caster has more HP than it costs (9:$8B63: the unit's weapon becomes item $2F). The ROM has no words for what a
+  spell does: the Spells tab gives Serenes Forest's for the white magic, and every number matches its Gaiden magic pages
+  (`src/data/fe2/__tests__/fe2Spells.test.ts`).
 - Learned (15:$E299, 11 bytes: character, then five (count, spell item)): a character in the table counts its level-ups in any class
   but Villager ($6E7A, 9:$891E), and on the level-up that brings the count to the table's number - 1 it learns the spell, if its
   class is a casting one and has it (1:$ADDE). So the joining level counts as 1 (Luthier joins at 7: Thunder at count 4 is Lv 10),

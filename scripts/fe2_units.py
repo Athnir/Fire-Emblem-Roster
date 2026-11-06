@@ -49,6 +49,10 @@ CLASS_STRENGTH, LEVEL_FACTOR = (9, 0x8F21), (9, 0x8EF9)
 CHANGE_FROM, CHANGE_TO, CHANGE_LEVEL, VILLAGER_TO = 0xE3A7, 0xE3B5, 0xE3C2, 0xE3CF
 VILLAGER, FIGHTER, PRIESTESS, HERO, ROYAL = 14, 21, 11, 23, 24
 ITEM_NAMES, ITEM_MIGHT, ITEM_COST = 0xDCAD, 0xD9B9, 0xD9F4
+# More item tables, by item: Hit (9:$8227, a spell's alone; a weapon's adds the wielder's), Crit (9:$83EA), the range bits (6:$9AD0:
+# 0x02 a foe next to the user, 0x04 two tiles away, 0x10 an ally's spell, 0x20 any range), and what it's effective against (9:$8298:
+# an index into $DAE4's pointers, each a list of classes ended by $FF; Mt x3 against them).
+ITEM_HIT, ITEM_CRIT, ITEM_RANGE, ITEM_EFFECTIVE, EFFECTIVE_LISTS = 0xDA54, 0xDA84, 0xDAFD, 0xDAB4, 0xDAE4
 WEAPON_BOUNDS, WEAPON_LISTS = 0xF50C, 0xF512
 SPELL_LEARN, SPELL_LISTS = 0xE299, 0xE199
 SPELL_LIST_CLASSES = [PRIESTESS, 15, 16, 17, 18, 19]       # 1:$AE38: Priestess -> list 0, class c (15-19) -> list c - 14
@@ -548,7 +552,15 @@ def build(game):
 
     spells = {}   # items 23-47: the spells (15:$F4AD: lists 4 and 5); 15:$D9F4 is the HP each costs
     for i in range(bounds[3], bounds[5]):
-        spells[i] = {'name': item(i), 'hpCost': r.u8(FIXED, ITEM_COST + i), 'might': r.u8(FIXED, ITEM_MIGHT + i)}
+        effective = []
+        if r.u8(FIXED, ITEM_EFFECTIVE + i):
+            p = r.u16(FIXED, EFFECTIVE_LISTS + 2 * r.u8(FIXED, ITEM_EFFECTIVE + i))
+            while (c := r.u8(FIXED, p)) != 0xFF:
+                effective.append(c)
+                p += 1
+        spells[i] = {'name': item(i), 'hpCost': r.u8(FIXED, ITEM_COST + i), 'might': r.u8(FIXED, ITEM_MIGHT + i),
+                     'hit': r.u8(FIXED, ITEM_HIT + i), 'crit': r.u8(FIXED, ITEM_CRIT + i), 'range': r.u8(FIXED, ITEM_RANGE + i),
+                     'effective': effective}
 
     chapters_ = [{'story': 'alm', 'number': n} for n in (1, 3, 4)] + [{'story': 'celica', 'number': n} for n in (2, 3, 4)]
     joined = {u['character'] for u in out_units}
@@ -578,6 +590,7 @@ def build(game):
         'dreadFighterRes': game.dread_res(),
         # 8:$A9DF: becoming a Mage (15) sets the spells to bit 0 (and starts the count again, 8:$AA24); a Priestess (11), Sage (19)
         # or Saint (17) adds bit 7 of the class's list.
+        'classSpellItems': sorted({s for k in SPELL_LIST_CLASSES for s in game.spell_list(k) if s != 0xFF}),
         'spellOnChange': {'mage': item(game.spell_list(15)[0]), 'priestess': item(game.spell_list(PRIESTESS)[7]),
                           'sage': item(game.spell_list(19)[7]), 'saint': item(game.spell_list(17)[7])},
         # 8:$A83D: (random byte x 5) / 256 picks the Villager's class.
