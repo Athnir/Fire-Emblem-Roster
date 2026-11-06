@@ -1,16 +1,20 @@
 import {
   FE16_ABILITIES,
   FE16_ABILITY_CHAINS,
+  FE16_AFFECTION,
   FE16_ARTS,
   FE16_CLASSES,
   FE16_CRESTS,
   FE16_JOIN_LEVELS,
   FE16_RANK_REWARDS,
+  FE16_SPELL_STATS,
   FE16_SPELLS,
   FE16_STATUES,
   FE16_SUPPORTS,
+  FE16_TEA,
   FE16_UNITS,
 } from '../data/fe16/fe16Units'
+import { Fe16Affection } from '../houses/affection'
 import { fe16Art } from '../houses/art'
 import { labelOf, type Fe16Data } from '../houses/logic'
 import { Fe16BulkViewer } from '../houses/bulk'
@@ -18,6 +22,7 @@ import { Fe16Classes } from '../houses/classes'
 import { Fe16Planner } from '../houses/planner'
 import { Fe16Info, Fe16Roster, Fe16SpoilerBar, Fe16Supports } from '../houses/screens'
 import { Fe16SkillPlanner } from '../houses/skills'
+import { Fe16Spells } from '../houses/spells'
 import { matchSkillIcons } from '../tellius/art'
 import { TelliusBulkUpload } from '../tellius/TelliusBulkUpload'
 import type { TelliusData } from '../tellius/types'
@@ -36,6 +41,9 @@ export const FE16_DATA: Fe16Data = {
   joinLevels: FE16_JOIN_LEVELS,
   statues: FE16_STATUES,
   chains: FE16_ABILITY_CHAINS,
+  spellStats: FE16_SPELL_STATS,
+  affection: FE16_AFFECTION,
+  tea: FE16_TEA,
 }
 
 // The bulk upload matches portraits by unit name: "byleth_male.png" and "byleth_female.png" for the two Byleths.
@@ -49,8 +57,10 @@ const fe16: GameParts = {
     { id: 'roster', label: 'Roster', component: () => <Fe16Roster data={FE16_DATA} /> },
     { id: 'unit', label: 'Unit Planner', component: () => <Fe16Planner data={FE16_DATA} /> },
     { id: 'supports', label: 'Supports', component: () => <Fe16Supports data={FE16_DATA} /> },
+    { id: 'affection', label: 'Affection', component: () => <Fe16Affection data={FE16_DATA} /> },
     { id: 'classes', label: 'Classes', component: () => <Fe16Classes data={FE16_DATA} /> },
     { id: 'skills', label: 'Skill Planner', component: () => <Fe16SkillPlanner data={FE16_DATA} /> },
+    { id: 'spells', label: 'Spells', component: () => <Fe16Spells data={FE16_DATA} /> },
     { id: 'viewer', label: 'Bulk Viewer', component: () => <Fe16BulkViewer data={FE16_DATA} /> },
     { id: 'info', label: 'Info', component: () => <Fe16Info /> },
   ],

@@ -140,6 +140,43 @@ riding). GameData +0x2427c is the chapter, +0x2449c the difficulty, +0x2449e the
   the generator's chains split a group where the names' stems differ. The breakers and their "+" forms, the Magic Range and Uses
   abilities are in no group: both stay.
 
+## Spells (fixed_data.bin section 1, the Spells tab)
+
+38 x 24, the weapons' layout: +4 what it does (0 an attack, 1 heals an ally, 2 heals allies around, 5 hits around the target, 6 drains,
+7 Torch, 8 Restore, 9 Ward, 10 Silence, 11 Rescue, 12 Warp, 13 the whole map), +5 its kind (5 black magic, 6 white, 7 dark: the names the
+Uses and Range abilities use), +7 max range (100 or more: worked out from Mag, as the help text says; Quake's 130 the whole map), +10 min
+range, +11 uses, +12 the status it inflicts (0x60 none), +14 effective against (the class-type bits), +16 Mt (a healing spell's heal),
++17 Hit, +18 Crit, +19 Wt, +22 the weapons' flags (0x10 no follow-up, 0x04 leaves 1 HP, 0x08 not fliers). Each unit's own spells are
+persondata section 4. Classdata +83/+84 name two spells per class (a Mage's Fire, a Bishop's Physic and Abraxas): what foes of the class
+carry, unconfirmed; a unit isn't given them.
+
+## Tea parties, gifts and lost items (the Affection tab)
+
+- **Favorite teas** (fixed_lobby_common.bin section 10, 101 x 10): u16 person, four bytes not traced, +6..+9 the teas (materials
+  192-212, text 5056 + material; 255 none). A tea's grade is fixed_materialdata.bin section 0 +8 (1-4; the Hresvelg Blend and Leicester
+  Cortania 4).
+- **Topics** (section 13, 150 x 43): a row per topic (0-99 the general ones, text 14781 + row, 66 named; 100-149 the personal ones, text
+  14881 + row - 100, one person's each), a byte per character slot - 2 (no Byleth), 1 where they like it. The tea party (`0x238650`, the
+  lookups `0x406af0` and `0x406a50`) counts a liked topic and plays the lively reaction; any other draws "They don't seem very interested
+  in this topic..." (an Intuition, event flag 0xbd, lets a miss be taken back once). Section 12, the same layout, only starts a 90-frame
+  expression (`0x238814` -> `0x4069e0`, the timer at +0x50): not counted.
+- **The final lines** (section 11, 392 x 14): u16 person, u8 the set (Constance's second, 1, her other self's), u8 a code, then a byte
+  per reaction (text 14931: Nod, Laugh, Commend, Disagree, Admonish, Sigh, Chat, Sip tea, Blush, Praise), 1 where it's right
+  (`0x4066d0` looks one up by person and code). A person's k-th record of a set is their k-th final line, scrdata table 0 block 45 + k:
+  27 of 27 against the guides' (Edelgard, Dimitri, Seteth). Which of Constance's sets a tea party uses isn't traced.
+- **The lines' text** (archive file 1, scrdata.bin): a section per language (1 US English), each 8 Koei XL tables of several columns
+  (`fe16_data.xl_rows`). Table 0 is the monastery's lines: blocks of 100 rows, a row per character slot; column 0 the line (1 to a
+  female Byleth where it differs: no final line does), 3 the voice. Blocks 37-41 the greetings and the tea, 42-44 the looks, 45-53 the
+  final lines, 54 the goodbye, 58/59 a lost item taken or not. The DLC characters' are the update's added file
+  `/patch4/common/common/scrdataDLC.bin` (INFO1 entry 3682; `fe16_extract.py --added` copies it): its table 0 in blocks of 10 rows
+  (person - 1040; row 7 is a Rhea), columns 0-3 the line and the second set's (2).
+- **Gifts and lost items** (fixed_presentdata.bin): section 0 (245 x 12), by key item (names text 10142 + n, descriptions 255 on): u16
+  its price, +4 its rank (0-4), +5 a quest's item, +6 a flower, +7 everyone likes it (the Owl Feather), +8 a lost item. Section 1
+  (45 x 17), by slot: +0 the flower they like, +1..+3 their lost items (the Ashen Wolves two), +4..+6 the gifts they dislike, +7..+11
+  the ones they like, +12..+16 the quest items they take. Giving an item (`0x209a30`): a lost item draws their 'mine' line if it's
+  theirs (`0x3dd6c0`); a liked gift, the Owl Feather or their flower the liked line (`0x4088b0`); a disliked one the disliked line
+  (`0x4089f0`, never for the Owl Feather); anything else the plain one. How many support points each gives isn't traced.
+
 ## Checked against Serenes Forest and Fire Emblem Wiki
 
 Every unit's bases, growths and maximums, and every class's bases, growths, boosts and mount bonus, match Serenes Forest

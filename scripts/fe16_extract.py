@@ -8,6 +8,8 @@ never printed), and writes only the small files the readers need:
   <OUT>/romfs/index.json  every DATA0 entry: size, stored size, compressed, and the update's path for the files it replaces
   <OUT>/romfs/info1.json  the files the update adds (INFO1), in order
   <OUT>/romfs/main.bin    the update's program (main NSO) as it sits in memory, relocated to 0
+  <OUT>/romfs/scrdataDLC.bin  the update's added file of the DLC characters' monastery lines (ADDED_WANTED); `--added` copies
+                          only these into an extraction already made
   <OUT>/dlc/<n>.bin       DLC archive file n (files up to 256 KB: data, text, scripts, unit tables), owners.json who holds each
 
     python fe16_extract.py [out_dir]
@@ -26,6 +28,8 @@ BASE = 'Fire Emblem_ Three Houses [010055D009F78000][v0][BASE].nsp'
 UPDATE = 'Fire Emblem_ Three Houses 1.2.0 [010055D009F78800][v327680][UPD].nsp'
 OUT = os.path.join(os.path.expanduser('~'), 'Documents', 'FE Games', 'Switch dumps', 'extracted', 'fe16')
 WANTED = range(0, 407)   # 0-82 data tables and text, 83-364 unit tables and scripts, 365-406 map grids
+# Files the update adds (INFO1) that the readers need, written under their own names: the DLC characters' monastery lines.
+ADDED_WANTED = ['/patch4/common/common/scrdataDLC.bin']
 DLC_LIMIT = 0x40000
 
 
@@ -93,6 +97,16 @@ def patch_index(archive, info='patch4'):
     return replaced, added
 
 
+def copy_added(archive, added, out):
+    """Write the update's added files in ADDED_WANTED to `out`, each under its own name (scrdataDLC.bin)."""
+    for want in ADDED_WANTED:
+        (path, size, compressed), = [x for x in added if x[0] == want]
+        data = archive.path(path)
+        data = koei_unzip(data) if compressed else data
+        assert len(data) == size, (path, len(data), size)
+        open(os.path.join(out, os.path.basename(path)), 'wb').write(data)
+
+
 def main(out_root=OUT):
     update, rom, files = merged_romfs()
     archive = Archive(rom, files)
@@ -118,6 +132,7 @@ def main(out_root=OUT):
         open(os.path.join(out, f'{n}.bin'), 'wb').write(data)
     json.dump([{'path': p, 'size': s, 'compressed': bool(c)} for p, s, c in added], open(os.path.join(out, 'info1.json'), 'w'),
               indent=1)
+    copy_added(archive, added, out)
     exefs = update.pfs0(next(s for s in update.sections if s['fs_type'] == 'PFS0'))
     image, _ = nso_image(exefs.open('main'))
     open(os.path.join(out, 'main.bin'), 'wb').write(image)
@@ -150,4 +165,10 @@ def main(out_root=OUT):
 
 
 if __name__ == '__main__':
-    main(*sys.argv[1:])
+    if sys.argv[1:2] == ['--added']:
+        # Only the update's added files, into an extraction already made.
+        _update, rom, files = merged_romfs()
+        archive = Archive(rom, files)
+        copy_added(archive, patch_index(archive)[1], os.path.join(*(sys.argv[2:3] or [OUT]), 'romfs'))
+    else:
+        main(*sys.argv[1:])

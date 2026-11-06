@@ -96,6 +96,41 @@ def text(n, table_no=1, lang=ENGLISH):
     return texts(lang)[table_no][n]
 
 
+SCRDATA = 1              # scrdata.bin: the monastery's lines, a section per language, each 8 Koei XL tables of several columns
+
+
+def xl_rows(t):
+    """A Koei XL table of several columns: 'XL', u16 version, u16 size (its low 16 bits), u16 columns, u16 rows, u16 row size, u32
+    header size, then a type byte per column. Each row is a u32 per column: type 0 a UTF-8 string's offset from the header's end,
+    type 1 a number (-1 none)."""
+    assert t[:2] == b'XL', t[:4]
+    cols, count, size, header = struct.unpack_from('<HHHI', t, 6)
+    types = t[16:16 + cols]
+    rows = []
+    for k in range(count):
+        row = []
+        for c in range(cols):
+            v = struct.unpack_from('<I', t, header + k * size + 4 * c)[0]
+            if types[c] == 0:
+                row.append(t[header + v:t.index(b'\0', header + v)].decode('utf-8'))
+            else:
+                row.append(v - (1 << 32) if v >= 1 << 31 else v)
+        rows.append(row)
+    return rows
+
+
+def script_lines(table_no=0, lang=ENGLISH, dlc=False):
+    """One of scrdata's tables. Table 0 holds the monastery's lines: blocks of 100 rows, a row per character slot in each block (the
+    block the kind of line: a gift taken, a tea party's greeting...), column 0 the line (1 to a female Byleth, where it differs),
+    3 the voice. With `dlc`, the update's scrdataDLC.bin (copied by fe16_extract.py): the DLC characters' lines, in blocks of 10 rows
+    (person - 1040), columns 0-3 the line and a second set (Constance's other self's) in 2."""
+    key = ('scr', table_no, lang, dlc)
+    if key not in _cache:
+        data = open(os.path.join(ROMFS, 'scrdataDLC.bin'), 'rb').read() if dlc else archive_file(SCRDATA)
+        _cache[key] = xl_rows(sections(sections(data)[lang])[table_no])
+    return _cache[key]
+
+
 def person_name(p):
     return text(PERSON_NAME + p)
 

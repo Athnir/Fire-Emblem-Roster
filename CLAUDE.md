@@ -157,6 +157,12 @@ new rule, add it here.
   tiers and the classes are grouped by tier. What the ranks (or a budding talent) teach is starred by how many units can learn it,
   any way but as a personal ability (user, 2026-11-05): ★ half the units or fewer, ★★ three or fewer. A dark magic skill and its
   black magic twin work the same and count as one (Black and Dark Tomefaire, Magic Range +1: every unit learns one, no star).
+- **Spells are a unit's own in Gaiden, Shadows of Valentia and Three Houses, so each has a Spells tab** (user, 2026-11-06: "more abilities
+  than items"; they stay out of the Armory's weapons): pick a unit and see every spell they can get, how (the level and class list, or
+  the rank) and its numbers (Mt, Hit, Crit, range, the HP it costs or its uses) and effects, from the game's tables, with its help text
+  where the game has one.
+- **Three Houses has an Affection tab** (user, 2026-11-06): each unit's tea party (favorite teas, the topics they like, their final lines
+  with the reactions right for each), the gifts they like and dislike (and their flower), and their lost items.
 - **A class only some can be in keeps its skills to them** (user, 2026-11-04): Three Houses' Dancer and its dances, Sword Avo +20
   and Sword Dance only for the White Heron Cup's candidates (the 24 students and Flayn); Engage's Dancer is Seadall's.
 - **Skill Planners don't work out which skill a child inherits** (user, 2026-11-02): the skills are picked, and the general pool

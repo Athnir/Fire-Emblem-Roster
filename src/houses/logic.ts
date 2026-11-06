@@ -2,12 +2,15 @@ import {
   FE16_RANKS,
   FE16_SKILL_LABELS,
   FE16_SKILLS,
+  type Fe16Affection,
   type Fe16Class,
   type Fe16House,
   type Fe16Learn,
   type Fe16Route,
   type Fe16Skill,
+  type Fe16SpellStat,
   type Fe16Support,
+  type Fe16TeaParty,
   type Fe16Unit,
 } from './types'
 
@@ -28,6 +31,11 @@ export interface Fe16Data {
   statues: Record<string, Record<string, Partial<Record<string, number>>>>
   /** The abilities that come in levels, each chain lowest first. */
   chains: string[][]
+  /** Each spell's numbers and help text (the Spells tab). */
+  spellStats: Record<string, Fe16SpellStat>
+  /** Each unit's tea party, gifts and lost items (the Affection tab); no Byleth. */
+  affection: Record<string, Fe16Affection>
+  tea: Fe16TeaParty
 }
 
 // The Roster's picks: the house taught, and for the Black Eagles the route they take at Chapter 12. Each leaves the units it rules out

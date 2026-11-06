@@ -165,3 +165,56 @@ export interface Fe16Support {
   npc?: string
   pairedEnding?: true
 }
+
+/** A spell's numbers and help text (fixed_data.bin section 1). */
+export interface Fe16SpellStat {
+  /** Black magic, dark magic or white magic: the names the Uses and Range abilities use. */
+  kind: string
+  /** Its Mt is what it heals. */
+  heals?: true
+  mt: number
+  hit: number
+  crit: number
+  wt: number
+  /** "1-2", "3-10", "1 to a range from Mag", "the whole map". */
+  range: string
+  /** A battle's uses. */
+  uses: number
+  effective: string[]
+  /** The game's help text. */
+  text: string
+  /** What the flags add that the help text doesn't say. */
+  notes?: string[]
+}
+
+/** One of a unit's final lines at a tea party, and the reactions right for it. */
+export interface Fe16TeaLine {
+  text: string
+  right: string[]
+  /** Constance's second set: her other self's lines. */
+  set?: number
+}
+
+/** A unit's tea party, gifts and lost items (the Affection tab). */
+export interface Fe16Affection {
+  teas: string[]
+  /** The general topics they like. */
+  topics: string[]
+  /** Their own topic, which only they have. */
+  personalTopic: string
+  lines: Fe16TeaLine[]
+  likes: string[]
+  dislikes: string[]
+  /** The flower they like, liked as a gift. */
+  flower?: string
+  lostItems: { name: string; clue: string }[]
+}
+
+export interface Fe16TeaParty {
+  /** Every general topic, in the game's order. */
+  topics: string[]
+  /** The final phase's reactions, in the game's order. */
+  reactions: string[]
+  /** Gifts everyone likes (the Owl Feather). */
+  likedByAll: string[]
+}

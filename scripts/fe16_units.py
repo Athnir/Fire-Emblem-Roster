@@ -464,14 +464,106 @@ def arts():
     return out
 
 
+SPELL_KINDS = {5: 'Black magic', 6: 'White magic', 7: 'Dark magic'}
+# +4, what a spell does: 0 an attack, 1 heals an ally, 2 heals allies around, 5 hits around the target (Meteor), 6 drains (Nosferatu),
+# 7 Torch, 8 Restore, 9 Ward, 10 Silence, 11 Rescue, 12 Warp, 13 the whole map (Quake).
+SPELL_HEALS = (1, 2)
+
+
 def spells():
-    """fixed_data.bin section 1 (38 x 24), the weapons' layout: +7 max range, +10 min range, +11 uses, +14 effective against,
-    +16 Mt, +17 Hit, +18 Crit, +19 Wt, +22 flags."""
+    """fixed_data.bin section 1 (38 x 24), the weapons' layout: +4 what it does (SPELL_KINDS' note), +5 its kind (5 black magic, 6
+    white, 7 dark: the names the abilities use, 'Black Magic Uses x2'), +7 max range, +10 min range (a max of 100 or more is worked out
+    from Mag, as the help text says; Quake's 130 the whole map), +11 uses, +12 the status it inflicts (0x60 none), +14 effective
+    against, +16 Mt (what a healing spell heals), +17 Hit, +18 Crit, +19 Wt, +22 flags (the weapons': 0x10 no follow-up, 0x04 leaves
+    1 HP, 0x08 not fliers)."""
     out = []
     for s, r in enumerate(D.table(FIXED_DATA, 1)):
         out.append({'id': s, 'name': T(T_SPELL + s), 'description': T(T_SPELL_DESC + s), 'school': 'Faith' if s >= 24 else 'Reason',
+                    'kind': SPELL_KINDS[r[5]], 'does': r[4], 'heals': r[4] in SPELL_HEALS,
                     'mt': r[16], 'hit': r[17], 'crit': r[18], 'wt': r[19], 'range': [r[10], r[7]], 'uses': r[11],
                     'effective': [CLASS_TYPES[k] for k in range(6) if r[14] >> k & 1], 'flags': r[22], 'raw': r.hex()})
+    return out
+
+
+# --- tea parties, gifts and lost items -----------------------------------------------------------------------------------------------
+
+LOBBY_COMMON, PRESENTDATA, MATERIALDATA = 24, 28, 31
+T_KEY_ITEM = 10142                    # a gift's or lost item's name; its description 255 on (text 10397 + n)
+T_MATERIAL = 5056                     # a material's name: tea leaves are materials 192-212
+T_TOPIC, T_PERSONAL_TOPIC = 14781, 14881
+T_REACTION = 14931                    # Nod, Laugh, Commend, Disagree, Admonish, Sigh, Chat, Sip tea, Blush, Praise
+TEA_FINAL_BLOCK = 45                  # scrdata table 0: a person's k-th final line is block 45 + k, the row block * 100 + slot
+
+
+def key_item(n):
+    """A gift's or lost item's name and description, spaces made plain (one name has a no-break space)."""
+    return {'name': ' '.join(T(T_KEY_ITEM + n).split()), 'description': ' '.join(T(T_KEY_ITEM + 255 + n).split())}
+
+
+def key_items():
+    """fixed_presentdata.bin section 0 (245 x 12), by key item: u16 its price, u16, u8 +4 its rank (0-4), +5 a quest's item, +6 a
+    flower, +7 everyone likes it (the Owl Feather), +8 a lost item. The gift checks (0x4088b0 liked, 0x4089f0 disliked) read +6
+    and +7; the lost item one (0x3dd6c0) +8."""
+    out = []
+    for n, r in enumerate(D.records(D.sections(D.archive_file(PRESENTDATA))[0])):
+        out.append({'id': n, **key_item(n), 'price': struct.unpack_from('<H', r, 0)[0], 'rank': r[4], 'quest': bool(r[5]),
+                    'flower': bool(r[6]), 'liked_by_all': bool(r[7]), 'lost_item': bool(r[8])})
+    return out
+
+
+def gift_prefs(slot):
+    """fixed_presentdata.bin section 1 (45 x 17), by character slot: +0 the flower they like (255 none), +1..+3 their lost items,
+    +4..+6 the gifts they dislike, +7..+11 the gifts they like, +12..+16 the quest items they take. Giving an item (0x209a30): a lost
+    item draws their 'mine' line or 'not mine'; a liked gift, the Owl Feather or their flower the liked line (0x4088b0), a disliked
+    one the disliked line (0x4089f0), anything else the plain one."""
+    r = D.records(D.sections(D.archive_file(PRESENTDATA))[1])[slot]
+    pick = lambda a, b: [key_item(n)['name'] for n in r[a:b] if n != 255]  # noqa: E731
+    return {'flower': None if r[0] == 255 else key_item(r[0])['name'], 'lost_items': [key_item(n) for n in r[1:4] if n != 255],
+            'dislikes': pick(4, 7), 'likes': pick(7, 12), 'quest_items': pick(12, 17)}
+
+
+def favorite_teas():
+    """fixed_lobby_common.bin section 10 (101 x 10): u16 person, four bytes not traced, then +6..+9 the teas they like best (materials
+    192-212, 255 none): the tea party's 'my favorite' greeting."""
+    out = {}
+    for r in D.records(D.sections(D.archive_file(LOBBY_COMMON))[10]):
+        p = struct.unpack_from('<H', r, 0)[0]
+        out[p] = [T(T_MATERIAL + m) for m in r[6:10] if m != 255]
+    return out
+
+
+def tea_topics(slot, section=13):
+    """fixed_lobby_common.bin section 13 (150 x 43): a row per topic (0-99 the general ones, text 14781 + row; 100-149 the personal
+    ones, text 14881 + row - 100, one person's each), a byte per character (slot - 2: no Byleth) set where they like it. The tea
+    party (0x238650, through 0x406af0 and 0x406a50) counts a liked topic and plays the 'lively' reaction; any other gets 'not very
+    interested'. Section 12, the same layout, only starts a 90-frame expression (0x238814, 0x4069e0): not counted."""
+    rows = D.records(D.sections(D.archive_file(LOBBY_COMMON))[section])
+    out = []
+    for k, r in enumerate(rows):
+        if 0 <= slot - 2 < len(r) and r[slot - 2] == 1:
+            out.append({'name': T(T_TOPIC + k if k < 100 else T_PERSONAL_TOPIC + k - 100), 'personal': k >= 100})
+    return out
+
+
+def tea_final_lines(person, slot):
+    """fixed_lobby_common.bin section 11 (392 x 14): u16 person, u8 the set (Constance's second, 1, is her other self's), u8 a code,
+    then a byte per reaction (text 14931 on) set where it's right (0x4066d0 looks a line's reaction up by person and code). A person's
+    k-th record of a set is their k-th final line, scrdata table 0 block 45 + k: checked against the tea party guides' lines and
+    answers for Edelgard, Dimitri and Seteth (27 of 27). The DLC characters' lines (persons 1040 on) are the update's
+    scrdataDLC.bin, its table 0 in blocks of 10 (row block * 10 + person - 1040), a set's line in column 2 x set."""
+    reactions = [T(T_REACTION + k) for k in range(10)]
+    dlc = person >= 1040
+    lines = D.script_lines(0, dlc=dlc)
+    out = []
+    count = {}
+    for r in D.records(D.sections(D.archive_file(LOBBY_COMMON))[11]):
+        if struct.unpack_from('<H', r, 0)[0] != person:
+            continue
+        k = count[r[2]] = count.get(r[2], -1) + 1
+        row = (TEA_FINAL_BLOCK + k) * 10 + person - 1040 if dlc else (TEA_FINAL_BLOCK + k) * 100 + slot
+        text = lines[row][2 * r[2]]
+        assert text, (person, k)
+        out.append({'text': ' '.join(text.split()), 'set': r[2], 'code': r[3], 'right': [reactions[j] for j in range(10) if r[4 + j]]})
     return out
 
 
