@@ -12,6 +12,7 @@ import os
 import fates_text
 from fates_lz import decompress
 from fe13_bin import Bin
+import fe15_bin as FB
 import fe15_joins as J
 from class_weapons import fe15_class_weapons
 from fe15_recruitment import RECRUITMENT
@@ -29,6 +30,15 @@ CHANGE_LEVEL = {
     'Cavalier': 7, 'Paladin': 10, 'Mage': 12, 'Pegasus Knight': 12, 'Cleric': 12, 'Fighter': 1, 'Priestess': 1,
 }
 MAGE_F = 14
+# Job.bin's 魔法成長 (+23): which of a person's two spell lists a class uses (0x1a9d0c): 1 the black magic one (Person.bin's 習得魔法系),
+# 2 the white magic one (習得神聖系); 0 none.
+SPELL_LISTS = {1: ('習得魔法系', 'Black magic'), 2: ('習得神聖系', 'White magic')}
+# The Dread Fighter's change back to a Villager (Job.bin's CC_魔戦士男, Lv 10): the way a Mercenary or Myrmidon reaches a Mage.
+DREAD_FIGHTER, VILLAGER_M = 'JID_魔戦士男', 'JID_村人男'
+# A spell's skills (Item.bin's スキル1-4) that set its range from Atk, as their names say ('Magic Range', '1/2 Magic Range').
+ATK_RANGE = {'SID_魔力射程': 'Atk', 'SID_半魔力射程': 'Atk/2', 'SID_四半魔力射程': 'Atk/4'}
+# Nosferatu's two hidden skills (no English text; not traced in the program): Serenes Forest's words for what they do.
+HIDDEN = {'SID_神殺し_非表示': 'it can defeat a god (神殺し, "god-slayer")', 'SID_眼光封じ': "Duma's Oculus doesn't stop it (眼光封じ)"}
 
 
 def load(path):
@@ -37,6 +47,85 @@ def load(path):
 
 def signed(b):
     return b - 256 if b > 127 else b
+
+
+def say(texts, label):
+    return next((t[label] for t in texts if label in t), None)
+
+
+def spells_of(units, unit_person, class_name, children):
+    """Each unit's spell lists, for the Spells tab: the lists the classes they can reach use (Job.bin 魔法成長), each entry a spell,
+    its rank (0 the first class's, 1 the promoted one's) and level (Person.bin's 習得魔法 records); and every spell's numbers and help
+    text (Item.bin). A unit reaches a class through the class tree, and a male one through a Dread Fighter's change back to Villager."""
+    texts = [fates_text.read(os.path.join(ROMFS, 'm', '@NOA_EN', f + '.bin.lz')) for f in ('Item', 'Name', 'Job', 'Skill')]
+    people = {r['_off']: r for r in FB.table('Data/Person.bin.lz', '個人').rows}
+    people_by_pid = {r['個人']: r for r in people.values()}
+    lists = FB.table('Data/Person.bin.lz', '習得魔法').by_id
+    jobs = FB.table('Data/Job.bin.lz', '兵種').by_id
+    items = FB.table('Data/Item.bin.lz', 'アイテム').by_id
+
+    def spell_name(iid):
+        r = items[iid]
+        name = say(texts, r['名前'])
+        if r['召喚']:
+            # Each Invoke summons its own class (Item.bin's 召喚, a person): named by it, as the game names all three alike.
+            name += f" ({class_name(people_by_pid[r['召喚']]['兵種'])}s)"
+        return name
+
+    book, used = {}, {}
+    for u in units:
+        person = people[unit_person[u['id']]]
+        start = person['兵種']
+        # The classes they can reach, and whether only through the Dread Fighter's change back to Villager.
+        seen, todo = {start: False}, [start]
+        while todo:
+            c = todo.pop()
+            nexts = [(n, seen[c]) for n in children.get(c, [])]
+            if c == DREAD_FIGHTER:
+                nexts.append((VILLAGER_M, True))
+            for n, loop in nexts:
+                if n not in seen:
+                    seen[n] = loop
+                    todo.append(n)
+        out = []
+        for kind, (field, label) in SPELL_LISTS.items():
+            magic = [c for c in seen if jobs[c]['魔法成長'] == kind]
+            if not magic or not person[field]:
+                continue
+            ranks = [sorted({class_name(c) for c in magic if jobs[c]['ランク'] == r}) for r in (0, 1)]
+            entries = []
+            rec = lists[person[field]]
+            for k, suffix in enumerate(['', '#2', '#3', '#4', '#5', '#6']):
+                iid = rec[f'魔法{k + 1}']
+                if iid:
+                    name = spell_name(iid)
+                    used[name] = iid
+                    entries.append({'spell': name, 'rank': rec['ランク' + suffix], 'level': rec['LV' + suffix]})
+            via = all(seen[c] for c in magic)
+            out.append({'kind': label, 'classes': [' or '.join(r) for r in ranks],
+                        **({'via': 'a Dread Fighter changing back to Villager (Lv 10), then to Mage (Villager Lv 3)'} if via else {}),
+                        'entries': entries})
+        if out:
+            book[u['id']] = out
+
+    stats = {}
+    for name, iid in sorted(used.items()):
+        r = items[iid]
+        sk = [r[f'スキル{k}'] for k in range(1, 5) if r[f'スキル{k}']]
+        lo, hi = r['内射程'], r['外射程']
+        atk = next((ATK_RANGE[x] for x in sk if x in ATK_RANGE), None)
+        rng = f'{lo}-{atk}' if hi == 255 and atk else '' if hi == 0 else str(lo) if lo == hi else f'{lo}-{hi}'
+        # 効果: 1 an attack, 2 heals an ally, 3 heals allies around; the rest move, bind or summon.
+        attack, heals = r['効果'] == 1, r['効果'] in (2, 3)
+        hidden = [HIDDEN[x] for x in sk if x in HIDDEN]
+        stats[name] = {
+            'kind': 'Black magic' if r['種類'] == 5 else 'White magic',
+            **({'mt': r['威力']} if attack or heals else {}), **({'heals': True} if heals else {}),
+            'hit': r['命中'], **({'crit': r['必殺']} if attack else {}), 'range': rng, 'hp': r['消費HP'],
+            'text': ' '.join((say(texts, r['ヘルプ']) or '').split()),
+            **({'notes': [f"Hidden skills: {'; '.join(hidden)} (Serenes Forest)."]} if hidden else {}),
+        }
+    return book, stats
 
 
 def read_supports(by_pid):
@@ -194,6 +283,8 @@ def main():
             **({'weaponsNote': "the spells are the unit's own, learned by level"} if any('Magic' in w for w in class_weapons[f'j{jid[n]}']) else {}),
         }
     supports = read_supports({pb.str(o): nm for nm, o in people.items() if nm in RECRUITMENT})
+    unit_person = {f'fe15-{nm.lower()}': o for nm, o in people.items()}
+    spell_book, spell_stats = spells_of(units, unit_person, lambda n: job(n)['name'], children)
     stories = [{'id': 'alm', 'label': "Alm's army"}, {'id': 'celica', 'label': "Celica's army"}]
 
     def js(v):
@@ -201,7 +292,7 @@ def main():
 
     lines = [
         "// Generated by scripts/build-fe15-units.py from the user's own Shadows of Valentia dump. Don't edit by hand.",
-        "import type { GbaChapter, GbaClass, GbaRankedSupport, GbaStory, GbaUnit } from '../../gba/types'",
+        "import type { GbaChapter, GbaClass, GbaRankedSupport, GbaSpellInfo, GbaSpellList, GbaStory, GbaUnit } from '../../gba/types'",
         '',
         f'export const FE15_STORIES: GbaStory[] = {js(stories)}',
         '',
@@ -221,10 +312,21 @@ def main():
         *[f'  {js(x)},' for x in supports],
         ']',
         '',
+        "// Each unit's spell lists: the classes that use each (the first's, then the promoted one's), and each spell's rank and level.",
+        'export const FE15_SPELL_BOOK: Record<string, GbaSpellList[]> = {',
+        *[f'  {js(k)}: {js(v)},' for k, v in spell_book.items()],
+        '}',
+        '',
+        '// Every spell they can get: its numbers and help text (Item.bin).',
+        'export const FE15_SPELL_STATS: Record<string, GbaSpellInfo> = {',
+        *[f'  {js(k)}: {js(v)},' for k, v in spell_stats.items()],
+        '}',
+        '',
     ]
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     open(OUT, 'w', encoding='utf-8', newline='\n').write('\n'.join(lines))
-    print(f'{len(units)} units, {len(classes)} classes, {len(supports)} supports -> {OUT}')
+    print(f'{len(units)} units, {len(classes)} classes, {len(supports)} supports, {len(spell_book)} with spells ({len(spell_stats)} '
+          f'spells) -> {OUT}')
 
 
 if __name__ == '__main__':

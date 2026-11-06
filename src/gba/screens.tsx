@@ -17,6 +17,8 @@ import {
   type GbaBranch,
   type GbaJoinChoice,
   type GbaSlotSupport,
+  type GbaSpellInfo,
+  type GbaSpellList,
   type GbaClass,
   type GbaChapter,
   type GbaStats,
@@ -103,11 +105,16 @@ export interface GbaData {
   /** Spells learned by level (Gaiden): each unit's known on joining and learned at the game's count of levels, each class's spells
    * (a spell is learned only while the class has it), the spell a change into a class gives, and how the count goes: the class whose
    * level-ups don't count, and the class change that starts it again. */
-  spells?: Record<string, { known: string[]; learn: { level: number; spell: string }[] }>
+  spells?: Record<string, { known: string[]; learn: { level: number; atLevel?: number; spell: string }[] }>
   classSpells?: Record<string, string[]>
   classChangeSpells?: Record<string, string>
   spellCount?: { skip: string; restart: { from: string; to: string } }
   spellText?: string
+  /** Each unit's spell lists by class (Shadows of Valentia), for the Spells tab, and how they're learned. */
+  spellBook?: Record<string, GbaSpellList[]>
+  spellBookText?: string
+  /** Every spell's numbers and what it does: the Spells tab's cards. */
+  spellStats?: Record<string, GbaSpellInfo>
 }
 
 const statsOf = (data: GbaData) => data.stats ?? GBA_STATS
@@ -285,7 +292,7 @@ function walkOf(data: GbaData, chapters: GbaChapter[], picks: Record<string, str
 
 /** The game's data for the story picked (all of it for a game told in one), and the switch to pick another. With the spoiler block
  * on, the chapters you've reached and the units they've brought, and the bar that walks the story (asking at each split). */
-function useStory(game: GbaData): { view: GbaData; story?: GbaStory; picker: ReactNode } {
+export function useStory(game: GbaData): { view: GbaData; story?: GbaStory; picker: ReactNode } {
   const picked = useGbaStore((s) => s.stories?.[game.gameId])
   const setStory = useGbaStore((s) => s.setStory)
   const block = useSpoilerStore((s) => s.block)
@@ -393,7 +400,7 @@ function artId(gameId: string, name: string): string {
   return `${gameId}/${name.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '')}`
 }
 
-function UnitPortrait({ data, unit, size = 64 }: { data: GbaData; unit: GbaUnit; size?: number }) {
+export function UnitPortrait({ data, unit, size = 64 }: { data: GbaData; unit: GbaUnit; size?: number }) {
   return data.portrait?.(unit, size) ?? <Portrait characterId={artId(data.gameId, unit.name)} isChild={false} size={size} />
 }
 
@@ -435,7 +442,7 @@ function StatTable({ data, rows }: { data: GbaData; rows: { label: string; value
   return <StatBlocks stats={stats} labels={labels} fmt={fmt} rows={rows} />
 }
 
-function useScreenshotUnit(unit: GbaUnit | undefined) {
+export function useScreenshotUnit(unit: GbaUnit | undefined) {
   const setUnitLabel = useScreenshotContextStore((state) => state.setUnitLabel)
   useEffect(() => {
     setUnitLabel(unit?.name ?? '')
@@ -458,7 +465,7 @@ function joinText(data: GbaData, u: GbaUnit): string {
   return `${where}: joins at the start`
 }
 
-function UnitSelect({ data, value, onChange }: { data: GbaData; value: string; onChange: (id: string) => void }) {
+export function UnitSelect({ data, value, onChange }: { data: GbaData; value: string; onChange: (id: string) => void }) {
   return (
     <select value={value} onChange={(e) => onChange(e.target.value)} className={`${selectClass} w-full max-w-xs`}>
       {data.chapters.map((ch) => {

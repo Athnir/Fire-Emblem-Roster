@@ -217,3 +217,34 @@ export interface GbaRankedSupport {
   points?: number[]
   acts?: number[]
 }
+
+/** A spell's numbers and what it does (Gaiden, Shadows of Valentia): the Spells tab's cards. */
+export interface GbaSpellInfo {
+  /** Black magic or white magic. */
+  kind: string
+  /** Its Mt, or what it heals (`heals`); none for a spell that neither hurts nor heals. */
+  mt?: number
+  heals?: true
+  /** None where the spell doesn't roll to hit (Gaiden's white magic). */
+  hit?: number
+  crit?: number
+  /** "1-2", "1-Atk/2", "any"; empty where it targets the caster. */
+  range: string
+  /** The HP casting it costs. */
+  hp: number
+  /** The game's help text, or what the spell does. */
+  text?: string
+  notes?: string[]
+}
+
+/** One of a unit's spell lists (Shadows of Valentia): the classes that use it, and what it teaches. */
+export interface GbaSpellList {
+  /** Black magic or white magic. */
+  kind: string
+  /** The classes using it that the unit can reach: the first's (rank 0) and the promoted one's (rank 1), each "A or B" ("" none). */
+  classes: string[]
+  /** How the unit reaches them, where it isn't their own class tree (a Dread Fighter's change back to Villager). */
+  via?: string
+  /** Each spell, its rank (0 learned in either class, 1 only in the promoted one) and level (0 known on entering the class). */
+  entries: { spell: string; rank: number; level: number }[]
+}

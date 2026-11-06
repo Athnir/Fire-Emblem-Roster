@@ -37,6 +37,31 @@ All of it matches Serenes Forest's support-bonus page but three values (the test
 here (Serenes Forest: 3; Conrad joins in Act 4), and Tatiana's B with Zeke gives Avoid +7 (Serenes Forest: +5). The range (3 tiles)
 is Serenes Forest's.
 
+## Spells (the Spells tab)
+
+Read with `scripts/fe15_bin.py` (copied from the Armory's): Echoes' tables describe themselves, so each field is read by its name.
+
+- **The lists**: each person (Person.bin) names two 習得魔法 records, 習得魔法系 (+116, the black magic list) and 習得神聖系 (+120, the
+  white magic list); each record is six entries of [the spell (IID_), s16 rank, u16 level]. Most people share the generic lists; the
+  units who can reach a casting class have their own (MSID_<name>).
+- **Which list** (Job.bin): a class's 魔法成長 (+23) picks it, 1 the black magic list (Mage, Sage, Priestess, Celica's Priestess and
+  Princess), 2 the white (Cleric, Saint), 0 none; its ランク (+20) is 0 for a first class, 1 a promoted one.
+- **What a unit knows** (code.bin `0x1a9d0c`, worked out from the class each time): every entry of the class's list whose level is at
+  most `0x450ec8`'s level, and of rank 1 only in a promoted class (`0x4487cc`). `0x450ec8`: the unit's level (+0xe1), plus for a rank-0
+  entry the levels it carries (+0xee). A class change (`0x353e8c`, `0x356114`) sets the carried levels to the larger of what they were
+  and the level it was made at less 1, at most 20; a new unit starts at 0 (`0x356774`). So a Villager made a Mage at Lv 3 carries 2.
+- **The spells** (Item.bin, 種類 5 black magic, 6 white): 威力 Mt (a healing spell's heal: 効果 2 or 3), 命中 Hit, 必殺 Crit, 内射程 and
+  外射程 the range (255: set by a skill, SID_魔力射程 Atk, SID_半魔力射程 Atk/2, SID_四半魔力射程 Atk/4), 消費HP the HP it costs, ヘルプ the
+  help text. The three Invokes, all named "Invoke", summon different classes (召喚, a person): the tab names each by its class.
+  Nosferatu's two hidden skills, SID_神殺し_非表示 and SID_眼光封じ, have no English text; Serenes Forest gives what they do (it can
+  KO a god, and Oculus doesn't stop it).
+- **Who**: the classes a unit can reach through the class tree, and a male one through a Dread Fighter's change back to Villager
+  (Job.bin's ＣＣ table: each class's class changes with the level they need, CC_魔戦士男 Villager at 10, CC_村人男 its five at 3; the
+  other final classes list a Villager too, at 1, which the app leaves out, as Serenes Forest does). 19 units.
+
+Every spell's HP cost, Mt, range and Hit matches Serenes Forest's black and white magic pages
+(`src/data/fe15/__tests__/fe15Spells.test.ts`).
+
 ## Joins (`scripts/fe15_joins.py`)
 
 From the event sheets (`Data/Event/<location>.bin`, one per place, in Awakening's container) and the map scripts (`Scripts/*.cmb`, Fates'
