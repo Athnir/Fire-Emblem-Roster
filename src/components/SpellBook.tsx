@@ -81,9 +81,13 @@ function SpellCardView({ name, how, card }: { name: string; how: string; card?: 
       {card && card.numbers.length > 0 && (
         <div className="grid max-w-md grid-cols-4 gap-x-3 gap-y-1 text-sm">
           {card.numbers.map((n) => (
-            <div key={n.label} className="flex justify-between gap-1">
+            // A value longer than a number ("1-Atk/2") takes two columns, so it doesn't wrap or push the card wider on a phone.
+            <div
+              key={n.label}
+              className={`flex gap-1 ${typeof n.value === 'string' && n.value.length > 3 ? 'col-span-2 gap-x-2' : 'justify-between'}`}
+            >
               <span className="text-neutral-500">{n.label}</span>
-              <span className="text-right tabular-nums text-neutral-100">{n.value}</span>
+              <span className="whitespace-nowrap text-right tabular-nums text-neutral-100">{n.value}</span>
             </div>
           ))}
         </div>
