@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
+import { capsTitle } from '../components/StatBlocks'
 import { chapterLabel, luckExtra, pairingChoices, selectClass, useArmy, useProfiles, useScreenshotUnit } from './hooks'
-import { bloodSources, excludedUnits, FE4_MAX_LEVEL, loveFor, NO_HUSBAND, project, promoteLevelOf, ringBonus, skillsWith, type Fe4Data, type Fe4Plan } from './logic'
+import { bloodSources, capsOf, excludedUnits, FE4_MAX_LEVEL, loveFor, NO_HUSBAND, project, promoteLevelOf, ringBonus, skillsWith, type Fe4Data, type Fe4Plan } from './logic'
 import { useFe4Store } from './store'
 import { FE4_STATS, type Fe4Choice, type Fe4Unit } from './types'
 import { HolyBloodWindow, WINDOW_NOTE } from './HolyBlood'
@@ -181,6 +182,7 @@ export function Fe4Planner({ data }: { data: Fe4Data }) {
   const plans = useFe4Store((s) => s.plans)
   const setPlan = useFe4Store((s) => s.setPlan)
   const [rings, setRings] = useState<string[]>([])
+  const [capsPick, setCapsPick] = useState('')
   const p = unit ? profile(unit) : undefined
   return (
     <div className="space-y-4">
@@ -244,7 +246,16 @@ export function Fe4Planner({ data }: { data: Fe4Data }) {
                 rows={[
                   { label: 'Growths (with holy blood)', values: p.growths, suffix: '%' },
                   ...(unit.growths ? [{ label: 'Own growths', values: unit.growths, suffix: '%' }] : []),
-                  ...[...new Map(stages.map((st) => [st.classId, st.caps])).entries()].map(([id, caps]) => ({ label: `Caps (${data.classes[id].name})`, values: caps })),
+                  // One caps block, its class picked: the one they join in or their promotion (user, 2026-11-07).
+                  (() => {
+                    const ids = [p.classId, ...(promo && promo.id !== p.classId ? [promo.id] : [])]
+                    const id = ids.includes(capsPick) ? capsPick : final.classId
+                    return {
+                      label: 'Caps',
+                      title: capsTitle({ options: ids.map((i) => ({ id: i, name: data.classes[i].name })), value: id, onChange: setCapsPick }),
+                      values: capsOf(data.classes[id]),
+                    }
+                  })(),
                 ]}
               />
               {unit.role === 'child' && (

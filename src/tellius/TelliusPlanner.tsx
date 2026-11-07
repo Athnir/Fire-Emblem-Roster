@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { capsTitle } from '../components/StatBlocks'
 import { BandEditor } from './BandEditor'
 import { TelliusBuildSetManager } from './builds'
 import { useArmy } from './choiceStore'
@@ -178,6 +179,7 @@ function Planner({ data, unit, onShowUnit }: { data: TelliusData; unit: TelliusU
   const { plan, saved, update, clear } = useUnitPlan(data, unit)
   const [boots, setBoots] = useState(false)
   const [adding, setAdding] = useState('')
+  const [capsPick, setCapsPick] = useState('')
 
   const chain = promotionsOf(data, unit)
   const segments = planSegments(data, unit, plan)
@@ -299,7 +301,16 @@ function Planner({ data, unit, onShowUnit }: { data: TelliusData; unit: TelliusU
         <StatTable
           rows={[
             { label: 'Growths', values: unit.growths, suffix: '%' },
-            ...[...new Set(stages.map((st) => st.classId))].map((id) => ({ label: `Caps (${data.classes[id].name})`, values: data.classes[id].caps })),
+            (() => {
+              // One caps block, its class picked from those the unit can be in (user, 2026-11-07).
+              const ids = [unit.classId, ...chain.map((c) => c.id)]
+              const id = ids.includes(capsPick) ? capsPick : finalClass.id
+              return {
+                label: 'Caps',
+                title: capsTitle({ options: ids.map((i) => ({ id: i, name: data.classes[i].name })), value: id, onChange: setCapsPick }),
+                values: data.classes[id].caps,
+              }
+            })(),
           ]}
         />
         <StatTable

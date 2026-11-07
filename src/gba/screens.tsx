@@ -1,4 +1,4 @@
-import { StatBlocks } from '../components/StatBlocks'
+import { capsTitle, StatBlocks } from '../components/StatBlocks'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
@@ -436,7 +436,7 @@ function fmt(v: number | undefined): string {
 }
 
 /** Rows of stats, each a block of stats four to a line (as Fates' planner); a stat at its cap is green. */
-function StatTable({ data, rows }: { data: GbaData; rows: { label: string; values: GbaStats; caps?: GbaStats; suffix?: string }[] }) {
+function StatTable({ data, rows }: { data: GbaData; rows: { label: string; title?: ReactNode; values: GbaStats; caps?: GbaStats; suffix?: string }[] }) {
   const stats = statsOf(data)
   const labels = Object.fromEntries(stats.map((s) => [s, labelOf(data, s)])) as Record<(typeof stats)[number], string>
   return <StatBlocks stats={stats} labels={labels} fmt={fmt} rows={rows} />
@@ -869,6 +869,7 @@ export function GbaPlanner({ data: game }: { data: GbaData }) {
   const setPlan = useGbaStore((s) => s.setPlan)
   const allClasses = useGbaStore((s) => !!s.settings?.[data.gameId]?.[ALL_CLASSES])
   const setSetting = useGbaStore((s) => s.setSetting)
+  const [capsPick, setCapsPick] = useState('')
   if (!joined) return null
   // The Avatar as created (New Mystery's Kris), and every class of the unit's gender once the setting opens them all.
   const made = avatarUnit(data, joined, saved)
@@ -899,6 +900,11 @@ export function GbaPlanner({ data: game }: { data: GbaData }) {
   const levels = (from: number, to = MAX_LEVEL) => Array.from({ length: Math.max(0, to - from + 1) }, (_, i) => from + i)
   const finalClass = data.classes[stages[stages.length - 1].classId]
   const classIds = [...new Set(stages.map((st) => st.classId))]
+  // Every class the unit can be in, for the caps' dropdown: the plan's first, then whatever the class changes lead to.
+  const reachable = [...classIds]
+  for (let i = 0; i < reachable.length; i++)
+    for (const c of changesOf(data, unit, data.classes[reachable[i]])) if (!reachable.includes(c.id)) reachable.push(c.id)
+  const capsId = reachable.includes(capsPick) ? capsPick : finalClass.id
   const last = steps[steps.length - 1]
   const lastLevel = last ? (last.promotion ? 1 : last.at) : unit.level
   // The promotions offered: the first from the class the unit joins in, then one from wherever that leads.
@@ -1063,7 +1069,13 @@ export function GbaPlanner({ data: game }: { data: GbaData }) {
             ...classIds
               .filter((id) => data.classes[id].growths)
               .map((id) => ({ label: `Growths as a ${data.classes[id].name}`, values: withClassGrowths(data, unit, data.classes[id]), suffix: '%' })),
-            ...(unit.caps ? [{ label: 'Maximums (their own)', values: unit.caps }] : classIds.map((id) => ({ label: `Caps (${data.classes[id].name})`, values: data.classes[id].caps }))),
+            unit.caps
+              ? { label: 'Maximums (their own)', values: unit.caps }
+              : {
+                  label: 'Caps',
+                  title: capsTitle({ options: reachable.map((id) => ({ id, name: data.classes[id].name })), value: capsId, onChange: setCapsPick }),
+                  values: data.classes[capsId].caps,
+                },
           ]}
         />
         {classIds.some((id) => data.classes[id].weapons) && (

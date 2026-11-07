@@ -1,5 +1,5 @@
 import { StatBlocks } from '../components/StatBlocks'
-import { useEffect } from 'react'
+import { useEffect, type ReactNode } from 'react'
 import { AssetIcon } from '../components/AssetIcon'
 import { Portrait } from '../components/Portrait'
 import { useScreenshotContextStore } from '../state/screenshotContextStore'
@@ -89,7 +89,7 @@ export function UnitSelect({ data, value, onChange }: { data: TelliusData; value
 }
 
 /** Rows of stats, each a block of stats four to a line (as Fates' planner); a stat at its cap is green. */
-export function StatTable({ rows }: { rows: { label: string; values: TelliusStats; caps?: TelliusStats; suffix?: string }[] }) {
+export function StatTable({ rows }: { rows: { label: string; title?: ReactNode; values: TelliusStats; caps?: TelliusStats; suffix?: string }[] }) {
   return <StatBlocks stats={TELLIUS_STATS} labels={TELLIUS_STAT_LABELS} fmt={formatStat} rows={rows} />
 }
 

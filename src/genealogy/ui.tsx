@@ -1,5 +1,6 @@
 import { StatBlocks } from '../components/StatBlocks'
 import { Portrait } from '../components/Portrait'
+import type { ReactNode } from 'react'
 import { artId, fmt, LABELS, selectClass } from './hooks'
 import { weaponRanks, type Fe4Data, type Fe4Profile } from './logic'
 import { FE4_STATS, type Fe4Stat, type Fe4Stats, type Fe4Unit } from './types'
@@ -19,9 +20,9 @@ export function UnitPortrait({ data, unit, size = 64 }: { data: Fe4Data; unit: F
 export function StatTable({
   rows,
 }: {
-  rows: { label: string; values: Fe4Stats; caps?: Fe4Stats; suffix?: string; extra?: Partial<Record<Fe4Stat, string>> }[]
+  rows: { label: string; title?: ReactNode; values: Fe4Stats; caps?: Fe4Stats; suffix?: string; extra?: Partial<Record<Fe4Stat, string>> }[]
 }) {
-  return <StatBlocks stats={FE4_STATS} labels={LABELS} fmt={fmt} rows={rows.map((r) => ({ label: r.label, values: r.values, caps: r.caps, suffix: r.suffix, below: r.extra }))} />
+  return <StatBlocks stats={FE4_STATS} labels={LABELS} fmt={fmt} rows={rows.map((r) => ({ label: r.label, title: r.title, values: r.values, caps: r.caps, suffix: r.suffix, below: r.extra }))} />
 }
 
 /** Stats four to a row, fixed-width so "Save as image" keeps the spacing (as the Fates viewer does). */
