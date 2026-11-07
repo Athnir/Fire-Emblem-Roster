@@ -22,6 +22,11 @@ AFFINITIES = {1: 'Fire', 2: 'Thunder', 3: 'Wind', 4: 'Ice', 5: 'Dark', 6: 'Light
 # The promotion options, two bytes per class (read at 0x080CC7D0): each class's one or two classes to promote to.
 PROMOTIONS = 0x95DFA4
 PROMOTED, TRAINEE = 0x100, 0x80000  # class abilities (+0x28)
+# A trainee's third option at Lv 10, its own class again: the promotion menu (0x080CCE6A) adds Journeyman (2) to a Journeyman's two,
+# Pupil (2) to a Pupil's and Recruit (2) to a Recruit's, once 0x080CCCA4 finds both routes cleared in the save (a flag of each).
+TRAINEE_AGAIN = {0x3D: 0x7E, 0x3E: 0x7F, 0x47: 0x37}
+# The trainee classes' second and third versions share their names: told apart as the Fire Emblem Wiki does.
+TRAINEE_TIERS = {0x7E: 2, 0x7F: 2, 0x37: 2, 0x38: 3, 0x39: 3, 0x3A: 3}
 # Support levels from points (0x0802823C): three `cmp rN, #n` (A, B, C); a level needs more than n.
 SUPPORT_LEVELS_CODE = 0x2823C
 STORY_IDS = {'Eirika': 'eirika', 'Ephraim': 'ephraim'}
@@ -59,7 +64,7 @@ def klass(k):
     new class's caps), the options from the promotion table."""
     e = r.cfg['classes'] + 84 * k
     abilities = r.u32(e + 0x28)
-    options = [x for x in R[PROMOTIONS + 2 * k:PROMOTIONS + 2 * k + 2] if x]
+    options = [x for x in R[PROMOTIONS + 2 * k:PROMOTIONS + 2 * k + 2] if x] + ([TRAINEE_AGAIN[k]] if k in TRAINEE_AGAIN else [])
     return {'bases': dict(zip(('hp', 'str', 'skl', 'spd', 'def', 'res', 'con', 'mov'), R[e + 0x0B:e + 0x13])),
             'caps': dict(zip(('hp', 'str', 'skl', 'spd', 'def', 'res', 'con'), R[e + 0x13:e + 0x1A])),
             'gains': dict(zip(('hp', 'str', 'skl', 'spd', 'def', 'res'), R[e + 0x22:e + 0x28])),
@@ -156,12 +161,15 @@ def main():
     for k in sorted(used):
         kd = klass(k)
         out_classes[str(k)] = {
-            'id': str(k), 'name': cnames.get(k, f'Class {k}'), 'bases': {**kd['bases'], 'lck': 0}, 'caps': {**kd['caps'], 'lck': 30},
+            'id': str(k), 'name': cnames.get(k, f'Class {k}') + (f' ({TRAINEE_TIERS[k]})' if k in TRAINEE_TIERS else ''), 'bases': {**kd['bases'], 'lck': 0}, 'caps': {**kd['caps'], 'lck': 30},
             'weapons': kd['weapons'],
             **({'promotesTo': str(kd['options'][0]), 'promotions': [str(o) for o in kd['options']]} if kd['options'] else {}),
             **({'gains': kd['gains']} if k in targets else {}),
             # A trainee class stops at Lv 10 and promotes then (Serenes Forest; the ability bit is the game's).
             **({'maxLevel': 10, 'autoPromote': True} if kd['trainee'] else {}),
+            **({'changeNote': f"{cnames[TRAINEE_AGAIN[k]]} ({TRAINEE_TIERS[TRAINEE_AGAIN[k]]}), the trainee class again, is offered at Lv 10 only "
+                              "once both routes are cleared in the save (the game's code); it promotes with an item to a third version."}
+               if k in TRAINEE_AGAIN else {}),
         }
 
     ids = {int(u['id'][4:]) for u in units}

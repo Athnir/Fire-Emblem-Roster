@@ -18,7 +18,12 @@ The Blazing Blade's layouts (`data-raw/fe7/README.md`): characters at `0x803D30`
 - **Promotions:** the table at `0x95DFA4` (read at 0x080CC7D0), two class ids per class: the one or two classes it promotes to.
   A class's own +5 isn't used (a Manakete's points at a Wyvern Rider). Promoting (0x0802BC20) adds the new class's +0x22-0x27 (HP,
   Str, Skl, Spd, Def, Res), each held at its caps; Con and Mov are the class's plus the character's. Matches every row of Serenes
-  Forest's promotion gains but its trainees' "(2)" classes, which the table doesn't offer.
+  Forest's promotion gains, its trainees' "(2)" classes too.
+- **A trainee's third option:** the promotion menu (0x080CCE6A) adds the trainee's own class again, Journeyman (2) (class 0x7E),
+  Pupil (2) (0x7F) or Recruit (2) (0x37), to a Journeyman's (0x3D), Pupil's (0x3E) or Recruit's (0x47) two, once 0x080CCCA4 finds
+  both routes cleared in the save (a bit of 0x1C and of 0xE0 in its byte +0x0E; the Fire Emblem Wiki: "after both Eirika and
+  Ephraim's routes are completed"). Each (2) promotes with an item to a promoted class or its (3) (0x38-0x3A), from the table above.
+  The (2) and (3) share the trainee's name in the game; the app adds the number, as the wiki does.
 - **Trainees** (Ross, Amelia, Ewan): their first classes have ability 0x80000 and promote, into one of two classes, on reaching Lv
   10 (Serenes Forest; not traced in the code).
 - **Levels** (0x08017C18): a group record with the auto-level bit, for a unit of yours, calls 0x08018160: the unit is set to the
