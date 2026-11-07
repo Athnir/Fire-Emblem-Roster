@@ -104,8 +104,15 @@ new rule, add it here.
   plus their own, held at 20 (HP is kept whole), so a promotion moves the shown stats by the classes' bases and leaves HP. The
   Unit Planner toggles a mounted unit on foot (its dismounted class) and adds up every holy scroll carried (a growth below 0 counts
   as 0).
-- **No per-unit stat-up items in the Unit Planners** (user, 2026-11-05): Engage's stat boosters and Thracia's rings are left out;
-  what's unlocked for everyone stays (Three Houses' Saint Statues, which raise the maximums).
+- **No per-unit stat-up items in the Unit Planners** (user, 2026-11-05): Engage's stat boosters and Thracia's rings are left out,
+  and Three Houses' Saint Statues too (user, 2026-11-07).
+- **A Unit Planner shows one class's caps at a time** (user, 2026-11-07): a single caps (or maximums) block with the class picked in a
+  dropdown from those the unit can be in, the plan's last by default, not a block for every class.
+- **Class changes are planned as Fates' segments** (user, 2026-11-07, Three Houses and Engage): each class with the levels spent in
+  it, added with "+ Add class segment"; each game's own rules count the levels (Three Houses carries the level through a change,
+  Engage starts again) and say which changes are allowed. Saved as each game's steps.
+- **The GBA games' supports list what each affinity gives per support level** (user, 2026-11-07): a unit holds five support levels
+  at most, so the player adds them up; no worked-out bonus per pair.
 - **Story class changes are planner steps** (user, 2026-11-02, Thracia: Leif's Prince at the end of Ch.18, Linoan's Sage, Lara's Dancer
   before her Master Seal), as Path of Radiance's story promotions are.
 - **What the game has one copy of is flagged, not blocked** (user, 2026-11-02, Thracia's skill manuals): two plans can use it, and a
@@ -135,8 +142,12 @@ new rule, add it here.
 - **A class's weapons show in the Unit Planner** (user, 2026-11-05): each class in the plan, and each choice at a promotion
   (The Sacred Stones' Sage: Staff, Anima, Light; Mage Knight: Staff, Anima), from the game's class data. A class with none (a
   Dancer, a Transporter) says so.
-- **Picture settings live only in the Roster** (user, 2026-11-05): the Avatar's looks and hair colour sit with the portraits, as
-  Fates' Corrin's do; the planners keep only what changes stats (Awakening's asset and flaw).
+- **Picture settings live in the Roster** (user, 2026-11-05): the Avatar's looks and hair colour sit with the portraits, as Fates'
+  Corrin's do. A child whose hair comes from the Avatar picks the Avatar's colour in the Marriage Planner too (user, 2026-11-07, as
+  Fates'). What changes stats (Awakening's asset and flaw) sits in a banner above every tab, as Fates' Corrin Build, set once.
+- **Awakening's Avatar is Robin** (user, 2026-11-07), the game's default name: Robin (M) and (F), the ids and art keys kept from
+  "Avatar". Its unit dropdowns group the adults, the children and the extras (who join after Chapter 25: the late paralogues' and
+  the DLC's). Its Marriage Planner's first box lists only the fixed parents, the second whom they can marry, as Fates'.
 - **New Mystery's Kris is made as Corrin is** (2026-11-05, Fates as the default): two units; the class and the three creation answers
   (which add to the bases and growths) in the Unit Planner, as Corrin's boon and bane; the hair, hair colour and eyes in the Roster,
   the portrait built from the game's own parts (body in the class's outfit, eyes, hair turned round the colour wheel). The prologue's
@@ -166,7 +177,9 @@ new rule, add it here.
 - **A class only some can be in keeps its skills to them** (user, 2026-11-04): Three Houses' Dancer and its dances, Sword Avo +20
   and Sword Dance only for the White Heron Cup's candidates (the 24 students and Flayn); Engage's Dancer is Seadall's.
 - **Skill Planners don't work out which skill a child inherits** (user, 2026-11-02): the skills are picked, and the general pool
-  lists every skill the unit can have in some playthrough, following the game for what can pass (as Fates' looser pool does). In
+  lists every skill the unit can have in some playthrough, following the game for what can pass (as Fates' looser pool does).
+  Awakening's picks the child's other parent and the skill each parent passes on (user, 2026-11-07: Owain's Galeforce from Lissa),
+  and shows the classes the other parent gives, as Fates' variable parent. In
   Awakening the classes show as chips to pick, as the DLC classes do, since the lists are long.
 
 ## Saved data
