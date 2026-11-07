@@ -15548,9 +15548,6 @@ export const FE16_ABILITY_CHAINS: string[][] = [["Sword Prowess Lv 1", "Sword Pr
 /** The level a unit recruited (or joining by the story) gets in each chapter's month, by route: index = chapter (0 the Prologue). */
 export const FE16_JOIN_LEVELS: Record<string, (number | null)[]> = {"ss": [1, 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 35, 37, 38, 40, 42, null], "am": [1, 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35, 37, 39, 41, 42], "vw": [1, 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35, 37, 38, 40, 42], "cf": [1, 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 25, 27, 29, 31, 33, 35, 37, null, null, null, null]}
 
-/** The Saint Statues' raises to the maximums, by statue and its level (fixed_shopdata.bin section 5; only level 9 adds any). */
-export const FE16_STATUES: Record<string, Record<string, Partial<Record<string, number>>>> = {"0": {"9": {"lck": 5, "cha": 5}}, "1": {"9": {"str": 5, "spd": 5}}, "2": {"9": {"mag": 5, "dex": 5}}, "3": {"9": {"def": 5, "res": 5}}}
-
 /** Each spell's numbers and help text (fixed_data.bin section 1), for the Spells tab. */
 export const FE16_SPELL_STATS: Record<string, Fe16SpellStat> = {
   "Fire": {

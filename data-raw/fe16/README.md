@@ -78,7 +78,7 @@ riding). GameData +0x2427c is the chapter, +0x2449c the difficulty, +0x2449e the
   students, Flayn, Cyril, the Ashen Wolves, Jeritza, Anna; not Seteth, Hanneman, Manuela, Gilbert, Alois, Catherine, Shamir), a level
   that gained 0 or 1 points gets the rest up to 2, one each to the stats that missed (growth 1 or more) by the least. Caps: the
   person's own (HP at most 199, others 99), and a Saint Statue at level 9 adds 5 to two of them (`0x3f32b0`; fixed_shopdata section
-  5). Mov never grows. EXP per level: growthdata section 5; Lv 99 the top.
+  5; the app leaves the statues out, user 2026-11-07). Mov never grows. EXP per level: growthdata section 5; Lv 99 the top.
 - **Shown stats** (`0xb0240`): the unit's own + the class's boosts, + the mount's while mounted and riding; held at 0-99 (Mov 1-19).
   A boost can go past the maximum. Max HP adds the class's HP boost.
 - **Class bases** (`0x412fa0`): own = max(own, the class's base), for good, on passing an exam and on every class change (and after

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { ClassSegments, type Segment, type SegmentRow } from '../components/ClassSegments'
 import { chip, selectClass, useArmy, useScreenshotUnit, useUnitPlan } from './hooks'
 import { canTake, CLASS_TIERS, classesFor, labelOf, learnsOf, rankIndex, type Fe16Data, type Fe16Picks } from './logic'
 import {
@@ -24,38 +25,12 @@ import { FE16_SKILL_LABELS, FE16_STATS, type Fe16Class, type Fe16Skill, type Fe1
 import { Fe16PlanSets, SkillChips, SkillRanks, StatTable, UnitSelect } from './ui'
 
 const TIERS = ['Starting', 'Beginner', 'Intermediate', 'Advanced', 'Master', 'DLC', 'Unique'] as const
-/** Which Saint Statue raises which maximums isn't traced to a name: the statues by the stats they raise (at level 9). */
-const STATUE_LABELS: Record<string, string> = { '0': 'Lck, Cha', '1': 'Str, Spd', '2': 'Mag, Dex', '3': 'Def, Res' }
-
-const levels = (from: number) => Array.from({ length: Math.max(0, MAX_LEVEL - from + 1) }, (_, i) => from + i)
 
 /** A class's name as the unit sees it, and what its exam asks for. */
 function examText(cls: Fe16Class): string {
   if (cls.given) return cls.given
   const ranks = Object.entries(cls.exam?.ranks ?? {}).map(([sk, r]) => `${FE16_SKILL_LABELS[sk as Fe16Skill]} ${r}`)
   return `${cls.exam?.seal ?? 'No seal'}, from Lv ${cls.level}${ranks.length ? `; the exam asks for ${ranks.join(', ')}` : ''}.`
-}
-
-/** The class picker for a step: the unit's classes by tier; those not open at the step's level greyed out. */
-function ClassSelect({ data, unit, value, level, had, onChange }: { data: Fe16Data; unit: Fe16Unit; value: string; level: number; had: Set<string>; onChange: (id: string) => void }) {
-  const classes = classesFor(data, unit)
-  return (
-    <select value={value} onChange={(e) => onChange(e.target.value)} className={selectClass}>
-      {TIERS.map((tier) => {
-        const here = classes.filter((c) => c.tier === tier)
-        if (here.length === 0) return null
-        return (
-          <optgroup key={tier} label={tier === 'Starting' ? 'Starting' : `${tier}${tier === 'Unique' ? '' : ` (Lv ${here[0].level})`}`}>
-            {here.map((c) => (
-              <option key={c.id} value={c.id} disabled={!canChange(unit, c, level, had)}>
-                {c.name}
-              </option>
-            ))}
-          </optgroup>
-        )
-      })}
-    </select>
-  )
 }
 
 /** One unit's average stats through their class changes, from Lv 1 or the month they join in. Saved per unit. */
@@ -71,7 +46,7 @@ export function Fe16Planner({ data }: { data: Fe16Data }) {
   const start = startOf(data, unit, plan, picks)
   const steps = legalSteps(data, unit, plan, start)
   const stages = project(data, unit, { ...plan, steps }, picks)
-  const caps = capsOf(data, unit, plan.statues)
+  const caps = capsOf(unit)
   const last = stages[stages.length - 1]
   const finalCls = data.classes[last.classId]
   const options = joinOptions(unit, picks)
@@ -89,8 +64,47 @@ export function Fe16Planner({ data }: { data: Fe16Data }) {
     for (const s of FE16_STATS) shownCaps[s] = caps[s] + (shown[s] - st.own[s])
     return { label: label(st), values: shown, caps: shownCaps, mov: true }
   }
-  const setStep = (i: number, patch: Partial<{ at: number; to: string }>) => update({ steps: steps.map((s, j) => (j === i ? { ...s, ...patch } : s)) })
   const lastLevel = steps.length ? steps[steps.length - 1].at : start.level
+  // The plan as Fates' segments: the class they join in, then each change's class, with the levels spent in each (the steps' levels
+  // apart). Saved as the steps, as before.
+  const segEnd = Math.max(lastLevel, Math.min(MAX_LEVEL, plan.targetLevel))
+  const bounds = [start.level, ...plan.steps.map((st) => st.at), Math.max(plan.steps.at(-1)?.at ?? start.level, Math.min(MAX_LEVEL, plan.targetLevel))]
+  const segments: Segment[] = [start.classId, ...plan.steps.map((st) => st.to)].map((classId, k) => ({ classId, levels: Math.max(0, bounds[k + 1] - bounds[k]) }))
+  const setSegments = (next: Segment[]) => {
+    let level = start.level
+    const out: { at: number; to: string }[] = []
+    next.forEach((sg, k) => {
+      if (k > 0) out.push({ at: level, to: sg.classId })
+      level = Math.min(MAX_LEVEL, level + sg.levels)
+    })
+    update({ steps: out, targetLevel: level })
+  }
+  const segRows: SegmentRow[] = segments.map((sg, k) => {
+    const from = bounds[k]
+    const had = certifiedBy(unit, start.classId, plan.steps.slice(0, Math.max(0, k - 1)))
+    const cls = data.classes[sg.classId]
+    const blocked = k > steps.length
+    return {
+      ...sg,
+      name: cls?.name ?? sg.classId,
+      from,
+      to: from + sg.levels,
+      max: sg.levels + (MAX_LEVEL - bounds[bounds.length - 1]),
+      options:
+        k === 0
+          ? undefined
+          : [...classesFor(data, unit)]
+              .sort((a, b) => TIERS.indexOf(a.tier as (typeof TIERS)[number]) - TIERS.indexOf(b.tier as (typeof TIERS)[number]))
+              .map((c) => ({
+              id: c.id,
+              label: c.name,
+              group: c.tier === 'Starting' || c.tier === 'Unique' ? c.tier : `${c.tier} (Lv ${c.level})`,
+              disabled: !canChange(unit, c, from, had),
+            })),
+      note: k === 0 ? (start.join ? 'The class they join in.' : undefined) : blocked ? `The game doesn't allow this change at Lv ${from}; it and the classes after it aren't counted.` : cls ? examText(cls) : undefined,
+      blocked,
+    }
+  })
   return (
     <div className="space-y-4">
       <UnitSelect units={units} picks={picks} value={unit.id} onChange={setUnitId} />
@@ -108,16 +122,6 @@ export function Fe16Planner({ data }: { data: Fe16Data }) {
               </select>
             </label>
           )}
-          <label className="space-y-1">
-            <span className="block text-xs text-neutral-500">Up to Lv (as {finalCls.name})</span>
-            <select value={Math.max(lastLevel, Math.min(MAX_LEVEL, plan.targetLevel))} onChange={(e) => update({ targetLevel: Number(e.target.value) })} className={selectClass}>
-              {levels(lastLevel).map((lv) => (
-                <option key={lv} value={lv}>
-                  {lv}
-                </option>
-              ))}
-            </select>
-          </label>
           {anyMounted && (
             <div className="flex gap-1.5">
               <button type="button" onClick={() => setOnFoot(false)} className={chip(!onFoot)}>
@@ -142,41 +146,21 @@ export function Fe16Planner({ data }: { data: Fe16Data }) {
           </p>
         )}
         <div className="space-y-2">
-          <h4 className="text-sm font-semibold text-neutral-200">Class changes</h4>
-          {steps.map((st, i) => {
-            const had = certifiedBy(unit, start.classId, steps.slice(0, i))
-            const from = i === 0 ? start.level : steps[i - 1].at
-            return (
-              <div key={i} className="flex flex-wrap items-center gap-2 text-sm">
-                <span className="text-neutral-500">At Lv</span>
-                <select value={st.at} onChange={(e) => setStep(i, { at: Number(e.target.value) })} className={selectClass}>
-                  {levels(from).map((lv) => (
-                    <option key={lv} value={lv}>
-                      {lv}
-                    </option>
-                  ))}
-                </select>
-                <span className="text-neutral-500">→</span>
-                <ClassSelect data={data} unit={unit} value={st.to} level={st.at} had={had} onChange={(to) => setStep(i, { to })} />
-                <button type="button" onClick={() => update({ steps: steps.filter((_, j) => j !== i) })} className="text-xs text-neutral-500 hover:text-red-400">
-                  Remove
-                </button>
-                <p className="w-full text-xs text-neutral-500">{examText(data.classes[st.to])}</p>
-              </div>
-            )
-          })}
-          <button
-            type="button"
-            onClick={() => {
-              const at = Math.max(lastLevel, Math.min(MAX_LEVEL, plan.targetLevel))
+          <h4 className="text-sm font-semibold text-neutral-200">Classes</h4>
+          {/* As Fates' (user, 2026-11-07): each class with the levels spent in it; the level carries on through a change, as the game's. */}
+          <ClassSegments
+            rows={segRows}
+            summary={`Lv ${start.level} to ${segEnd}: ${segEnd - start.level} of ${MAX_LEVEL - start.level} levels planned`}
+            onClass={(i, id) => setSegments(segments.map((sg, j) => (j === i ? { ...sg, classId: id } : sg)))}
+            onLevels={(i, n) => setSegments(segments.map((sg, j) => (j === i ? { ...sg, levels: n } : sg)))}
+            onRemove={(i) => setSegments(segments.filter((_, j) => j !== i))}
+            onAdd={() => {
               const had = certifiedBy(unit, start.classId, steps)
-              const next = classesFor(data, unit).find((c) => c.id !== last.classId && canChange(unit, c, at, had) && canTake(c, unit))
-              if (next) update({ steps: [...steps, { at, to: next.id }] })
+              const next = classesFor(data, unit).find((c) => c.id !== last.classId && canChange(unit, c, segEnd, had) && canTake(c, unit))
+              if (next) setSegments([...segments, { classId: next.id, levels: segEnd < MAX_LEVEL ? 1 : 0 }])
             }}
-            className="rounded-md border border-neutral-700 bg-neutral-800 px-2 py-1 text-xs text-neutral-300 hover:border-neutral-600"
-          >
-            + Add a class change
-          </button>
+            canAdd={segments.length - 1 === steps.length && segEnd < MAX_LEVEL}
+          />
         </div>
         {isDancer && dancers.length > 0 && (
           <p className="text-sm text-amber-400">
@@ -184,22 +168,6 @@ export function Fe16Planner({ data }: { data: Fe16Data }) {
             Cup's winner is certified, one unit a playthrough; the planner keeps both plans anyway.
           </p>
         )}
-        <div className="space-y-1">
-          <h4 className="text-sm font-semibold text-neutral-200">Saint Statues</h4>
-          <div className="flex flex-wrap gap-1.5">
-            {Object.keys(STATUE_LABELS).map((id) => {
-              const on = (plan.statues ?? []).includes(id)
-              return (
-                <button key={id} type="button" onClick={() => update({ statues: on ? plan.statues!.filter((x) => x !== id) : [...(plan.statues ?? []), id] })} className={chip(on)}>
-                  {STATUE_LABELS[id]} +5
-                </button>
-              )
-            })}
-          </div>
-          <p className="text-xs text-neutral-500">
-            A statue at level 9 raises two maximums by 5 for your units (0x3f32b0); its earlier levels add nothing to them.
-          </p>
-        </div>
         <p className="text-xs text-neutral-500">
           Average stats. Each level rolls the unit's growth plus the class's (Cyril's Aptitude adds 20); most units get at least two
           points a level (the staff and knights don't). Maximums are the unit's own; the class's boosts (and a mount's) show on top and
@@ -211,7 +179,7 @@ export function Fe16Planner({ data }: { data: Fe16Data }) {
           rows={[
             { label: 'Growths (their own; a class adds its own)', values: unit.growths, suffix: '%' },
             { label: 'Bases (Lv 1)', values: unit.bases, mov: true },
-            { label: `Maximums (their own${plan.statues ? ', with the Saint Statues' : ''}; classes have none)`, values: caps },
+            { label: 'Maximums (their own; classes have none)', values: caps },
           ]}
         />
         <Estimate key={unit.id} data={data} unit={unit} plan={plan} picks={picks} caps={caps} onFoot={onFoot} defaultClass={finalCls.id} defaultLevel={last.level} />

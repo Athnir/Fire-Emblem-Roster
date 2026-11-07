@@ -27,8 +27,6 @@ export interface Fe16Plan {
   joinChapter?: number
   steps: Fe16Step[]
   targetLevel: number
-  /** The Saint Statues raised to level 9 ('0' to '3'): each adds 5 to two maximums. */
-  statues?: string[]
   /** The abilities equipped (up to five; the personal ability and the class's come on their own). */
   abilities?: string[]
   /** The combat arts equipped (up to three). */
@@ -106,13 +104,10 @@ export function levelGain(growths: Fe16Stats, minimum: boolean): Fe16Stats {
   return out
 }
 
-/** A unit's maximums: their own (classes have none), and 5 more on two stats for each Saint Statue at level 9 (0x3f32b0). HP's
- * stays its own. */
-export function capsOf(data: Fe16Data, unit: Fe16Unit, statues: string[] = []): Fe16Stats {
+/** A unit's maximums: their own (classes have none), held at 199 for HP and 99 for the rest. The Saint Statues' raises (0x3f32b0) are
+ * left out (user, 2026-11-07). */
+export function capsOf(unit: Fe16Unit): Fe16Stats {
   const out = { ...unit.caps }
-  for (const id of statues) {
-    for (const [s, v] of Object.entries(data.statues[id]?.['9'] ?? {})) if (s in out) out[s as Fe16Stat] += v ?? 0
-  }
   for (const s of FE16_STATS) out[s] = Math.min(s === 'hp' ? 199 : 99, out[s])
   return out
 }
@@ -265,7 +260,7 @@ export function startOf(data: Fe16Data, unit: Fe16Unit, plan: Fe16Plan, picks: F
  * the stats to the new class's bases for good. */
 export function project(data: Fe16Data, unit: Fe16Unit, plan: Fe16Plan, picks: Fe16Picks): Fe16Stage[] {
   const start = startOf(data, unit, plan, picks)
-  const caps = capsOf(data, unit, plan.statues)
+  const caps = capsOf(unit)
   const steps = legalSteps(data, unit, plan, start)
   let cls = data.classes[start.classId]
   let level = start.level

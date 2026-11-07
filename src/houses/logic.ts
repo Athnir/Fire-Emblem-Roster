@@ -27,8 +27,6 @@ export interface Fe16Data {
   crests: Record<string, string>
   /** The level a unit joining partway gets in each chapter's month, by route (index = chapter). */
   joinLevels: Record<string, (number | null)[]>
-  /** The Saint Statues' raises to the maximums, by statue and level. */
-  statues: Record<string, Record<string, Partial<Record<string, number>>>>
   /** The abilities that come in levels, each chain lowest first. */
   chains: string[][]
   /** Each spell's numbers and help text (the Spells tab). */

@@ -30,7 +30,7 @@ export function Fe16BulkViewer({ data }: { data: Fe16Data }) {
       level: final.level,
       stats: shownStats(cls, final.own),
       growths: growthsIn(u, cls),
-      caps: capsOf(data, u, plan.statues),
+      caps: capsOf(u),
       skills: [...(plan.abilities ?? []), ...(plan.arts ?? [])],
     }
   })
