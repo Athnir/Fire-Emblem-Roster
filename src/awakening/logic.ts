@@ -426,6 +426,33 @@ export function reachableSkills(data: Fe13Data, unit: Fe13Unit, not: string[] = 
   return out
 }
 
+/** A child's classes with a chosen other parent (the Skill Planner's pick, user 2026-11-07): the Marriage Planner's inheritance
+ * (0x2cff38) with that marriage in place, and what those classes promote to; null when the unit isn't a child. */
+export function classesWith(data: Fe13Data, child: Fe13Unit, otherId: string, spouses: Record<string, string>, plans: Record<string, Fe13Plan> = {}): string[] | null {
+  if (!child.parent) return null
+  const r = childOf(data, child, { ...spouses, [child.parent]: otherId, [otherId]: child.parent }, plans)
+  if (!r) return null
+  const out = new Set(r.classes)
+  for (const id of [...out]) for (const p of data.classes[id]?.promotesTo ?? []) out.add(p)
+  return [...out]
+}
+
+/** The skills a parent can pass this child (0x27bc80): one, the last the parent has equipped, out of every skill they can have in some
+ * playthrough, but the DLC's and the enemies' (which never pass); Wyrmsbane only to a child who can be a Manakete, Beastbane only to one
+ * who can be a Taguel (`childClasses`); from Chrom or Lucina only Aether (a daughter) or Rightful King (a son). In the game's order. */
+export function inheritableFrom(data: Fe13Data, child: Fe13Unit, parent: Fe13Unit, childClasses: string[]): string[] {
+  if (ROYAL.includes(parent.id)) return [child.female ? AETHER : RIGHTFUL_KING]
+  const can = (cls: string) => childClasses.some((id) => data.classes[id]?.name === cls)
+  const passes = (name: string) => {
+    const kind = data.skills?.[name]?.pass ?? 0
+    return kind === 0 || (kind === 2 && can('Manakete')) || (kind === 3 && can('Taguel'))
+  }
+  const order = Object.keys(data.skills ?? {})
+  return [...reachableSkills(data, parent, child.parent ? [child.parent] : [])]
+    .filter((name) => data.skills?.[name] && passes(name))
+    .sort((a, b) => order.indexOf(a) - order.indexOf(b))
+}
+
 /** A child's parents in the plan: the fixed one, and their spouse if married. */
 export function parentsOf(data: Fe13Data, unitId: string, spouses: Record<string, string>): string[] {
   const unit = data.units.find((u) => u.id === unitId)

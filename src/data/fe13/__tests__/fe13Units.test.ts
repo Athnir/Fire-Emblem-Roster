@@ -60,7 +60,8 @@ const EXCEPTIONS: Record<string, Partial<Record<string, number>>> = {
 describe('Awakening units', () => {
   it("matches Serenes Forest's levels and bases", () => {
     for (const [name, sf] of Object.entries(SF_BASES)) {
-      const units = FE13_UNITS.filter((u) => u.name === name || u.name.startsWith(`${name} (`))
+      // Serenes Forest's "Avatar" is the app's Robin (M) and (F).
+      const units = FE13_UNITS.filter((u) => u.name === name || u.name.startsWith(`${name === 'Avatar' ? 'Robin' : name} (`))
       expect([name, units.length > 0]).toEqual([name, true])
       for (const u of units) {
         const own = u.parent ? u.personal : u.bases
@@ -108,10 +109,10 @@ describe('Awakening units', () => {
       { skill: 'Underdog', level: 15 },
     ])
     expect(unit('Chrom').classSets.male.map(cls)).toEqual(['Lord', 'Cavalier', 'Archer'])
-    expect(unit('Avatar (F)').classSets.female.map(cls)).not.toContain('Lord')
-    expect(unit('Avatar (F)').classSets.female.map(cls)).toContain('Pegasus Knight')
+    expect(unit('Robin (F)').classSets.female.map(cls)).not.toContain('Lord')
+    expect(unit('Robin (F)').classSets.female.map(cls)).toContain('Pegasus Knight')
     // The program's full list (0x2cff38): thirteen classes for each gender.
-    expect(unit('Avatar (M)').classSets.male).toHaveLength(13)
+    expect(unit('Robin (M)').classSets.male).toHaveLength(13)
   })
 
   it('gives each child their fixed parent, and S supports only where the game has an S level', () => {
@@ -120,14 +121,14 @@ describe('Awakening units', () => {
     const chrom = unit('Chrom')
     const s = (name: string) => chrom.supports.find((x) => x.partner === unit(name).id)!.levels[3]
     expect(s('Sumia')).not.toBeNull()
-    expect(s('Avatar (F)')).not.toBeNull()
-    expect(s('Avatar (M)')).toBeNull()
+    expect(s('Robin (F)')).not.toBeNull()
+    expect(s('Robin (M)')).toBeNull()
   })
 
   it("decodes every unit's and class's growths to Serenes Forest's", () => {
     let units = 0
     for (const u of FE13_UNITS.filter((x) => !x.joinChapter.startsWith('fe13-e0'))) {
-      const sf = SF_PERSONAL_GROWTHS[u.name] ?? SF_PERSONAL_GROWTHS[u.name.replace(/ \([MF]\)$/, '')]
+      const sf = SF_PERSONAL_GROWTHS[u.name] ?? SF_PERSONAL_GROWTHS[u.name.replace(/ \([MF]\)$/, '').replace(/^Robin$/, 'Avatar')]
       expect([u.name, !!sf]).toEqual([u.name, true])
       expect([u.name, ...STATS.map((s) => u.growths[s])]).toEqual([u.name, ...sf])
       units++

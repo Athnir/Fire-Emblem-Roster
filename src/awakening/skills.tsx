@@ -2,9 +2,10 @@ import { useMemo, useState } from 'react'
 import { AssetIcon } from '../components/AssetIcon'
 import { Fe13BuildSetManager } from './builds'
 import type { Fe13BuildEntry } from './buildSets'
-import { classSetOf, dlcClassesFor, fixedShare, reachableClasses, reachableSkills, type Fe13Data } from './logic'
+import { classesWith, classSetOf, dlcClassesFor, fixedShare, inheritableFrom, reachableClasses, reachableSkills, spousesOf, type Fe13Data } from './logic'
+import { useFe13Store } from './store'
 import { UnitSelect } from './screens'
-import { panel, useAvatarData, useScreenshotUnit } from './ui'
+import { panel, selectClass, useAvatarData, useScreenshotUnit } from './ui'
 import type { Fe13Class, Fe13Unit } from './types'
 
 const MAX_LOADOUT = 5
@@ -89,6 +90,12 @@ export function Fe13SkillPlanner({ data: raw }: { data: Fe13Data }) {
   // For the Team Viewer: a unit only ever behind another, listed apart, in the class they give their bonus as.
   const [backpack, setBackpack] = useState(false)
   const [backpackClass, setBackpackClass] = useState('')
+  // A child's other parent and the skill each parent passes on (user, 2026-11-07, as Fates' variable parent): the classes the other
+  // parent gives show as their own row of chips, and the two inherited skills can go in the loadout.
+  const spouses = useFe13Store((s) => s.spouses)
+  const plans = useFe13Store((s) => s.plans)
+  const [otherId, setOtherId] = useState('')
+  const [inherit, setInherit] = useState<{ fixed: string; other: string }>({ fixed: '', other: '' })
   useScreenshotUnit(unit)
 
   const classes = useMemo(() => reachableClasses(data, unit), [data, unit])
@@ -100,9 +107,21 @@ export function Fe13SkillPlanner({ data: raw }: { data: Fe13Data }) {
     const set = new Set([unit.classId, ...ownSet])
     return !dlc.includes(id) && (set.has(id) || [...set].some((b) => data.classes[b]?.promotesTo.includes(id)))
   })
-  const fromParents = ordered(data, classes, []).filter((id) => !own.includes(id) && !dlc.includes(id))
+  const fixedParent = unit.parent ? data.units.find((u) => u.id === unit.parent) : undefined
+  const others = fixedParent ? spousesOf(data, fixedParent).filter((u) => !u.maiden) : []
+  const other = others.find((u) => u.id === otherId)
+  const withOther = other ? classesWith(data, unit, other.id, spouses, plans) : null
+  // With the other parent picked, the classes they give; without, every class some parent could.
+  const fromParents = ordered(data, withOther ?? classes, []).filter((id) => !own.includes(id) && !dlc.includes(id))
+  const childClasses = withOther ?? classes
+  const fromFixed = fixedParent ? inheritableFrom(data, unit, fixedParent, childClasses) : []
+  const fromOther = other ? inheritableFrom(data, unit, other, childClasses) : []
+  const inherited = [
+    { name: inherit.fixed, from: fixedParent, ok: fromFixed.includes(inherit.fixed) },
+    { name: inherit.other, from: other, ok: fromOther.includes(inherit.other) },
+  ].filter((x, i, all) => x.name && x.ok && all.findIndex((y) => y.name === x.name) === i)
   const classSkills = new Set(classes.flatMap((id) => data.classes[id]?.skills.map((s) => s.skill) ?? []))
-  const inRows = new Set(picked.flatMap((id) => data.classes[id]?.skills.map((s) => s.skill) ?? []))
+  const inRows = new Set([...picked.flatMap((id) => data.classes[id]?.skills.map((s) => s.skill) ?? []), ...inherited.map((x) => x.name)])
   const order = Object.keys(data.skills ?? {})
   const pool = [...reachable]
     .filter((name) => !inRows.has(name))
@@ -117,7 +136,10 @@ export function Fe13SkillPlanner({ data: raw }: { data: Fe13Data }) {
     return undefined
   }
 
-  const reset = () => {
+  const reset = (id = unit.id) => {
+    const u = data.units.find((x) => x.id === id)
+    setOtherId(u?.parent ? (spouses[u.parent] ?? '') : '')
+    setInherit({ fixed: '', other: '' })
     setPicked([])
     setLoadout([])
     setBackpack(false)
@@ -131,6 +153,9 @@ export function Fe13SkillPlanner({ data: raw }: { data: Fe13Data }) {
     setLoadout(Array.isArray(d.loadout) ? (d.loadout as string[]) : [])
     setBackpack(Boolean(d.backpack))
     setBackpackClass(typeof d.backpackClass === 'string' ? d.backpackClass : '')
+    setOtherId(typeof d.otherParent === 'string' ? d.otherParent : '')
+    const inh = (d.inherit ?? {}) as { fixed?: unknown; other?: unknown }
+    setInherit({ fixed: typeof inh.fixed === 'string' ? inh.fixed : '', other: typeof inh.other === 'string' ? inh.other : '' })
   }
 
   const toggleClass = (id: string) => setPicked((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
@@ -172,9 +197,56 @@ export function Fe13SkillPlanner({ data: raw }: { data: Fe13Data }) {
           value={unit.id}
           onChange={(id) => {
             setUnitId(id)
-            reset()
+            reset(id)
           }}
         />
+        {fixedParent && (
+          <div className="space-y-2">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <label className="flex flex-col gap-1 text-xs text-neutral-400">
+                {fixedParent.female ? 'Father' : 'Mother'} ({fixedParent.name}'s spouse)
+                <select
+                  value={other ? other.id : ''}
+                  onChange={(e) => {
+                    setOtherId(e.target.value)
+                    setInherit((v) => ({ ...v, other: '' }))
+                  }}
+                  className={selectClass}
+                >
+                  <option value="">(none picked)</option>
+                  {others.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {[
+                { key: 'fixed' as const, parent: fixedParent, options: fromFixed },
+                ...(other ? [{ key: 'other' as const, parent: other, options: fromOther }] : []),
+              ].map(({ key, parent, options }) => (
+                <label key={key} className="flex flex-col gap-1 text-xs text-neutral-400">
+                  Skill inherited from {parent.name}
+                  <select value={options.includes(inherit[key]) ? inherit[key] : ''} onChange={(e) => setInherit((v) => ({ ...v, [key]: e.target.value }))} className={selectClass}>
+                    <option value="">(none picked)</option>
+                    {options.map((name) => (
+                      <option key={name} value={name}>
+                        {name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ))}
+            </div>
+            <p className="text-xs text-neutral-500">
+              A child inherits one skill from each parent: the last one that parent has equipped when the child is recruited, of any they
+              can learn but the DLC's and the enemies' (Chrom and Lucina pass only Aether or Rightful King). From the game's program
+              (0x27bc80).{!other && ' Pick the other parent to see the classes and the skill they pass on.'}
+            </p>
+          </div>
+        )}
         {unit.skills && unit.skills.length > 0 && (
           <div className="text-sm text-neutral-300">
             <span className="text-neutral-500">Joins with: </span>
@@ -185,10 +257,29 @@ export function Fe13SkillPlanner({ data: raw }: { data: Fe13Data }) {
           Pick the classes you plan for {unit.name} to list their skills below; tap a skill to put it in the loadout.
         </p>
         {chips(`${unit.name}'s classes`, own)}
-        {chips(
-          'With some parents',
-          fromParents,
-          `Classes ${unit.name} has only with some parents (with the Avatar as a parent, every regular class of their gender).`,
+        {other
+          ? chips(`From ${other.name} (${other.female ? 'Mother' : 'Father'})`, fromParents, `The classes ${other.name} passes on, and what they promote to.`)
+          : chips(
+              'With some parents',
+              fromParents,
+              `Classes ${unit.name} has only with some parents (with Robin as a parent, every regular class of their gender).`,
+            )}
+        {inherited.length > 0 && (
+          <div>
+            <h4 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-neutral-400">Inherited skills</h4>
+            <div className="flex flex-wrap gap-2">
+              {inherited.map(({ name, from }) => (
+                <SkillButton
+                  key={name}
+                  data={data}
+                  name={name}
+                  tag={`from ${from?.name}`}
+                  selected={loadout.includes(name)}
+                  onToggle={() => toggleSkill(name)}
+                />
+              ))}
+            </div>
+          </div>
         )}
         {chips('DLC classes', dlc)}
         {picked.length > 0 ? (
@@ -261,7 +352,7 @@ export function Fe13SkillPlanner({ data: raw }: { data: Fe13Data }) {
         <Fe13BuildSetManager
           tab="skills"
           unit={unit}
-          data={{ classes: picked, loadout, backpack, backpackClass }}
+          data={{ classes: picked, loadout, backpack, backpackClass, otherParent: otherId, inherit }}
           nameOf={(id) => data.units.find((u) => u.id === id)?.name ?? id}
           onLoadEntry={loadEntry}
         />

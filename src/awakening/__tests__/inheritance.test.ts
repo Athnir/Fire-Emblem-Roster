@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { FE13_ASSETS, FE13_CHAPTERS, FE13_CLASSES, FE13_MAIDEN, FE13_SKILLS, FE13_UNITS } from '../../data/fe13/fe13Units'
-import { avatarHairOf, capsOf, childOf, classChanges, classSetOf, dlcClassesFor, familyOf, fixedShare, hairOf, isFamilyBlocked, looksOf, legalSteps, levelGain, pairUpBonus, project, reachableSkills, spousesOf, statsIn, unitNow, withAvatar, type Fe13Data } from '../logic'
+import { avatarHairOf, capsOf, childOf, classesWith, inheritableFrom, classChanges, classSetOf, dlcClassesFor, familyOf, fixedShare, hairOf, isFamilyBlocked, looksOf, legalSteps, levelGain, pairUpBonus, project, reachableSkills, spousesOf, statsIn, unitNow, withAvatar, type Fe13Data } from '../logic'
 import { FE13_STATS } from '../types'
 
 const data: Fe13Data = { chapters: FE13_CHAPTERS, units: FE13_UNITS, classes: FE13_CLASSES, maiden: FE13_MAIDEN, skills: FE13_SKILLS }
@@ -314,7 +314,7 @@ describe("A child's hair (0x2cdfd8)", () => {
   })
 
   it("takes the Avatar's chosen colour, and a child spouse's own", () => {
-    expect(hair('kjelle', marry(['sully', 'avatar-m']), '#4c5f78')).toEqual(['#4c5f78', 'Avatar (M)'])
+    expect(hair('kjelle', marry(['sully', 'avatar-m']), '#4c5f78')).toEqual(['#4c5f78', 'Robin (M)'])
     // Morgan (M)'s father Owain has Vaike's hair.
     expect(hair('morgan-m', marry(['avatar-f', 'owain'], ['lissa', 'vaike']))).toEqual([unit('vaike').hair, 'Owain'])
   })
@@ -340,5 +340,20 @@ describe("The Avatars' looks", () => {
     expect(hairOf(data, unit('morgan-f'), marry(['avatar-m', 'sumia']), avatarHairOf(build)).hex).toBe(unit('sumia').hair)
     // Lucina keeps her own with the female Avatar as her mother.
     expect(hairOf(data, unit('lucina'), marry(['chrom', 'avatar-f']), avatarHairOf(build)).hex).toBe(unit('lucina').hair)
+  })
+
+  it("lists the skill each parent can pass a child, and the classes a picked father gives (the Skill Planner, user 2026-11-07)", () => {
+    const owain = unit('owain')
+    // Owain with Robin as his father: Robin's classes come in, and Lissa can pass Galeforce (her Dark Flier's).
+    const classes = classesWith(data, owain, 'fe13-avatar-m', {})!
+    expect(classNames(classes)).toEqual(expect.arrayContaining(['Myrmidon', 'Tactician', 'Grandmaster', 'Dark Knight']))
+    const fromLissa = inheritableFrom(data, owain, unit('lissa'), classes)
+    expect(fromLissa).toContain('Galeforce')
+    // No DLC skill and no enemy skill passes.
+    for (const name of fromLissa) expect([name, FE13_SKILLS[name].pass === 0 || FE13_SKILLS[name].pass === 2 || FE13_SKILLS[name].pass === 3]).toEqual([name, true])
+    // Chrom passes Lucina only Aether.
+    expect(inheritableFrom(data, unit('lucina'), unit('chrom'), classesWith(data, unit('lucina'), 'fe13-sumia', {})!)).toEqual(['Aether'])
+    // Wyrmsbane only to a child who can be a Manakete: Nah, not Owain.
+    expect(inheritableFrom(data, owain, unit('lissa'), classes)).not.toContain('Wyrmsbane')
   })
 })

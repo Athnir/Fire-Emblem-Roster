@@ -48,6 +48,8 @@ import { FE13_STATS, FE13_STAT_LABELS, type Fe13Class, type Fe13Stat, type Fe13S
 function artId(name: string): string {
   return `fe13/${name.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '')}`
 }
+/** A unit's art key: Robin's stays the one it had as "Avatar (M)" or "(F)" (avatar_m.png), so art already uploaded still shows. */
+const artOf = (unit: Fe13Unit) => artId(isAvatar(unit) ? (unit.female ? 'Avatar (F)' : 'Avatar (M)') : unit.name)
 
 /** A unit's portrait. A child whose hair the game tints (all but Lucina) is drawn from their uploaded layers, the hair in `hairHex` (by
  * default their own colour), as Fates draws its children; an Avatar from their build's bald body and their hairstyle, in their colour,
@@ -64,10 +66,10 @@ export function UnitPortrait({ unit, size = 64, hairHex }: { unit: Fe13Unit; siz
       base: { key: assetKeys.corrinBase(`fe13/${body}`), url: `${dir}/base.png` },
       hair: { key: assetKeys.corrinHairRaw(`fe13/${body}`, hair), url: `${dir}/${hair}.png` },
     }
-    return <Portrait characterId={artId(unit.name)} isChild={false} hairHex={looks.hair} layers={layers} flatFallback size={size} />
+    return <Portrait characterId={artOf(unit)} isChild={false} hairHex={looks.hair} layers={layers} flatFallback size={size} />
   }
   const layered = !!unit.parent && unit.id !== 'fe13-lucina'
-  return <Portrait characterId={artId(unit.name)} isChild={layered} hairHex={layered ? (hairHex ?? unit.hair) : undefined} flatFallback size={size} />
+  return <Portrait characterId={artOf(unit)} isChild={layered} hairHex={layered ? (hairHex ?? unit.hair) : undefined} flatFallback size={size} />
 }
 
 /** An Avatar's build and hairstyle, as the game's creation menu numbers them (the colour is with the asset and flaw). */
@@ -103,18 +105,55 @@ function Swatch({ hex }: { hex?: string }) {
   return <span className="inline-block h-3 w-3 rounded-sm border border-neutral-600 align-middle" style={{ backgroundColor: hex }} title={hex} />
 }
 
-/** Where a child's hair comes from, with the colour. */
+/** Where a child's hair comes from, with the colour; from Robin, Robin's colour is picked right here (as Fates' Marriage Planner picks
+ * Corrin's, user 2026-11-07), the same setting as the Roster's. */
 function HairLine({ data, child, spouses }: { data: Fe13Data; child: Fe13Unit; spouses: Record<string, string> }) {
   const avatar = useFe13Store((s) => s.avatar)
+  const setAvatar = useFe13Store((s) => s.setAvatar)
   const hair = hairOf(data, child, spouses, avatarHairOf(avatar))
-  const fromAvatar = hair.from?.id.startsWith('fe13-avatar')
+  const robin = hair.from && isAvatar(hair.from) ? (hair.from.id as Fe13AvatarId) : undefined
   return (
-    <div className="flex items-center gap-1.5 text-xs text-neutral-500">
-      <span>
-        {hair.from ? `Hair from ${hair.from.name}` : child.id === 'fe13-lucina' ? 'Hair: always her own' : 'Hair: their own'}
-        {fromAvatar && !hair.hex ? " (pick the Avatar's hair colour in the Roster)" : ''}
-      </span>
-      <Swatch hex={hair.hex} />
+    <div className="space-y-1">
+      <div className="flex items-center gap-1.5 text-xs text-neutral-500">
+        <span>{hair.from ? `Hair from ${hair.from.name}` : child.id === 'fe13-lucina' ? 'Hair: always her own' : 'Hair: their own'}</span>
+        <Swatch hex={hair.hex} />
+      </div>
+      {robin && data.avatarHair && data.avatarHair.length > 0 && (
+        <div className="space-y-1">
+          <span className="block text-xs text-neutral-400">{hair.from!.name}'s hair colour</span>
+          <div className="grid w-fit grid-cols-10 gap-1">
+            {data.avatarHair.map((hex) => (
+              <button
+                key={hex}
+                type="button"
+                onClick={() => setAvatar({ ...avatar, looks: { ...avatar.looks, [robin]: { ...looksOf(avatar, robin), hair: hex } } })}
+                title={hex}
+                aria-label={`Hair colour ${hex}`}
+                className={`h-5 w-5 rounded border ${looksOf(avatar, robin).hair === hex ? 'border-2 border-violet-400' : 'border-neutral-700'}`}
+                style={{ backgroundColor: hex }}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** Robin's asset and flaw, above every tab (user, 2026-11-07, as Fates' Corrin Build): set once, not again in each tab. */
+export function Fe13RobinPanel() {
+  const [open, setOpen] = useState(true)
+  return (
+    <div className="border-b border-neutral-800 bg-neutral-900/90 px-6 py-3 backdrop-blur-sm">
+      <button type="button" onClick={() => setOpen((v) => !v)} className="flex items-center gap-1.5 text-sm font-medium text-neutral-300 hover:text-neutral-100">
+        <span className={`transition-transform ${open ? 'rotate-90' : ''}`}>▸</span>
+        Robin's Build
+      </button>
+      {open && (
+        <div className="mt-3 max-w-md rounded-md border border-neutral-800 p-3">
+          <AvatarBuild />
+        </div>
+      )}
     </div>
   )
 }
@@ -159,13 +198,13 @@ export function AvatarBuild({ palette, genders = AVATARS, stats = true }: { pale
       {stats && (
         <>
           <div className="flex flex-wrap items-end gap-2">
-            <span className="pb-1 text-sm font-semibold text-neutral-200">Avatar</span>
+            <span className="pb-1 text-sm font-semibold text-neutral-200">Robin</span>
             {pick('Asset', 'asset', avatar.flaw)}
             {pick('Flaw', 'flaw', avatar.asset)}
           </div>
           <p className="text-xs text-neutral-500">
-            Changes both Avatars' bases, growths and modifiers, and so what Morgan and the Avatar's other children inherit (the game's
-            PersonalityData table). None is the person record's own numbers.
+            Changes both Robins' bases, growths and modifiers, and so what Morgan and Robin's other children inherit (the game's
+            PersonalityData table). None is the person record's own numbers. Set once here for every tab.
           </p>
         </>
       )}
@@ -176,8 +215,8 @@ export function AvatarBuild({ palette, genders = AVATARS, stats = true }: { pale
           return (
             <div key={id} className="space-y-1">
               <span className="block text-xs text-neutral-500">
-                {genders.length > 1 ? `Hair colour, ${id.endsWith('-f') ? 'female' : 'male'} Avatar` : 'Hair colour'} (a child whose other parent is
-                this Avatar takes it)
+                {genders.length > 1 ? `Hair colour, ${id.endsWith('-f') ? 'Robin (F)' : 'Robin (M)'}` : 'Hair colour'} (a child whose other parent is
+                this Robin takes it)
               </span>
               <div className="grid w-fit grid-cols-10 gap-1">
                 {palette.map((hex) => (
@@ -249,22 +288,35 @@ function joinText(data: Fe13Data, u: Fe13Unit): string {
   return `${where}: joins at the start`
 }
 
+/** The last story chapter: a unit joining after it (not a child) is an extra. */
+const LAST_CHAPTER = 'fe13-025'
+
+/** The units in three groups, each in the order they join (user, 2026-11-07): the adults, the children, then the extras, who join after
+ * Chapter 25 (the late paralogues' Gangrel to Priam, and the DLC's). */
+export function unitGroups(data: Fe13Data): { label: string; units: Fe13Unit[] }[] {
+  const order = data.chapters.map((c) => c.id)
+  const last = order.indexOf(LAST_CHAPTER)
+  const extra = (u: Fe13Unit) => !u.parent && last >= 0 && order.indexOf(u.joinChapter) > last
+  const byJoin = [...data.units].sort((a, b) => order.indexOf(a.joinChapter) - order.indexOf(b.joinChapter))
+  return [
+    { label: 'Adults', units: byJoin.filter((u) => !u.parent && !extra(u)) },
+    { label: 'Children', units: byJoin.filter((u) => u.parent) },
+    { label: 'Extras', units: byJoin.filter(extra) },
+  ].filter((g) => g.units.length > 0)
+}
+
 export function UnitSelect({ data, value, onChange }: { data: Fe13Data; value: string; onChange: (id: string) => void }) {
   return (
     <select value={value} onChange={(e) => onChange(e.target.value)} className={`${selectClass} w-full max-w-xs`}>
-      {data.chapters.map((ch) => {
-        const units = data.units.filter((u) => u.joinChapter === ch.id)
-        if (!units.length) return null
-        return (
-          <optgroup key={ch.id} label={ch.label}>
-            {units.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.name}
-              </option>
-            ))}
-          </optgroup>
-        )
-      })}
+      {unitGroups(data).map((g) => (
+        <optgroup key={g.label} label={g.label}>
+          {g.units.map((u) => (
+            <option key={u.id} value={u.id}>
+              {u.name}
+            </option>
+          ))}
+        </optgroup>
+      ))}
     </select>
   )
 }
@@ -342,7 +394,7 @@ function UnitDetail({ data, unit }: { data: Fe13Data; unit: Fe13Unit }) {
           </div>
           {hairAvatar && data.avatarHair && (
             <div className="space-y-1">
-              <span className="text-xs text-neutral-400">The Avatar's hair colour (whatever this playthrough's Avatar picked)</span>
+              <span className="text-xs text-neutral-400">Robin's hair colour (whatever this playthrough's Robin picked)</span>
               <div className="grid w-fit grid-cols-10 gap-1">
                 {data.avatarHair.map((hex) => (
                   <button
@@ -680,7 +732,6 @@ export function Fe13Planner({ data: raw }: { data: Fe13Data }) {
     <div className="space-y-4">
       <UnitSelect data={data} value={unit.id} onChange={setUnitId} />
       <div className={panel}>
-        {(unit.id.startsWith('fe13-avatar') || isMorgan(unit)) && <AvatarBuild />}
         <div className="space-y-2 text-sm text-neutral-300">
           {rows.map(({ i, step, from, fromLevel: lv, options }) => (
             <div key={i} className="flex flex-wrap items-end gap-2">
@@ -903,7 +954,7 @@ export function Fe13Supports({ data: raw }: { data: Fe13Data }) {
 }
 
 const INHERITANCE_NOTE =
-  "A child's growths are their own, their mother's and their father's added and divided by 3, rounded down. Their maximums take both parents' modifiers, plus 1 on every stat but HP (a Morgan whose other parent is a child gets that child's own +1, not a second). They join with their own stats plus a third of how far each parent is above them in each stat, rounded down; a parent below them adds nothing, so a child never joins below their own. A parent's stats are their Unit Planner plan's last row, or as they join, counting every point gained even past a maximum. A child takes both parents' classes for their gender (Olivia's son gets Mercenary and Barbarian for her Dancer and Pegasus Knight), but never Lord, which only Lucina has, or Dancer; Taguel and Manakete reach only Morgan. A child with the Avatar as a parent gets every regular class of their gender. Morgan starts in the other parent's first class, or as a Tactician after a Lord or Dancer. A child parent of Morgan's passes on what they inherited themselves. All from the game's program: growths 0x27d230, maximums 0x2c48f8, the join 0x3a44d0, the parents 0x27c0a8, classes 0x2cff38 and 0x214098, Morgan's class 0x27c150."
+  "A child's growths are their own, their mother's and their father's added and divided by 3, rounded down. Their maximums take both parents' modifiers, plus 1 on every stat but HP (a Morgan whose other parent is a child gets that child's own +1, not a second). They join with their own stats plus a third of how far each parent is above them in each stat, rounded down; a parent below them adds nothing, so a child never joins below their own. A parent's stats are their Unit Planner plan's last row, or as they join, counting every point gained even past a maximum. A child takes both parents' classes for their gender (Olivia's son gets Mercenary and Barbarian for her Dancer and Pegasus Knight), but never Lord, which only Lucina has, or Dancer; Taguel and Manakete reach only Morgan. A child with Robin as a parent gets every regular class of their gender. Morgan starts in the other parent's first class, or as a Tactician after a Lord or Dancer. A child parent of Morgan's passes on what they inherited themselves. All from the game's program: growths 0x27d230, maximums 0x2c48f8, the join 0x3a44d0, the parents 0x27c0a8, classes 0x2cff38 and 0x214098, Morgan's class 0x27c150."
 
 function sourceText(data: Fe13Data, p: Fe13Parent): string {
   if (p.unit.maiden) return "the village maiden, all zeros (the game's PID_ダミー)"
@@ -1089,7 +1140,8 @@ export function Fe13MarriagePlanner({ data: raw }: { data: Fe13Data }) {
   const primary = byId.get(primaryId)
   const spouse = byId.get(spouseId)
   useScreenshotUnit(primary)
-  // Someone already married (either Avatar, for the Avatar) is out of a new marriage.
+  // As Fates' (user, 2026-11-07): the first box lists only the fixed parents (whose child comes from whoever they marry: the mothers,
+  // Chrom and Robin), the second whom they can marry. Someone already married (either Robin, for Robin) is out of a new marriage.
   const assigned = (id: string) => Object.keys(spouses).some((k) => sameUnit(k, id))
   const fixedParents = new Set(data.units.map((u) => u.parent).filter(Boolean))
   const free = data.units.filter((u) => spousesOf(data, u).length > 0 && !assigned(u.id))
@@ -1114,7 +1166,6 @@ export function Fe13MarriagePlanner({ data: raw }: { data: Fe13Data }) {
   return (
     <div className="space-y-6">
       <div className={panel}>
-        <AvatarBuild />
         <h3 className="text-base font-semibold text-neutral-100">New Marriage</h3>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <select
@@ -1125,9 +1176,8 @@ export function Fe13MarriagePlanner({ data: raw }: { data: Fe13Data }) {
             }}
             className={selectClass}
           >
-            <option value="">Select someone…</option>
-            <optgroup label="Has a child with any spouse">{free.filter((u) => fixedParents.has(u.id)).map(option)}</optgroup>
-            <optgroup label="Others">{free.filter((u) => !fixedParents.has(u.id)).map(option)}</optgroup>
+            <option value="">Select a parent…</option>
+            {free.filter((u) => fixedParents.has(u.id)).map(option)}
           </select>
           <select value={spouseId} onChange={(e) => setSpouseId(e.target.value)} disabled={!primary} className={`${selectClass} disabled:opacity-50`}>
             <option value="">{primary ? 'Select a spouse…' : 'Select someone first…'}</option>
@@ -1288,7 +1338,6 @@ export function Fe13ParentChecker({ data: raw }: { data: Fe13Data }) {
               ))}
           </select>
         </label>
-        {child && isMorgan(child) && <AvatarBuild />}
         {child && (
           <label className="flex flex-col gap-1 text-xs text-neutral-400">
             Add a candidate other parent

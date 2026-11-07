@@ -24,7 +24,8 @@ STATS = ['hp', 'str', 'mag', 'skl', 'spd', 'lck', 'def', 'res']
 PERSON = 568
 # JobData +84..+89: the weapon types a class uses (1) or not (0); the unit's experience in them is the person's plus that byte (0x2d0b60).
 WEAPONS = ['Sword', 'Lance', 'Axe', 'Bow', 'Tome', 'Staff']
-AVATARS = {'PID_プレイヤー男': 'Avatar (M)', 'PID_プレイヤー女': 'Avatar (F)'}
+# Named Robin, the game's default name for the Avatar (user, 2026-11-07); the ids stay fe13-avatar-m and -f (saved plans use them).
+AVATARS = {'PID_プレイヤー男': 'Robin (M)', 'PID_プレイヤー女': 'Robin (F)'}
 TACTICIAN = {'JID_戦術師男', 'JID_戦術師女'}
 MORGAN = {'PID_マーク男': 'Morgan (M)', 'PID_マーク女': 'Morgan (F)'}
 # What the scripts leave to the player, in Serenes Forest's words (its recruitment page).
@@ -145,7 +146,8 @@ def main():
         return AVATARS.get(pid) or MORGAN.get(pid) or D.name_of(b.str(rec[pid] + 20))
 
     def uid(pid):
-        n = name_of(pid)
+        # The Avatars keep the ids they had as "Avatar (M)" and "Avatar (F)": saved plans, marriages and art use them.
+        n = {'PID_プレイヤー男': 'Avatar (M)', 'PID_プレイヤー女': 'Avatar (F)'}.get(pid) or name_of(pid)
         return 'fe13-' + ''.join(ch if ch.isalnum() else '-' for ch in n.lower().replace("'", '').replace('’', '')).strip('-').replace('--', '-')
 
     # The army: the two Avatars (the Prologue's start), then everyone the scripts bring in.
@@ -183,12 +185,12 @@ def main():
             notes.append(NOTES[pid])
         ch = CHAPTERS.get(key, {})
         if ch.get('parent') and key.startswith('X'):
-            parent = 'the Avatar' if ch['parent'].startswith('プレイヤー') else D.name_of('MPID_' + ch['parent'])
+            parent = 'Robin' if ch['parent'].startswith('プレイヤー') else D.name_of('MPID_' + ch['parent'])
             notes.append(f'The paralogue opens once {parent} is married (the chapter data).')
         units.append({
             'id': uid(pid), 'pid': pid, 'name': name, 'female': female, 'classId': f'c{cls}', 'level': raw[69],
             'joinChapter': f'fe13-{key.lower()}',
-            'join': {'how': how, **({'with': [name_of(w) if w in rec else 'Avatar' for w in dict.fromkeys(with_)]} if with_ else {}),
+            'join': {'how': how, **({'with': [name_of(w) if w in rec else 'Robin' for w in dict.fromkeys(with_)]} if with_ else {}),
                      **({'turn': turn} if turn else {}), **({'note': ' '.join(notes)} if notes else {})},
             'bases': bases, 'personal': dict(zip(STATS, personal)),
             'growths': dict(zip(STATS, G.person_growths(raw, o))),

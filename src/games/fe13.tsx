@@ -1,6 +1,6 @@
 import { Fe13BulkViewer } from '../awakening/bulk'
 import { LinearSpoilerBar } from '../components/LinearSpoilerBar'
-import { Fe13MarriagePlanner, Fe13Planner, Fe13Roster, Fe13Supports } from '../awakening/screens'
+import { Fe13MarriagePlanner, Fe13Planner, Fe13RobinPanel, Fe13Roster, Fe13Supports } from '../awakening/screens'
 import { Fe13SkillPlanner } from '../awakening/skills'
 import type { Fe13Data } from '../awakening/logic'
 import { FE13_ASSETS, FE13_AVATAR_HAIR, FE13_CHAPTERS, FE13_CLASSES, FE13_MAIDEN, FE13_SKILLS, FE13_UNITS, FE13_WEAPON_BONUS } from '../data/fe13/fe13Units'
@@ -29,7 +29,9 @@ const FE13_LAYERS = [
   }),
   ...['m', 'f'].flatMap((g) => [1, 2, 3].flatMap((n) => ['base', 'hair1', 'hair2', 'hair3', 'hair4', 'hair5'].map((l) => `avatar/${g}_${n}/${l}.png`))),
 ]
-const UPLOAD_DATA = { gameId: 'fe13', units: FE13_UNITS, skills: FE13_SKILLS } as unknown as TelliusData
+// Robin's portraits stay matched as avatar_m.png and avatar_f.png, the names they had (the art pack and what's already uploaded).
+const UPLOAD_UNITS = FE13_UNITS.map((u) => (u.id === 'fe13-avatar-m' ? { ...u, name: 'Avatar (M)' } : u.id === 'fe13-avatar-f' ? { ...u, name: 'Avatar (F)' } : u))
+const UPLOAD_DATA = { gameId: 'fe13', units: UPLOAD_UNITS, skills: FE13_SKILLS } as unknown as TelliusData
 
 const fe13: GameParts = {
   tabs: [
@@ -41,6 +43,7 @@ const fe13: GameParts = {
     // As Fates: the Parent Checker sits in the Bulk Viewer, next to the Team Viewer.
     { id: 'viewer', label: 'Bulk Viewer', component: () => <Fe13BulkViewer data={useFe13Data()} /> },
   ],
+  banner: Fe13RobinPanel,
   spoiler: "Every tab follows the chapter you're on: units show once they join, the children with their paralogues.",
   spoilerBar: () => <LinearSpoilerBar gameId="fe13" chapters={FE13_DATA.chapters} />,
   bulkUpload: ({ onClose }) => <TelliusBulkUpload data={UPLOAD_DATA} title="Awakening" onClose={onClose} />,
