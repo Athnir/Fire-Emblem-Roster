@@ -1,4 +1,4 @@
-import { StatBlocks } from '../components/StatBlocks'
+import { capsTitle, StatBlocks } from '../components/StatBlocks'
 import { useMemo, useRef, useState, type ReactNode } from 'react'
 import { Portrait } from '../components/Portrait'
 import { assetKeys } from '../data/assetStorage'
@@ -244,6 +244,7 @@ function fmt(v: number | undefined): string {
 
 type Row = {
   label: string
+  title?: ReactNode
   values: Partial<Fe13Stats & { mov: number }>
   caps?: Partial<Fe13Stats>
   /** Before the maximums: a stat held at one shows the points it keeps beyond it. */
@@ -269,7 +270,7 @@ function StatTable({ rows, mov = false }: { rows: Row[]; mov?: boolean }) {
       stats={cols}
       labels={FE13_STAT_LABELS}
       fmt={(n) => fmt(n)}
-      rows={rows.map((r) => ({ label: r.label, values: mov ? r.values : { ...r.values, mov: undefined }, caps: r.caps, suffix: r.suffix, signed: r.signed, after: kept(r) }))}
+      rows={rows.map((r) => ({ label: r.label, title: r.title, values: mov ? r.values : { ...r.values, mov: undefined }, caps: r.caps, suffix: r.suffix, signed: r.signed, after: kept(r) }))}
     />
   )
 }
@@ -679,6 +680,7 @@ export function Fe13Planner({ data: raw }: { data: Fe13Data }) {
   const spouses = useFe13Store((s) => s.spouses)
   const plans = useFe13Store((s) => s.plans)
   const setPlan = useFe13Store((s) => s.setPlan)
+  const [capsPick, setCapsPick] = useState('')
   const stored: Fe13Plan = saved ?? { steps: [], targetLevel: maxLevelOf(data.classes[unit.classId]) }
   const update = (patch: Partial<Fe13Plan>) => setPlan(unit.id, { ...stored, ...patch })
   // Aptitude only for a unit who can have it in some playthrough (Donnel's Villager, or inherited from a parent who can).
@@ -723,6 +725,12 @@ export function Fe13Planner({ data: raw }: { data: Fe13Data }) {
     update({ steps: patch.to ? kept : [...kept, ...steps.slice(i + 1)] })
   }
   const nextOptions = classChanges(data, current, set, plan.dlc)
+  // The maximums of one class at a time, picked from every class the unit can be in (user, 2026-11-07): their set, what it promotes
+  // to, and the DLC classes unlocked; the plan's last by default.
+  const capsClasses = [...new Set([...[start.classId, ...set].flatMap((id) => [id, ...(data.classes[id]?.promotesTo ?? [])]), ...(plan.dlc ?? []), ...steps.map((st) => st.to)])].filter(
+    (id) => data.classes[id],
+  )
+  const capsId = capsClasses.includes(capsPick) ? capsPick : finalClass.id
   const growthsAs = (cls: Fe13Class) => {
     const out = {} as Fe13Stats
     for (const s of FE13_STATS) out[s] = growths[s] + (cls.growths?.[s] ?? 0) + (plan.aptitude ? 20 : 0)
@@ -859,7 +867,11 @@ export function Fe13Planner({ data: raw }: { data: Fe13Data }) {
             { label: 'Personal growths', values: growths, suffix: '%' },
             { label: `Growths as a ${finalClass.name}${plan.aptitude ? ' (with Aptitude)' : ''}`, values: growthsAs(finalClass), suffix: '%' },
             { label: child ? `Modifiers (${child.fixed.unit.name}'s and ${child.other.unit.name}'s)` : 'Modifiers', values: modifiers, signed: true },
-            { label: `Maximums (${finalClass.name})`, values: capsOf(finalClass, modifiers, plan.limitBreaker) },
+            {
+              label: 'Maximums',
+              title: capsTitle({ label: 'Maximums', options: capsClasses.map((id) => ({ id, name: data.classes[id].name })), value: capsId, onChange: setCapsPick }),
+              values: capsOf(data.classes[capsId], modifiers, plan.limitBreaker),
+            },
           ]}
         />
         <StatTable
