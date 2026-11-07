@@ -1108,26 +1108,16 @@ export function GbaSupports({ data: game }: { data: GbaData }) {
   useScreenshotUnit(unit)
   const partners = unit ? supportsOf(data, unit.id) : []
   const fixed = unit && data.supportBonuses ? bonusesOf(data, unit.id) : null
-  const row = (name: string) => data.affinities.find((a) => a.name === name)
-  const bonus = (a: string, b: string) => {
-    const x = row(a)
-    const y = row(b)
-    if (!x || !y) return ''
-    const keys: [keyof GbaAffinity, string][] = [
-      ['atk', 'Atk'],
-      ['def', 'Def'],
-      ['hit', 'Hit'],
-      ['avoid', 'Avo'],
-      ['crit', 'Crit'],
-      ['dodge', 'Dodge'],
-    ]
-    // Per level: both rows summed and halved, rounded down (the game multiplies by the level before halving).
-    return keys
-      .map(([k, label]) => [label, ((x[k] as number) + (y[k] as number)) / 2] as const)
-      .filter(([, v]) => v)
-      .map(([label, v]) => `${label} +${v}`)
-      .join(', ')
-  }
+  // Each affinity's bonus for one support level, as the wikis give it: the game's table holds twice that (a pair's is both rows summed,
+  // times the level, halved, rounded down). Shown per affinity, not worked out per pair (user, 2026-11-07): a unit holds five support
+  // levels at most, so the player picks which, and adds them up.
+  const AFFINITY_KEYS = ['atk', 'def', 'hit', 'avoid', 'crit', 'dodge'] as const
+  const AFFINITY_LABELS = { atk: 'Atk', def: 'Def', hit: 'Hit', avoid: 'Avo', crit: 'Crit', dodge: 'Dodge' }
+  const affinityRows = data.affinities.map((a) => ({
+    label: a.name === unit?.affinity ? `${a.name} (${unit.name}'s)` : a.name,
+    values: Object.fromEntries(AFFINITY_KEYS.map((k) => [k, (a[k] as number) / 2])) as Record<(typeof AFFINITY_KEYS)[number], number>,
+    signed: true,
+  }))
   return (
     <div className="space-y-4">
       {picker}
@@ -1154,15 +1144,15 @@ export function GbaSupports({ data: game }: { data: GbaData }) {
             <>
               <p className="text-xs text-neutral-500">
                 A pair starts with some points and gains more {data.supportGain ?? 'each turn it ends within reach'}; C, B and A need {data.supportLevels.join(', ')}{' '}
-                points. Turns are counted from the start. A unit can hold five support levels at most. The bonus is what each level adds
-                with the partner within 3 tiles (both affinities summed and halved).
+                points. Turns are counted from the start. A unit can hold five support levels at most.
+
               </p>
               {/* C, B and A in view on a phone, no sideways scroll (user, 2026-11-05): the affinity, the points and the bonus go under
                   the partner's name. */}
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-xs text-neutral-500">
-                    <th className="py-1 text-left font-normal">Partner (affinity, points: start + a turn, bonus per level)</th>
+                    <th className="py-1 text-left font-normal">Partner (affinity, points: start + a turn)</th>
                     <th className="w-9 py-1 text-right font-normal">C</th>
                     <th className="w-9 py-1 text-right font-normal">B</th>
                     <th className="w-9 py-1 text-right font-normal">A</th>
@@ -1177,7 +1167,7 @@ export function GbaSupports({ data: game }: { data: GbaData }) {
                           {partner.name}
                         </button>
                         <div className="text-xs text-neutral-500">
-                          {partner.affinity} · {support.start} + {support.perTurn} a turn · {bonus(unit.affinity ?? '', partner.affinity ?? '')}
+                          {partner.affinity} · {support.start} + {support.perTurn} a turn
                         </div>
                       </td>
                       {turnsFor(data.supportLevels, support).map((t, i) => (
@@ -1189,6 +1179,15 @@ export function GbaSupports({ data: game }: { data: GbaData }) {
                   ))}
                 </tbody>
               </table>
+              <div className="space-y-2">
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-neutral-400">What each affinity gives, per support level</h4>
+                <p className="text-xs text-neutral-500">
+                  With the partner within 3 tiles, each support level adds the unit's affinity row and the partner's together: a C is one
+                  level, a B two, an A three. Both units get it, and the bonuses of several partners in reach add up (Serenes Forest). The
+                  game's table holds each value doubled: it adds the two rows, multiplies by the level and halves, rounding down.
+                </p>
+                <StatBlocks stats={AFFINITY_KEYS} labels={AFFINITY_LABELS} rows={affinityRows} fmt={(n) => String(n)} />
+              </div>
             </>
           )}
         </div>
