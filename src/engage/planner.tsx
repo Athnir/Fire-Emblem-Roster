@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { ClassSegments, type Segment, type SegmentRow } from '../components/ClassSegments'
 import { chip, selectClass, useArmy, useScreenshotUnit, useUnitPlan } from './hooks'
 import {
   capsOf,
@@ -113,31 +114,67 @@ export function Fe17Planner({ data }: { data: Fe17Data }) {
   const sync = syncBonus(emblem, bond)
   const label = (st: Fe17Stage) =>
     `${data.classes[st.classId].name} Lv ${st.level}${st.internal ? ` (int. ${st.internal})` : ''}${st.how === 'joins' ? ' (joins)' : st.how === 'change' ? ' (changes)' : ''}`
-  const classAt = (i: number) => (i === 0 ? unit.classId : steps[i - 1].to)
-  const levelAt = (i: number) => {
-    if (i === 0) return unit.level
-    const prev = steps[i - 1]
-    return levelAfter(data.classes[classAt(i - 1)], prev.at, data.classes[prev.to])
-  }
-  const setStep = (i: number, patch: Partial<{ at: number; to: string }>) => update({ steps: steps.map((s, j) => (j === i ? { ...s, ...patch } : s)) })
   const lastLevel = last.level
-  const fromLevel = steps.length ? levelAt(steps.length) : unit.level
+  // The plan as Fates' segments: the class they join in, then each change's class, with the levels gained in each; saved as the steps.
+  const rawLevelAt = (k: number): number => {
+    if (k === 0) return unit.level
+    const prev = plan.steps[k - 1]
+    const fromCls = data.classes[k === 1 ? unit.classId : plan.steps[k - 2].to]
+    const toCls = data.classes[prev.to]
+    return fromCls && toCls ? levelAfter(fromCls, prev.at, toCls) : 1
+  }
+  const segments: Segment[] = [unit.classId, ...plan.steps.map((st) => st.to)].map((classId, k) => {
+    const from = rawLevelAt(k)
+    const end = k < plan.steps.length ? plan.steps[k].at : Math.max(from, Math.min(data.classes[classId]?.maxLevel ?? 20, plan.targetLevel))
+    return { classId, levels: Math.max(0, end - from) }
+  })
+  const setSegments = (next: Segment[]) => {
+    const out: { at: number; to: string }[] = []
+    let cls = data.classes[unit.classId]
+    let level = unit.level
+    next.forEach((sg, k) => {
+      if (k > 0) {
+        const to = data.classes[sg.classId]
+        out.push({ at: level, to: sg.classId })
+        level = levelAfter(cls, level, to)
+        cls = to
+      }
+      level = Math.min(cls.maxLevel, level + sg.levels)
+    })
+    update({ steps: out, targetLevel: level })
+  }
+  const segRows: SegmentRow[] = segments.map((sg, k) => {
+    const cls = data.classes[sg.classId]
+    const from = rawLevelAt(k)
+    const prev = k > 0 ? data.classes[k === 1 ? unit.classId : plan.steps[k - 2].to] : undefined
+    const at = k > 0 ? plan.steps[k - 1].at : 0
+    const change = prev ? changesFrom(data, unit, prev.id, have).find((c) => c.to === sg.classId) : undefined
+    const blocked = k > steps.length
+    return {
+      ...sg,
+      name: cls?.name ?? sg.classId,
+      from,
+      to: from + sg.levels,
+      max: (cls?.maxLevel ?? 20) - from,
+      options: prev
+        ? changesFrom(data, unit, prev.id, have).map((c) => ({
+            id: c.to,
+            label: `${data.classes[c.to].name} (${SEAL_NAMES[c.seal]}${c.minLevel > 1 ? `, Lv ${c.minLevel}` : ''})`,
+            disabled: at < c.minLevel,
+          }))
+        : undefined,
+      note: blocked
+        ? `The game doesn't allow this change at ${prev?.name} Lv ${at}${change && at < change.minLevel ? ` (it needs Lv ${change.minLevel})` : ''}; it and the classes after it aren't counted.`
+        : undefined,
+      blocked,
+    }
+  })
   const emblems = data.emblems.filter((e) => e.levels.some((l) => l.sync.length || l.inherit.length))
   return (
     <div className="space-y-4">
       <UnitSelect data={data} units={units} value={unit.id} onChange={setUnitId} />
       <div className="space-y-4 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
         <div className="flex flex-wrap items-end gap-4 text-sm text-neutral-300">
-          <label className="space-y-1">
-            <span className="block text-xs text-neutral-500">Up to Lv (as {finalCls.name})</span>
-            <select value={Math.max(fromLevel, Math.min(finalCls.maxLevel, plan.targetLevel))} onChange={(e) => update({ targetLevel: Number(e.target.value) })} className={selectClass}>
-              {levels(fromLevel, finalCls.maxLevel).map((lv) => (
-                <option key={lv} value={lv}>
-                  {lv}
-                </option>
-              ))}
-            </select>
-          </label>
           <label className="space-y-1">
             <span className="block text-xs text-neutral-500">Difficulty (the internal level's cap)</span>
             <select value={plan.difficulty ?? 'normal'} onChange={(e) => update({ difficulty: e.target.value as Fe17Difficulty })} className={selectClass}>
@@ -163,46 +200,21 @@ export function Fe17Planner({ data }: { data: Fe17Data }) {
           )}
         </div>
         <div className="space-y-2">
-          <h4 className="text-sm font-semibold text-neutral-200">Class changes</h4>
-          {steps.map((st, i) => {
-            const from = data.classes[classAt(i)]
-            const options = changesFrom(data, unit, from.id, have)
-            return (
-              <div key={i} className="flex flex-wrap items-center gap-2 text-sm">
-                <span className="text-neutral-500">As a {from.name}, at Lv</span>
-                <select value={st.at} onChange={(e) => setStep(i, { at: Number(e.target.value) })} className={selectClass}>
-                  {levels(levelAt(i), from.maxLevel).map((lv) => (
-                    <option key={lv} value={lv}>
-                      {lv}
-                    </option>
-                  ))}
-                </select>
-                <span className="text-neutral-500">→</span>
-                <select value={st.to} onChange={(e) => setStep(i, { to: e.target.value })} className={selectClass}>
-                  {options.map((c) => (
-                    <option key={c.to} value={c.to} disabled={st.at < c.minLevel}>
-                      {data.classes[c.to].name} ({SEAL_NAMES[c.seal]}{c.minLevel > 1 ? `, Lv ${c.minLevel}` : ''})
-                    </option>
-                  ))}
-                </select>
-                <button type="button" onClick={() => update({ steps: steps.filter((_, j) => j !== i) })} className="text-xs text-neutral-500 hover:text-red-400">
-                  Remove
-                </button>
-              </div>
-            )
-          })}
-          <button
-            type="button"
-            onClick={() => {
-              const from = data.classes[classAt(steps.length)]
-              const at = Math.max(fromLevel, Math.min(from.maxLevel, plan.targetLevel))
-              const next = changesFrom(data, unit, from.id, have).find((c) => c.to !== from.id && at >= c.minLevel)
-              if (next) update({ steps: [...steps, { at, to: next.to }] })
+          <h4 className="text-sm font-semibold text-neutral-200">Classes</h4>
+          {/* As Fates' (user, 2026-11-07): each class with the levels spent in it; a change starts the level again, as the game's. */}
+          <ClassSegments
+            rows={segRows}
+            summary={`${segRows.reduce((n, r) => n + r.levels, 0)} levels planned, ending at ${finalCls.name} Lv ${lastLevel}`}
+            onClass={(i, id) => setSegments(segments.map((sg, j) => (j === i ? { ...sg, classId: id } : sg)))}
+            onLevels={(i, n) => setSegments(segments.map((sg, j) => (j === i ? { ...sg, levels: n } : sg)))}
+            onRemove={(i) => setSegments(segments.filter((_, j) => j !== i))}
+            onAdd={() => {
+              const end = segRows[segRows.length - 1]
+              const next = changesFrom(data, unit, end.classId, have).find((c) => c.to !== end.classId && end.to >= c.minLevel)
+              if (next) setSegments([...segments, { classId: next.to, levels: 1 }])
             }}
-            className="rounded-md border border-neutral-700 bg-neutral-800 px-2 py-1 text-xs text-neutral-300 hover:border-neutral-600"
-          >
-            + Add a class change
-          </button>
+            canAdd={segments.length - 1 === steps.length}
+          />
           <p className="text-xs text-neutral-500">
             Proficient in: {have.join(', ')}; innate: {unit.innate.join(', ')} (a class's rank in an innate weapon is one higher). A class
             asks for its weapons; emblem bonds add more.
