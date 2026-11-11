@@ -22,6 +22,10 @@ interface Fe17State {
   picks: Fe17Picks
   setPlan: (unitId: string, plan: Fe17Plan | null) => void
   setPick: (choiceId: 'alear', value: string | null) => void
+  /** Whether the Expansion Pass's content shows at all (user, 2026-11-11): its units, Emblems, Bond Rings and classes. Shown unless
+   * turned off. */
+  showExpansion?: boolean
+  setShowExpansion: (on: boolean) => void
   /** Replaces the plans and picks (loading a saved set). */
   load: (plans: Record<string, Fe17Plan>, picks: Fe17Picks) => void
 }
@@ -46,6 +50,7 @@ export const useFe17Store = create<Fe17State>()(
           else picks[choiceId] = value
           return { picks: picks as Fe17Picks }
         }),
+      setShowExpansion: (on) => set({ showExpansion: on }),
       load: (plans, picks) => set({ plans: { ...plans }, picks: { ...picks } }),
     }),
     { name: 'fe-roster-fe17', version: 1, migrate: (saved, version) => (version < 1 ? alearMoved(saved as Fe17State) : saved) as Fe17State },

@@ -1,6 +1,5 @@
 import { useRef, useState } from 'react'
-import { useReached } from '../state/spoilerStore'
-import { chip, selectClass, useArmy, useScreenshotUnit } from './hooks'
+import { chip, selectClass, useArmy, useEngageReached, useScreenshotUnit } from './hooks'
 import { chapterLabel, labelOf, supportsOf, type Fe17Data } from './logic'
 import { FE17_STAT_LABELS, type Fe17BondRingSet, type Fe17StatsMov, type Fe17Unit } from './types'
 import { EmblemFace, RingFace, SkillChips, SkillIcon, SkillList, UnitPortrait, UnitSelect } from './ui'
@@ -153,7 +152,7 @@ export function Fe17Supports({ data }: { data: Fe17Data }) {
  * spoiler block on (user, 2026-11-03), an Emblem's ring and its world's bond rings show from the chapter the ring first comes in. */
 export function Fe17Emblems({ data }: { data: Fe17Data }) {
   const [kind, setKind] = useState<'major' | 'minor'>('major')
-  const reached = useReached(data.gameId, data.chapters)
+  const reached = useEngageReached(data)
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2">

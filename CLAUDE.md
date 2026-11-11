@@ -211,6 +211,10 @@ reveals it. What that means for each tab is settled with the user as each game i
   chapter, time-away lines blank.
 - **Felicia and Jakob both stay listed** (user, 2026-11-03, Fates): a note says you get the one of the opposite gender to Corrin,
   and nothing says if or when the other comes.
+- **Engage's bar has the chapters alone** (user, 2026-11-11): no paralogues, Divine Paralogues or Fell Xenologue. A paralogue (an
+  Emblem's, Jean's, Anna's) counts as cleared from the chapter after the one that opens it, and the Expansion Pass's the same (opened
+  by Chapter 6, so from Chapter 7). A tick box above the tabs shows the Expansion Pass's content at all (its units, Emblems, Bond Rings
+  and classes, flagged in the game's data); shown, it follows those rules.
 - **Engage's rings show with their Emblem** (user, 2026-11-03): an Emblem Ring (major), and the Bond Rings (minor) of its world,
   from the chapter the ring first comes in; the six rings taken after Chapter 10 don't hide again. The Heroes Bond Rings come from
   the first visit to the Somniel (after Chapter 3). The Emblems tab shows Major or Minor rings, picked at its top.

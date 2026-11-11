@@ -1,7 +1,6 @@
 import { useState } from 'react'
-import { useReached } from '../state/spoilerStore'
 import { isPlanned } from '../logic/planned'
-import { armyWith, plansWith, selectClass } from './hooks'
+import { armyWith, plansWith, selectClass, useEngageReached } from './hooks'
 import { capsOf, defaultPlan, growthsIn, labelOf, project, shownStats, type Fe17Data } from './logic'
 import { useFe17Builds, useFe17Store } from './store'
 import { Fe17PlanSets, SkillChips, StatGrid, UnitPortrait } from './ui'
@@ -11,7 +10,7 @@ import { Fe17PlanSets, SkillChips, StatGrid, UnitPortrait } from './ui'
 export function Fe17BulkViewer({ data }: { data: Fe17Data }) {
   const current = useFe17Store((s) => s.plans)
   const sets = useFe17Builds((s) => s.sets)
-  const reached = useReached(data.gameId, data.chapters)
+  const reached = useEngageReached(data)
   const [source, setSource] = useState('current')
   const set = sets.find((s) => s.id === source)
   const planOf = plansWith(set?.plans ?? current)

@@ -1,5 +1,4 @@
 import { UploadSection } from '../components/BulkAssetUpload'
-import { LinearSpoilerBar } from '../components/LinearSpoilerBar'
 import { FE17_BOND_RINGS, FE17_BOOSTERS, FE17_CHAPTERS, FE17_CLASS_TYPES, FE17_CLASSES, FE17_EMBLEMS, FE17_SKILL_CHAINS, FE17_SKILLS, FE17_SUPPORTS, FE17_UNITS } from '../data/fe17/fe17Units'
 import { FEMALE_ALEAR, fe17Art, matchEmblemFaces, matchRingFaces, matchSkillIcons } from '../engage/art'
 import { Fe17BulkViewer } from '../engage/bulk'
@@ -8,6 +7,7 @@ import type { Fe17Data } from '../engage/logic'
 import { Fe17Planner } from '../engage/planner'
 import { Fe17Emblems, Fe17Info, Fe17Roster, Fe17Supports } from '../engage/screens'
 import { Fe17SkillPlanner } from '../engage/skills'
+import { Fe17ExpansionBox, Fe17SpoilerBar, useFe17View } from '../engage/spoiler'
 import { TelliusBulkUpload } from '../tellius/TelliusBulkUpload'
 import type { TelliusData } from '../tellius/types'
 import type { GameParts } from './index'
@@ -41,17 +41,18 @@ const RING_COUNT = FE17_BOND_RINGS.reduce((n, s) => n + s.rings.length, 0)
 
 const fe17: GameParts = {
   tabs: [
-    { id: 'roster', label: 'Roster', component: () => <Fe17Roster data={FE17_DATA} /> },
-    { id: 'unit', label: 'Unit Planner', component: () => <Fe17Planner data={FE17_DATA} /> },
-    { id: 'supports', label: 'Supports', component: () => <Fe17Supports data={FE17_DATA} /> },
-    { id: 'emblems', label: 'Emblems', component: () => <Fe17Emblems data={FE17_DATA} /> },
-    { id: 'classes', label: 'Classes', component: () => <Fe17Classes data={FE17_DATA} /> },
-    { id: 'skills', label: 'Skill Planner', component: () => <Fe17SkillPlanner data={FE17_DATA} /> },
-    { id: 'viewer', label: 'Bulk Viewer', component: () => <Fe17BulkViewer data={FE17_DATA} /> },
+    { id: 'roster', label: 'Roster', component: () => <Fe17Roster data={useFe17View(FE17_DATA)} /> },
+    { id: 'unit', label: 'Unit Planner', component: () => <Fe17Planner data={useFe17View(FE17_DATA)} /> },
+    { id: 'supports', label: 'Supports', component: () => <Fe17Supports data={useFe17View(FE17_DATA)} /> },
+    { id: 'emblems', label: 'Emblems', component: () => <Fe17Emblems data={useFe17View(FE17_DATA)} /> },
+    { id: 'classes', label: 'Classes', component: () => <Fe17Classes data={useFe17View(FE17_DATA)} /> },
+    { id: 'skills', label: 'Skill Planner', component: () => <Fe17SkillPlanner data={useFe17View(FE17_DATA)} /> },
+    { id: 'viewer', label: 'Bulk Viewer', component: () => <Fe17BulkViewer data={useFe17View(FE17_DATA)} /> },
     { id: 'info', label: 'Info', component: () => <Fe17Info /> },
   ],
-  spoiler: "Every tab follows the chapter you're on: units show once they join (the paralogues after the chapters that open them, the Expansion Pass's after Chapter 6). The Emblems tab shows each Emblem's ring, and its world's Bond Rings, from the chapter the ring first comes in.",
-  spoilerBar: () => <LinearSpoilerBar gameId="fe17" chapters={FE17_CHAPTERS} />,
+  spoiler: "Every tab follows the chapter you're on: units show once they join. The bar has the chapters alone: a paralogue counts as cleared from the chapter after the one that opens it, and the Expansion Pass's Divine Paralogues and Fell Xenologue (opened by Chapter 6) the same, from Chapter 7. The Emblems tab shows each Emblem's ring, and its world's Bond Rings, from the chapter the ring first comes in.",
+  banner: Fe17ExpansionBox,
+  spoilerBar: () => <Fe17SpoilerBar chapters={useFe17View(FE17_DATA).chapters} />,
   bulkUpload: ({ onClose }) => (
     <TelliusBulkUpload
       data={UPLOAD_DATA}
