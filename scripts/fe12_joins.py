@@ -1,28 +1,30 @@
 """
-Who joins New Mystery of the Emblem's army, where and how (data-raw/fe12/README.md).
-
-The user's cartridge image has the chapters' scripts (script/*.cmb) zeroed out: every byte of all 119 is 0, and the DSi digest table
-on the cartridge (+0x5340800, an HMAC per 1 KB sector) shows those sectors weren't zero when it was made (20,611 sectors of the image
-were blanked: the scripts, the small faces sf/, the sound, some battle animations). So the joins come from what is intact:
+Who joins New Mystery of the Emblem's army, where and how (data-raw/fe12/README.md), read from the placements, the chapters' scripts
+(script/*.cmb, `scripts/fe12_cmb.py`) and their text:
 
 - The placements (dispos/, 88-byte records; scripts/fe12_data.py `dispos`): a person placed on your side (+8 army 0) with the flag
   0x80 is created there if they aren't in the army yet (overlay 00 0x2205b5c: without 0x80, or with 0x02 / 0x04 / 0x08 / 0x200,
-  a record only places a unit that already exists). The group names say when: 'mikata' (the deployment, at the start), 'op' (the
-  opening), 'ed' (the ending), 'mNN' (placed during the chapter by its script). The prologue's B groups (bmap204 / 206 / 207:
-  mikataB, firstB, m01B...) are the chapter's other version, picked by the first answer at the end of the chapter before.
+  a record only places a unit that already exists). The prologue's B groups (bmap204 / 206 / 207: mikataB, firstB, m01B...) are the
+  chapter's other version (its own script, bmap204B.cmb...), picked by the first answer at the end of the chapter before.
+- When a group is placed is the handler of the chapter's scripts that places it (`group_when`): the map's begin or its opening (the
+  start), a turn handler (that turn), its Ending (after the battle), a village of its terrain script (a visit). A group no handler
+  places is never placed (Prologue III's Norne).
 - The chapters' text (m/NNN): MSnnn_TKn are the talks, MSnnn_VILn the villages; each message names the faces it shows
-  ('\\x06\\x08MATIS|'). A talk with a person placed on the foe's side recruits them; a village whose message shows a person placed on
-  your side during the chapter recruits them (Marth visits: the other face).
-- When an 'mNN' group is placed (the start, a turn, the end) the scripts decided; that, the chapter conditions and the gaiden chapters'
-  requirements are Serenes Forest's (GROUP_HOW, NOTES), checked against the text where it shows them.
+  ('\x06\x08MATIS|'). A talk with a person placed on the foe's side recruits them (the talkers: the other faces).
+- The gaiden chapters' requirements are read from the scripts (`gaiden`): each FlagSet of the chapter's gf_<n>ｘ分岐 flag at the end
+  of the chapter before, under the checks just before it.
 
 Units who join in the prologue and leave at its end (they aren't in Chapter 1's deployment, and Prologue VIII's ending has their
-goodbyes, MS208_ED3_*) come back where they're next placed with 0x80.
+goodbyes, MS208_ED3_*) come back where they're next placed with 0x80. (An earlier dump of the cartridge had the scripts zeroed; the
+timings and requirements were Serenes Forest's then, and every timing matched.)
 """
+import os
 import re
+import struct
 from collections import OrderedDict
 
 import fe12_data as D
+from fe12_cmb import Script
 
 # (dispos file, chapter id suffix, label) in story order; gaiden chapters after the chapter that opens them.
 STORY = [
@@ -45,48 +47,11 @@ CREATE = 0x80
 # Faces a message shows that stand for a person under another face name.
 FACE_ALIAS = {'Y_MISHEIL': 'PID_MISHEIL', 'Y_MINERBA': 'PID_MINERBA', 'S_RENA': 'PID_RENA', 'S_MARIA': 'PID_MARIA',
               'S_NIENA': 'PID_NIENA', 'S_ERICE': 'PID_ERICE', 'PLAYER': 'PID_PLAYER'}
-# Placements that create a person for a scene, not a join (the text shows them leaving, or Serenes Forest has them join later).
-SCENE = {
-    ('bmap203', 'm01'),   # Norne on your side in Prologue III: Serenes Forest lists no Norne in the prologue (see NOTES).
-    ('bmap020', 'ed01'),  # Nyna, Elice, Maria and Lena in Ch. 20's ending: taken by Gharnef; recruited in the Endgame.
-}
-# When the scripts place an 'mNN' group (Serenes Forest's recruitment table; the text agrees where noted).
-GROUP_HOW = {
-    ('bmap204', 'm01'): ('end', None),     # Gordin, after beating Jeorge (MS204_ED1_A shows him)
-    ('bmap204', 'm01B'): ('end', None),    # Athena, after beating her (MS204_ED1_B: 'Athena lends you her strength')
-    ('bmap205', 'm01'): ('event', 2),      # Merric, turn 2
-    ('bmap206', 'm01'): ('start', None),   # Cecil
-    ('bmap206', 'm01B'): ('start', None),
-    ('bmap206', 'm02'): ('end', None),     # Ogma (MS206_ED1_A: 'call me if you need my strength')
-    ('bmap206', 'm02B'): ('end', None),    # Draug (MS206_ED1_B)
-    ('bmap207', 'm01'): ('end', None),     # Est
-    ('bmap207', 'm01B'): ('end', None),    # Cain
-    ('bmap002', 'm01'): ('start', None),   # Catria
-    ('bmap002', 'm03'): ('end', None),     # Linde
-    ('bmap003', 'm01'): ('start', None),   # Palla (MS003_OP1 shows her)
-    ('bmap004', 'm02'): ('end', None),     # Caeda
-    ('bmap004', 'm03'): ('start', None),   # Ogma, Yumina, Yubello
-    ('bmap006', 'm01'): ('end', None),     # Wendell
-    ('bmap006', 'm03'): ('event', 3),      # Frey and Norne, turn 3 (MS006_EV1 shows them)
-    ('bmap007', 'm01'): ('start', None),   # Navarre, Feena
-    ('bmap008', 'm02'): ('start', None),   # Cain
-    ('bmap010', 'm01'): ('start', None),   # Merric
-    ('bmap010', 'm02'): ('end', None),     # Dice and Maris (MS010_ED_BS shows them)
-    ('bmap012', 'm01'): ('end', None),     # Robert, Belf, Leiden
-    ('bmap014', 'm01'): ('start', None),   # Xane
-    ('bmap015', 'm01'): ('start', None),   # Est
-    ('bmap015', 'm02'): ('start', None),   # Dolph
-    ('bmap016', 'm01'): ('start', None),   # Macellan
-    ('bmap017', 'm02'): ('end', None),     # Frost
-    ('bmap020', 'm01'): ('start', None),   # Midia
-    ('bmap021', 'm01'): ('start', None),   # Ymir
-    ('bmap021', 'm02'): ('end', None),     # Michalis, after his village (MS021_VIL1); from Ch. 22's preparations
-    ('bmap022', 'm01'): ('start', None),   # Nagi
-    ('bmap103', 'm01'): ('start', None),   # Wrys
-    ('bmap110', 'm01'): ('start', None),   # Horace
-    ('bmap113', 'm01'): ('start', None),   # Athena
-}
-# Recruited from the foe's side with no talk in the text: how (Serenes Forest).
+# Placements that create a person for a scene, not a join: Nyna, Elice, Maria and Lena in Ch. 20's ending (its Ending places them, and
+# Gharnef takes them; the Endgame's talks recruit them).
+SCENE = {('bmap020', 'ed01')}
+# Recruited from the foe's side with no talk in the text: Tiki by her talk handler with Marth (bmap014's, type 0x08); Caesar and Radd
+# handed over by Ch. 6x's Ending (UnitTransfer).
 FOE_HOW = {
     ('bmap014', 'PID_TIKI'): ('talk', ['PID_MARS']),
     ('bmap106', 'PID_SEAZER'): ('end', []),
@@ -94,7 +59,7 @@ FOE_HOW = {
 }
 # Units who join in the prologue only for one answer to a choice at the end of the chapter before (the B groups are the first answer).
 CHOICE_UNITS = {'PID_GOHDON', 'PID_ATHENA', 'PID_OGUMA', 'PID_DOHGA', 'PID_EST', 'PID_KAIN'}
-# Where the placements don't hold a recruit: the scripts' conditions (Serenes Forest's, unless it says the text).
+# Where the placements don't hold a recruit: the scripts' conditions (Serenes Forest's where it says so).
 NOTES = {
     'PID_GOHDON': 'Joins at the end of Prologue IV if the second answer was picked at the end of Prologue III (Jeorge is the '
                   'opponent); otherwise at the start of Ch. 1, as the Ch. 1 deployment creates him (flag 0x80).',
@@ -109,34 +74,136 @@ NOTES = {
     'PID_KAIN': 'Joins at the end of Prologue VII if the first answer was picked at the end of Prologue VI (he is the opponent); '
                 'otherwise first at the start of Ch. 8.',
     'PID_RICARD': 'Talk with Julian in Ch. 5, or in Ch. 6 if not recruited in Ch. 5 (he comes as a reinforcement there).',
-    'PID_JORJUE': 'Only if he survived Ch. 5 (Serenes Forest).',
-    'PID_ASTRIA': 'Only if Jeorge survived Ch. 7, 8 and 9 (Serenes Forest).',
+    'PID_JORJUE': 'Only if he wasn\'t killed in Ch. 5, where he fights you: Ch. 8 places him unless the flag his death sets.',
+    'PID_ASTRIA': 'Only if he wasn\'t killed in Ch. 7, 8 or 9, where he fights you: Ch. 16 places him unless the flag his death sets.',
     'PID_TIKI': 'Talk with Marth; needs the Starsphere (Serenes Forest).',
-    'PID_SEAZER': 'Clear Ch. 6x without killing him (Serenes Forest; the ending has him surrender, MS106_ED1A).',
-    'PID_RADEI': 'Clear Ch. 6x without killing him (Serenes Forest; MS106_ED1C has Marth hire him).',
+    'PID_SEAZER': "Clear Ch. 6x without killing him: its Ending hands him over (the ending has him surrender, MS106_ED1A).",
+    'PID_RADEI': "Clear Ch. 6x without killing him: its Ending hands him over (MS106_ED1C has Marth hire him).",
     'PID_KATARINA': 'Talk with Kris three times (MS116_TK1-3).',
-    'PID_SIMA': 'Talk with Marth, only if no Gra soldier has been killed; killing one later while she lives turns her and Samson back '
-                'into foes (Serenes Forest).',
-    'PID_SAMSON': 'Talk with Sheema once she has joined (Serenes Forest).',
-    'PID_BIRAKU': 'Comes as a reinforcement in Ch. 19 (Serenes Forest).',
-    'PID_MISHEIL': 'In Ch. 21, Minerva waits on the village before the end of turn 15, then Marth visits it; he joins once the '
-                   'chapter ends (Serenes Forest; MS021_EV2 / MS021_VIL1).',
-    'PID_DICE': 'Joins at the end of Ch. 10 (MS010_ED_BS), for Ch. 10x (Serenes Forest).',
-    'PID_MARIS': 'Joins at the end of Ch. 10 (MS010_ED_BS), for Ch. 10x (Serenes Forest).',
-    'PID_NORN': 'Unconfirmed: Prologue III also places her on your side (bmap203 m01), and Prologue VIII\'s ending has her go home '
-                '("Ryan\'s injury will heal soon", MS208_ED3_4_2), so she seems to stand in for an injured Ryan; the script that '
-                'decides it is missing from the dump.',
-}
-# The gaiden chapters' requirements (Serenes Forest's; the scripts that check them are missing).
-GAIDEN = {
-    '3x': 'The prologue was cleared with one or fewer of your units defeated (or retreated).',
-    '6x': 'Rickard was recruited and is alive.',
-    '10x': 'Three or more of the enemy Clerics survived.',
-    '13x': "Neither of the enemy Thieves escaped the map.",
-    '16x': "Kris is promoted and Lv 5 or over.",
-    '20x': 'The Shield of Seals was obtained, and three or more of Roshea, Vyland, Sedgar, Wolf and Midia were recruited and are alive.',
+    'PID_SIMA': 'Talk with Marth, only while no Gra soldier has been killed (the talk\'s check counts them); killing one later while '
+                'she lives turns her and Samson back into foes (Serenes Forest).',
+    'PID_SAMSON': 'Talk with Sheema once she has joined.',
+    'PID_BIRAKU': 'Comes with the reinforcements of Ch. 19\'s second area, unless he was killed in Ch. 18.',
+    'PID_MISHEIL': 'In Ch. 21, Minerva steps onto the village by turn 15 while it\'s unvisited, then a unit visits it; he joins once '
+                   'the chapter ends (its Ending places him; MS021_EV2 / MS021_VIL1).',
+    'PID_DICE': "Joins at the end of Ch. 10 (its Ending places him), for Ch. 10x.",
+    'PID_MARIS': "Joins at the end of Ch. 10 (its Ending places her), for Ch. 10x.",
 }
 FACE = re.compile(r'[\x06\x07\x0b\x0c]\x08([A-Za-z_0-9]+)\|')
+
+
+TURNS, VILLAGE = (0x03, 0x17), 9
+
+
+def script(key):
+    p = os.path.join(D.ROM, 'script', key + '.cmb')
+    return Script(p) if os.path.exists(p) else None
+
+
+def trigger(s, h):
+    return struct.unpack_from('<I', s.d, s.offs[h['index']] + 0xc)[0] & 0xFFFF
+
+
+def group_when(key):
+    """{group: (how, turn)}: the handler of the chapter's scripts that places each group (a Dispos call): the map's begin or opening, or
+    its first turn's player phase ('start'), a later turn's handler ('event', the turn), its Ending ('end'), a village of its terrain
+    script ('visit'). A prologue chapter with a second version adds that version's scripts (bmap204B...)."""
+    out = {}
+    for k in (key, key + 'B'):
+        for s, ter in ((script(k), False), (script(k + '_ter'), True)):
+            for h in s.handlers() if s else []:
+                if ter:
+                    if len(h['args']) < 3 or h['args'][2] != VILLAGE:
+                        continue
+                    w = ('visit', None)
+                elif h['name'] in ('MapBegin', 'Opening'):
+                    w = ('start', None)
+                elif h['name'] == 'Ending':
+                    w = ('end', None)
+                elif trigger(s, h) in TURNS and h['args'][0]:
+                    first, _, phase = h['args'][:3]
+                    w = ('start', None) if first == 1 and phase == 0 else ('event', first)
+                else:
+                    continue
+                for fn, a in s.calls(h):
+                    if fn.startswith('Dispos') and fn != 'DisposWait' and a and isinstance(a[0], str):
+                        out.setdefault(a[0], w)
+    return out
+
+
+# GetNormalizeTurn (arm9 0x2028510): a turn limit times 100, 120, 140, 160 or 180% (Normal, Hard, Maniac, Lunatic, Reverse Lunatic).
+NORMALIZE = (('Hard', 120), ('Maniac', 140), ('Lunatic', 160), ('Reverse Lunatic', 180))
+ZENKAKU = str.maketrans('0123456789', '０１２３４５６７８９')
+GAIDEN_FLAG = 'gf_{}ｘ分岐'   # gf_<n>ｘ分岐
+SHIELD = '封印の盾完成'   # 封印の盾完成
+
+
+def _name(pid):
+    from fe12_names import english
+    p = next(p for p in D.persons() if p['pid'] == pid)
+    if pid == 'PID_PLAYER':
+        return english(D.say('MPID_PLAYER_DEFAULT'))
+    return english(D.say('MPID_' + p['fid'][4:]) or D.say('MPID_' + p['pid'][4:]))
+
+
+def gaiden():
+    """{'3x': requirement...}: what opens each gaiden chapter, read from the end of the chapter before (each FlagSet of its gaiden flag,
+    gf_<n>ｘ分岐, under the checks just before it): cleared by a turn (GetTurn() <= GetNormalizeTurn(n), the limit scaled by the mode),
+    no foe escaped (IsEnemyEscape), someone in your army (ForceUnitCheckPID), so many of a list, Kris promoted at a level, so many of the
+    chapter's foes left (GetCountSamePID). Prologue VIII's ChapterNext sets 3x's flag too, and Ch. 20 goes on only once the Binding
+    Shield is completed (its ChapterNext checks 封印の盾完成 first, else BadEnd)."""
+    out = {}
+    for before, n in (('bmap003', 3), ('bmap006', 6), ('bmap010', 10), ('bmap013', 13), ('bmap016', 16), ('bmap020', 20)):
+        s = script(before)
+        ops = s.disasm(next(h for h in s.handlers() if h['name'] == 'Ending'))
+        flag = GAIDEN_FLAG.format(str(n).translate(ZENKAKU))
+        counted = {ops[k][2]: ops[k + 1][2] for k in range(len(ops) - 2)
+                   if ops[k][1] == 'addr' and ops[k + 1][1] == 'str' and ops[k + 2][1] == 'call' and ops[k + 2][2][0] == 'GetCountSamePID'}
+        ways, start = [], 0
+        for k, (_, op, v) in enumerate(ops):
+            if not (op == 'call' and v[0] == 'FlagSet' and ops[k - 1][2] == flag):
+                continue
+            seg, start = ops[start:k], k + 1
+            calls = [x[2][0] for x in seg if x[1] == 'call']
+            pids = list(dict.fromkeys(x[2] for x in seg if x[1] == 'str' and x[2].startswith('PID_')))
+            last_int = next((x[2] for x in reversed(seg) if x[1] == 'int'), None)
+            if 'GetNormalizeTurn' in calls:
+                i = next(i for i, x in enumerate(seg) if x[1] == 'call' and x[2][0] == 'GetNormalizeTurn')
+                t = seg[i - 1][2]
+                ways.insert(0, f"Ch. {n} is cleared by turn {t} (" + ', '.join(f'{t * pct // 100} on {mode}' for mode, pct in NORMALIZE)
+                            + ')')
+            elif 'IsEnemyEscape' in calls:
+                ways.append('no foe has escaped the map')
+            elif 'UnitIsHighJob' in calls:
+                ways.append(f'{_name("PID_PLAYER")} is promoted and Lv {last_int} or over')
+            elif 'ForceUnitCheckPID' in calls and len(pids) == 1:
+                ways.append(f'{_name(pids[0])} is in your army')
+            elif 'ForceUnitCheckPID' in calls:
+                names = [_name(p) for p in pids]
+                ways.append(f"{last_int} or more of {', '.join(names[:-1])} and {names[-1]} are in your army")
+            elif any(x[1] == 'local' and x[2] in counted for x in seg):
+                pid = counted[next(x[2] for x in seg if x[1] == 'local' and x[2] in counted)]
+                count = sum(1 for us in D.dispos(before).values() for u in us if D.persons()[u['person']]['pid'] == pid)
+                ways.append(f'{last_int} or more of the {count} enemy Clerics are still on the map')
+            else:
+                raise AssertionError((before, seg[-10:]))
+        text = ways[0] + (', or ' + ', or '.join(ways[1:]) + ' when it ends' if len(ways) > 1 else '')
+        if n == 3:
+            s8 = script('bmap208')
+            ops8 = s8.disasm(next(h for h in s8.handlers() if h['name'] == 'ChapterNext'))
+            k = next(k for k, (_, op, v) in enumerate(ops8) if op == 'str' and v == flag)
+            assert ops8[k - 2][1] == 'op32', ops8[k - 4:k]
+            text += f'; or no more than {ops8[k - 3][2]} of your units fell in the prologue'
+        if n == 20:
+            s20 = script('bmap020')
+            nxt = [v for _, op, v in s20.disasm(next(h for h in s20.handlers() if h['name'] == 'ChapterNext')) if op == 'str']
+            assert nxt[0] == SHIELD, nxt
+            text += '; and only once the Binding Shield is completed in Ch. 20 (without it the game ends there)'
+        out[f'{n}x'] = text[0].upper() + text[1:] + '.'
+    return out
+
+
+GAIDEN = gaiden()
 
 
 def chapter_id(key):
@@ -195,6 +262,7 @@ def joins():
     later = OrderedDict()   # pid -> [creation placements after their first join]
     for key, _, _ in STORY:
         groups = D.dispos(key)
+        when = group_when(key)
         tk = {}
         for label, kind, n, who in scenes(key):
             tk.setdefault((kind, n), set()).update(who)
@@ -205,13 +273,13 @@ def joins():
                     continue
                 p = pid[u['person']]
                 how, turn, with_ = 'start', None, []
-                if gname.startswith('ed'):
-                    how = 'end'
-                elif gname.startswith('m') and not gname.startswith('mikata'):
-                    if any(kind == 'VIL' and p in who for (kind, n), who in tk.items()):
-                        how, with_ = 'visit', ['PID_MARS']
-                    elif (key, gname) in GROUP_HOW:
-                        how, turn = GROUP_HOW[(key, gname)]
+                if not gname.startswith('mikata'):
+                    if gname not in when:
+                        continue   # no handler places it (Prologue III's Norne)
+                    how, turn = when[gname]
+                    # A village's recruit: its message shows Marth (the face), as the visitor.
+                    if how == 'visit' and any(kind == 'VIL' and p in who for (kind, n), who in tk.items()):
+                        with_ = ['PID_MARS']
                 ev = {'key': key, 'chapter': chapter_id(key), 'how': how, 'turn': turn, 'with': with_, 'unit': u, 'group': gname,
                       'variant': variant(gname)}
                 if p not in out:

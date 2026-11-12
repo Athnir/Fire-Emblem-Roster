@@ -1,8 +1,8 @@
 """Copy the files the Roster reads out of the user's own New Mystery of the Emblem cartridge into data-raw/fe12/rom (git-ignored, never
 committed), decompressed.
 
-The cartridge image (`Fire Emblem - Shin Monshou no Nazo - Hikari to Kage no Eiyuu.nds`, Japanese, VI2J, clean) sits in
-Documents\\FE Games. From it: data/ (the database FE12Data.bin, the base conversations' table FE12BaseTalk.bin, the dictionary),
+The cartridge image (`FIREEMBLEM12_VI2J01_01.nds`, Japanese, VI2J revision 1, clean) sits in Documents\\FE Games (an earlier dump,
+`Fire Emblem - Shin Monshou no Nazo - Hikari to Kage no Eiyuu.nds`, had its 119 scripts zeroed; every other file is the same). From it: data/ (the database FE12Data.bin, the base conversations' table FE12BaseTalk.bin, the dictionary),
 dispos/ (each chapter's placements), script/ (the chapters' scripts: Shadow Dragon's bytecode, scripts/fe11_cmb.py), m/ (the Japanese
 text, label -> string), cpu/, pcmake/ (the avatar's creation screens), plus the ARM9 program and its overlays for checking mechanics.
 Everything in those folders is LZ11 (or LZ10) packed; script/ files are stored as they are.
@@ -16,7 +16,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from nds_rom import Nds, decompress  # noqa: E402
 
 GAMES = os.path.join(os.path.expanduser('~'), 'Documents', 'FE Games')
-CART = os.path.join(GAMES, 'Fire Emblem - Shin Monshou no Nazo - Hikari to Kage no Eiyuu.nds')
+CART = os.path.join(GAMES, 'FIREEMBLEM12_VI2J01_01.nds')
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data-raw', 'fe12', 'rom')
 KEEP = ('data/', 'dispos/', 'script/', 'm/', 'cpu/', 'pcmake/')
 # LZ10 / LZ11-compressed; script/ files are stored as they are.

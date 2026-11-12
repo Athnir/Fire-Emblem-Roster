@@ -7,16 +7,17 @@ overlays, into `data-raw/fe12/rom/` (git-ignored, never committed). `scripts/fe1
 the joins, `scripts/fe12_names.py` the English names, `scripts/build-fe12-units.py` writes `src/data/fe12/fe12Units.ts`, and
 `scripts/fe12_portraits.py` the portraits. The readers it shares with Shadow Dragon: `nds_rom.py`, `fe13_bin.py`, `fe11_portraits.py`.
 
-## What the image lacks
+## The dump
 
-Every byte of all 119 `script/*.cmb` files is 0, and so are the small faces (`sf/`), the shop and shield screens, parts of
-`sound/FE12_Sound.sdat` and of 6 battle animations. The cartridge's DSi digest table says these weren't zero when it was made: the
-sector table (header +0x1f0: 0x5340800, an HMAC-SHA1 per 1 KB sector of 0x4000-0x5340800) gives every truly empty sector the same
-value (1,324 of them), and 20,611 sectors that are zero in this image have values of their own. The tables, placements, text,
-portraits (`f/`), avatar parts (`av/`), program and overlays have no such sectors. So the chapters' scripts, which decide when a
-placed group appears, what the talks and villages do and what opens the gaiden chapters, can't be read; the joins come from the
-placements and the text, and what only the scripts know is Serenes Forest's (below, and `unconfirmed` notes in the data). A
-complete dump would let `fe12_joins.py` read the scripts as `fe11_joins.py` does (the bytecode is Shadow Dragon's, `fe11_cmb.py`).
+The cartridge image is `FIREEMBLEM12_VI2J01_01.nds`. An earlier dump of it (`Fire Emblem - Shin Monshou no Nazo - Hikari to Kage
+no Eiyuu.nds`, since removed) had every byte of all 119 `script/*.cmb` files zeroed, and the small faces (`sf/`), the shop and shield
+screens, parts of `sound/FE12_Sound.sdat` and of 6 battle animations: its DSi digest table (header +0x1f0: 0x5340800, an HMAC-SHA1 per
+1 KB sector) gave 20,611 of its zero sectors values of their own. The joins were then built from the placements and the text, with
+Serenes Forest's table for when each group comes and for the gaiden chapters' requirements. Every file read from the old dump is byte
+for byte the same in this one, and the scripts are all there: the timings and requirements are read from them now (`fe12_joins.py`,
+with `fe12_cmb.py`, the Armory's script reader with New Mystery's opcodes). Every timing from Serenes Forest's table matched the
+scripts; its gaiden requirements left out each chapter's turn limit (and 20x's Binding Shield), and Prologue III's Norne turned out
+never to be placed.
 
 ## Containers and text
 
@@ -99,17 +100,23 @@ your side, it reuses the person's unit from force 2 (set aside) if there is one,
 
 ## Joins (`scripts/fe12_joins.py`)
 
-- A playable person placed on your side with 0x80 joins there; the group says when: `mikata` (the deployment) and `op` at the start,
-  `ed` at the end, `mNN` during the chapter (when: Serenes Forest's, `GROUP_HOW`).
-- A village (`MSnnn_VILn`) showing a person placed in an `mNN` group recruits them (Marth visits); a talk (`MSnnn_TKn`) showing a
-  person placed on the foe's side recruits them, the other faces (who have joined by then) being the talkers.
+- A playable person placed on your side with 0x80 joins there, when the handler of the chapter's scripts that places the group runs
+  (`group_when`): the map's begin or opening, or its first turn's player phase (the start), a later turn's handler (that turn), the
+  Ending (after the battle), a village of its terrain script (a visit; its message shows Marth). A group no handler places never joins.
+- A talk (`MSnnn_TKn`) showing a person placed on the foe's side recruits them, the other faces (who have joined by then) being the
+  talkers (each matches a talk handler of the chapter's script, type 0x08).
 - The prologue (Prologue I-VIII, bmap201-208, every difficulty: each mode's menu starts bmap201) has three choices: the first
   answer at the end of Prologue III, V and VI plays the chapter's B version (MapTable bmap204B / 206B / 207B; the placements' B
   groups), so Athena, Draug or Cain joins instead of Gordin, Ogma or Est (Serenes Forest; the B groups say who). Units not in
   Chapter 1's deployment leave after Prologue VIII (their goodbyes are MS208_ED3_*) and come back where they're next created; Gordin
   and Draug are created by Chapter 1's deployment whichever answer was picked.
-- Excluded as scenes: Norne in Prologue III (`bmap203 m01`, unconfirmed: P8's ending has her go home as Ryan heals), and Nyna, Elice,
-  Maria and Lena in Chapter 20's ending (recruited in the Endgame).
+- Excluded as a scene: Nyna, Elice, Maria and Lena in Chapter 20's ending (its Ending places them as Gharnef takes them; the Endgame's
+  talks recruit them). Prologue III's `m01` (Norne) is never placed by its script.
+- The gaiden chapters' requirements (`gaiden`): each FlagSet of the chapter's gf_<n>ｘ分岐 flag at the end of the chapter before, under
+  the checks just before it: cleared by a turn (GetTurn() <= GetNormalizeTurn(n), the turn scaled by the mode: 100, 120, 140, 160 and
+  180% for Normal to Reverse Lunatic, arm9 0x2028510), or another way (Rickard in your army, 3 of the 6 enemy Clerics left, no foe
+  escaped, Kris promoted at Lv 5 or over, 3 of Roshea, Wolf, Sedgar, Vyland and Midia); Prologue VIII's ChapterNext sets 3x's flag too
+  (at most one unit fallen in the prologue), and Chapter 20 goes on only once the Binding Shield is completed (else BadEnd).
 - Chapters: 1-23, then the Endgame (bmap024, 終章); gaiden 3x, 6x, 10x, 13x, 16x, 20x (bmap1xx). The extra chapters (bmap301-304,
   BS Fire Emblem's) and the downloadable ones (dl001-003) are left out.
 

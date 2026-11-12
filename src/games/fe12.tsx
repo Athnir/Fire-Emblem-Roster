@@ -62,7 +62,7 @@ const byId = new Map(units.map((u) => [u.id, u]))
 const names = (ids: string[]) => ids.map((id) => byId.get(id)?.name ?? id).join(' and ')
 
 // The side chapters: what opens each (Serenes Forest's; the scripts that check them are blank in the cartridge image).
-const chapters = FE12_CHAPTERS.map((c) => (FE12_GAIDEN[c.id] ? { ...c, note: `Opens only if: ${FE12_GAIDEN[c.id]} (Serenes Forest)` } : c))
+const chapters = FE12_CHAPTERS.map((c) => (FE12_GAIDEN[c.id] ? { ...c, note: `Opens only if: ${FE12_GAIDEN[c.id]}` } : c))
 
 // The prologue's three questions: each answer plays the next chapter's version with one unit, and the other joins later (FE12_ALT_JOINS).
 const choices: GbaJoinChoice[] = FE12_CHOICES.map((c) => {
